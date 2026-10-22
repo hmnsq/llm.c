@@ -18,21 +18,21 @@ Which could be tricky in C because of the regex involved, to look into later.
 typedef struct {
     uint32_t vocab_size;
     char **token_table;
-    int init_ok;
-    int eot_token; // <|endoftext|> token id
+    цяло init_ok;
+    цяло eot_token; // <|endoftext|> token id
 } Tokenizer;
 
 void safe_printf(const char *piece) {
     // the tokens are raw bytes, and we we only want to print the printable ones
     // many bytes can be various control codes, backspace, etc.
-    if (piece == NULL) { return; }
-    if (piece[0] == '\0') { return; }
+    ако (piece == NULL) { върни; }
+    ако (piece[0] == '\0') { върни; }
     // handle individual byte tokens
     // every token is asserted to be at least one byte so doing piece[1] is ok
-    if (piece[1] == '\0') {
+    ако (piece[1] == '\0') {
         unsigned char byte_val = piece[0];
-        if (!(isprint(byte_val) || isspace(byte_val))) {
-            return; // weird byte, don't print it
+        ако (!(isprint(byte_val) || isspace(byte_val))) {
+            върни; // weird byte, don't print it
         }
     }
     printf("%s", piece);
@@ -40,7 +40,7 @@ void safe_printf(const char *piece) {
 
 void tokenizer_init(Tokenizer *tokenizer, const char *filename) {
     FILE *file = fopen(filename, "rb");
-    if (file == NULL) {
+    ако (file == NULL) {
         // try to be more helpful as we just added this feature, erase later
         printf("---\n");
         printf("WARNING: Failed to open the tokenizer file %s\n", filename);
@@ -48,29 +48,29 @@ void tokenizer_init(Tokenizer *tokenizer, const char *filename) {
         printf("Re-run `python train_gpt2.py` to write it\n");
         printf("---\n");
         tokenizer->init_ok = 0;
-        return;
+        върни;
     }
     // read in the header
     uint32_t header[256];
     freadCheck(header, sizeof(uint32_t), 256, file);
     assert(header[0] == 20240328);
-    int version = header[1];
+    цяло version = header[1];
     tokenizer->vocab_size = header[2];
-    if (version == 1) {
+    ако (version == 1) {
         // version 1 didn't include the EOT token id
         // so we assume it is 50256, the EOT in GPT-2
         assert(tokenizer->vocab_size == 50257); // let's be defensive here
         tokenizer->eot_token = 50256;
-    } else if (version == 2) {
+    } иначе ако (version == 2) {
         tokenizer->eot_token = header[3];
-    } else {
+    } иначе {
         fprintf(stderr, "Tokenizer model file %s has bad version: %d\n", filename, version);
         exit(EXIT_FAILURE);
     }
     // read in all the tokens
     unsigned char length;
     tokenizer->token_table = (char **)mallocCheck(tokenizer->vocab_size * sizeof(char *));
-    for (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
+    за (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
         freadCheck(&length, sizeof(unsigned char), 1, file);
         assert(length > 0); // every token should be at least one character
         char *token_bytes = (char *)mallocCheck(length + 1);
@@ -84,20 +84,20 @@ void tokenizer_init(Tokenizer *tokenizer, const char *filename) {
 }
 
 const char *tokenizer_decode(Tokenizer *tokenizer, uint32_t token_id) {
-    if (tokenizer->init_ok == 0) {
-        return NULL;
+    ако (tokenizer->init_ok == 0) {
+        върни NULL;
     }
-    if (token_id < tokenizer->vocab_size) {
-        return tokenizer->token_table[token_id];
-    } else {
+    ако (token_id < tokenizer->vocab_size) {
+        върни tokenizer->token_table[token_id];
+    } иначе {
         printf("invalid token id %u!\n", token_id);
-        return NULL;
+        върни NULL;
     }
 }
 
 void tokenizer_free(Tokenizer *tokenizer) {
-    if (tokenizer->init_ok) {
-        for (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
+    ако (tokenizer->init_ok) {
+        за (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
             free(tokenizer->token_table[i]);
         }
         free(tokenizer->token_table);
