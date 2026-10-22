@@ -4,97 +4,97 @@ Implements various learning rate schedulers.
 #ifndef SCHEDULERS_H
 #define SCHEDULERS_H
 
-#include <assert.h>
-#include <math.h>
-#include <string.h>
+#अन्तर्भाव <assert.h>
+#अन्तर्भाव <math.h>
+#अन्तर्भाव <string.h>
 
-typedef struct {
-    const char* type;
-    float learning_rate;
-    int warmup_iterations;
-    int train_num_batches;
-    float final_learning_rate_frac;
+प्रकारनिर्देश संरचना {
+    ध्रुव वर्ण* type;
+    भिन्न learning_rate;
+    पूर्णाङ्क warmup_iterations;
+    पूर्णाङ्क train_अंक_batches;
+    भिन्न final_learning_rate_frac;
 } LearningRateScheduler;
 
-void lr_scheduler_init(LearningRateScheduler *scheduler, const char* scheduler_type, float learning_rate, int warmup_iterations, int train_num_batches, float final_learning_rate_frac) {
+शून्य lr_scheduler_init(LearningRateScheduler *scheduler, ध्रुव वर्ण* scheduler_type, भिन्न learning_rate, पूर्णाङ्क warmup_iterations, पूर्णाङ्क train_अंक_batches, भिन्न final_learning_rate_frac) {
     scheduler->type = scheduler_type;
     scheduler->learning_rate = learning_rate;
     scheduler->warmup_iterations = warmup_iterations;
-    scheduler->train_num_batches = train_num_batches;
+    scheduler->train_अंक_batches = train_अंक_batches;
     scheduler->final_learning_rate_frac = final_learning_rate_frac;
 }
 
 // cosine: warmup linearly to max LR, then cosine decay to LR * final_learning_rate_frac
-float get_learning_rate_cosine(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float coeff = 0.5f * (1.0f + cosf(M_PI * decay_ratio)); // coeff starts at 1 and goes to 0
-        assert(0.0f <= coeff && coeff <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
+भिन्न get_learning_rate_cosine(LearningRateScheduler *scheduler, पूर्णाङ्क step) {
+    भिन्न lr = scheduler->learning_rate;
+    यदि (step < scheduler->warmup_iterations) {
+        lr = scheduler->learning_rate * ((भिन्न)(step + 1)) / scheduler->warmup_iterations;
+    } अन्यथा {
+        भिन्न decay_ratio = ((भिन्न)(step - scheduler->warmup_iterations)) / (scheduler->train_अंक_batches - scheduler->warmup_iterations);
+        प्रतिज्ञा(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        भिन्न coeff = 0.5f * (1.0f + cosf(M_PI * decay_ratio)); // coeff starts at 1 and goes to 0
+        प्रतिज्ञा(0.0f <= coeff && coeff <= 1.0f);
+        भिन्न min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
         lr = min_lr + coeff * (scheduler->learning_rate - min_lr);
     }
-    return lr;
+    प्रत्यागम lr;
 }
 
 // linear: warmup linearly to max LR, then decay linearly to LR * final_learning_rate_frac
-float get_learning_rate_linear(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
+भिन्न get_learning_rate_linear(LearningRateScheduler *scheduler, पूर्णाङ्क step) {
+    भिन्न lr = scheduler->learning_rate;
+    यदि (step < scheduler->warmup_iterations) {
+        lr = scheduler->learning_rate * ((भिन्न)(step + 1)) / scheduler->warmup_iterations;
+    } अन्यथा {
+        भिन्न decay_ratio = ((भिन्न)(step - scheduler->warmup_iterations)) / (scheduler->train_अंक_batches - scheduler->warmup_iterations);
+        प्रतिज्ञा(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        भिन्न min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
         lr = scheduler->learning_rate - decay_ratio * (scheduler->learning_rate - min_lr);
     }
-    return lr;
+    प्रत्यागम lr;
 }
 
 // constant
-float get_learning_rate_constant(LearningRateScheduler *scheduler, int step) {
-    return scheduler->learning_rate;
+भिन्न get_learning_rate_constant(LearningRateScheduler *scheduler, पूर्णाङ्क step) {
+    प्रत्यागम scheduler->learning_rate;
 }
 
 // wsd schedule: warmup linearly, keep constant, last 20% decay using 1 - sqrt decay to final_frac (should be 0.0)
 // https://arxiv.org/abs/2405.18392
-float get_learning_rate_wsd(LearningRateScheduler *scheduler, int step) {
-    int decay_point = (int)(0.8f * scheduler->train_num_batches);
-    float max_lr = scheduler->learning_rate;
-    float lr = max_lr;
-    if (step < scheduler->warmup_iterations) {
-        float decay_ratio = ((float)(step + 1)) / scheduler->warmup_iterations;
+भिन्न get_learning_rate_wsd(LearningRateScheduler *scheduler, पूर्णाङ्क step) {
+    पूर्णाङ्क decay_point = (पूर्णाङ्क)(0.8f * scheduler->train_अंक_batches);
+    भिन्न max_lr = scheduler->learning_rate;
+    भिन्न lr = max_lr;
+    यदि (step < scheduler->warmup_iterations) {
+        भिन्न decay_ratio = ((भिन्न)(step + 1)) / scheduler->warmup_iterations;
         lr = max_lr * decay_ratio;
-    } else if (step < decay_point) {
+    } अन्यथा यदि (step < decay_point) {
         // noop, keep lr constant
-    } else {
-        float decay_ratio = ((float)(step - decay_point)) / (scheduler->train_num_batches - decay_point);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = max_lr * scheduler->final_learning_rate_frac;
-        return min_lr + (1.0f - sqrtf(decay_ratio)) * (max_lr - min_lr);
+    } अन्यथा {
+        भिन्न decay_ratio = ((भिन्न)(step - decay_point)) / (scheduler->train_अंक_batches - decay_point);
+        प्रतिज्ञा(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        भिन्न min_lr = max_lr * scheduler->final_learning_rate_frac;
+        प्रत्यागम min_lr + (1.0f - sqrtf(decay_ratio)) * (max_lr - min_lr);
     }
-    return lr;
+    प्रत्यागम lr;
 }
 
 // return the learning rate at a given step
-float get_learning_rate(LearningRateScheduler *scheduler, int step) {
-    float step_learning_rate;
-    if (strcmp(scheduler->type, "cosine") == 0) {
+भिन्न get_learning_rate(LearningRateScheduler *scheduler, पूर्णाङ्क step) {
+    भिन्न step_learning_rate;
+    यदि (म_भेद(scheduler->type, "cosine") == 0) {
         step_learning_rate = get_learning_rate_cosine(scheduler, step);
-    } else if (strcmp(scheduler->type, "linear") == 0) {
+    } अन्यथा यदि (म_भेद(scheduler->type, "linear") == 0) {
         step_learning_rate = get_learning_rate_linear(scheduler, step);
-    } else if (strcmp(scheduler->type, "constant") == 0) {
+    } अन्यथा यदि (म_भेद(scheduler->type, "constant") == 0) {
         step_learning_rate = get_learning_rate_constant(scheduler, step);
-    } else if (strcmp(scheduler->type, "wsd") == 0) {
+    } अन्यथा यदि (म_भेद(scheduler->type, "wsd") == 0) {
         step_learning_rate = get_learning_rate_wsd(scheduler, step);
-    } else {
-        fprintf(stderr, "Unknown learning rate scheduler type: %s\n", scheduler->type);
-        exit(EXIT_FAILURE);
+    } अन्यथा {
+        ख_लिखो(मानक_त्रुटि, "Unknown learning rate scheduler type: %s\n", scheduler->type);
+        निकास(निकास_त्रुटि);
     }
-    return step_learning_rate;
+    प्रत्यागम step_learning_rate;
 }
 
 #endif // SCHEDULERS_H
