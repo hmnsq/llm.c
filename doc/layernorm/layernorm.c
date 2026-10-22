@@ -8,21 +8,21 @@
 
 void layernorm_forward(float* out, float* mean, float* rstd,
                        float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
+                       整数 B, 整数 T, 整数 C) {
     float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+    为 (整数 b = 0; b < B; b++) {
+        为 (整数 t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
             float* x = inp + b * T * C + t * C;
             // calculate the mean
             float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            为 (整数 i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
             float v = 0.0f;
-            for (int i = 0; i < C; i++) {
+            为 (整数 i = 0; i < C; i++) {
                 float xshift = x[i] - m;
                 v += xshift * xshift;
             }
@@ -31,7 +31,7 @@ void layernorm_forward(float* out, float* mean, float* rstd,
             float s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
             float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
+            为 (整数 i = 0; i < C; i++) {
                 float n = (s * (x[i] - m)); // normalized output
                 float o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
@@ -45,9 +45,9 @@ void layernorm_forward(float* out, float* mean, float* rstd,
 
 void layernorm_backward(float* dinp, float* dweight, float* dbias,
                         float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+                        整数 B, 整数 T, 整数 C) {
+    为 (整数 b = 0; b < B; b++) {
+        为 (整数 t = 0; t < T; t++) {
             float* dout_bt = dout + b * T * C + t * C;
             float* inp_bt = inp + b * T * C + t * C;
             float* dinp_bt = dinp + b * T * C + t * C;
@@ -57,7 +57,7 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             // first: two reduce operations
             float dnorm_mean = 0.0f;
             float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
+            为 (整数 i = 0; i < C; i++) {
                 float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
                 float dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
@@ -67,7 +67,7 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
+            为 (整数 i = 0; i < C; i++) {
                 float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
                 float dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
@@ -87,26 +87,26 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+整数 check_tensor(float *a, float *b, 整数 n, char* label) {
+    整数 ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    为 (整数 i = 0; i < n; i++) {
+        如果 (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } 否则 {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    返回 ok;
 }
 
-int main() {
+整数 主要() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    整数 B = 2; // batch
+    整数 T = 3; // time / sequence length
+    整数 C = 4; // number of channels
 
     float* x = (float*) malloc(B * T * C * sizeof(float));
     float* w = (float*) malloc(C * sizeof(float));
@@ -121,9 +121,9 @@ int main() {
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    如果 (file == NULL) {
         printf("Error opening file\n");
-        return 1;
+        返回 1;
     }
     fread(x, sizeof(float), B * T * C, file);
     fread(w, sizeof(float), C, file);
@@ -171,5 +171,5 @@ int main() {
     free(dx);
     free(dw);
     free(db);
-    return 0;
+    返回 0;
 }

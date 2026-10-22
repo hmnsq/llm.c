@@ -8,30 +8,30 @@ gcc -O3 -I../../llmc -o test_outlier_detector test_outlier_detector.c -lm && ./t
 #include <stdlib.h>
 #include "../../llmc/outlier_detector.h"
 
-int main(void) {
+整数 主要(void) {
     OutlierDetector detector;
     init_detector(&detector);
 
     srand(1337); // init rng
 
     // generate OUTLIER_DETECTOR_WINDOW_SIZE * 2 random numbers between -1 and 1
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE * 2; i++) {
+    为 (整数 i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE * 2; i++) {
         double val = (double)rand() / RAND_MAX * 2 - 1;  // Random number between -1 and 1
         double zscore = update_detector(&detector, val);
 
         printf("Step %d: Value = %.4f, zscore = %.4f\n", i, val, zscore);
 
         // check that the first OUTLIER_DETECTOR_WINDOW_SIZE values return nan
-        if (i < OUTLIER_DETECTOR_WINDOW_SIZE) {
-            if (!isnan(zscore)) {
+        如果 (i < OUTLIER_DETECTOR_WINDOW_SIZE) {
+            如果 (!isnan(zscore)) {
                 printf("Error: Expected nan, got %.4f\n", zscore);
-                return EXIT_FAILURE;
+                返回 EXIT_FAILURE;
             }
-        } else {
+        } 否则 {
             // check that the zscore is within reasonable bounds
-            if (zscore < -3.0 || zscore > 3.0) {
+            如果 (zscore < -3.0 || zscore > 3.0) {
                 printf("Error: Z-score %.4f is outside of expected range\n", zscore);
-                return EXIT_FAILURE;
+                返回 EXIT_FAILURE;
             }
         }
     }
@@ -42,11 +42,11 @@ int main(void) {
     printf("Outlier Step: Value = %.4f, zscore = %.4f\n", outlier, zscore);
 
     // check that the z-score here is large
-    if (zscore < 5.0) {
+    如果 (zscore < 5.0) {
         printf("Error: Z-score %.4f is not large enough for an outlier\n", zscore);
-        return EXIT_FAILURE;
+        返回 EXIT_FAILURE;
     }
 
     printf("OK\n");
-    return EXIT_SUCCESS;
+    返回 EXIT_SUCCESS;
 }
