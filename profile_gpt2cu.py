@@ -3,31 +3,31 @@
 # Note: If you run into errors because of missing access rights to performance counters, try
 # https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters#SolnAdminTag
 
-import subprocess
-import csv
-from collections import defaultdict
-import shutil
+استورد subprocess
+استورد csv
+من collections استورد defaultdict
+استورد shutil
 
 # find ncu: Is it on PATH?
 NCU = shutil.which("ncu")
 # otherwise, guess a standard location
-if NCU is None:
+إذا NCU دی هیڅ:
     NCU = "/usr/local/cuda/bin/ncu"
 
 # build the executable
 subprocess.check_call(["make", "profile_gpt2cu", "NO_MULTI_GPU=1", "USE_CUDNN=1"])
 
 # try to see if profiling is allowed for non-root:
-options = subprocess.check_output(["modprobe", "-c", "nvidia"], text=True)
-can_profile = len([l for l in options.splitlines() if "NVreg_RestrictProfilingToAdminUsers=0" in l]) != 0
+options = subprocess.check_output(["modprobe", "-c", "nvidia"], متن=ریښتیا)
+can_profile = اوږدوالی([l لكل l في options.splitlines() إذا "NVreg_RestrictProfilingToAdminUsers=0" في l]) != 0
 
 # record metrics
 # --full and --import-source are entirely superfluous for this script, but you might want to
 # manually inspect `profile.ncu-rep`, so we keep it here
 cmd = [NCU, "--set", "full", "--import-source", "yes", "-o", "profile", "-f", "./profile_gpt2cu"]
 # do we need to run under sudo
-if not can_profile:
-    print("NVreg_RestrictProfilingToAdminUsers=1, running with sudo")
+إذا ليس can_profile:
+    چاپ("NVreg_RestrictProfilingToAdminUsers=1, running with sudo")
     cmd = ["sudo"] + cmd
 subprocess.check_call(cmd)
 
@@ -43,128 +43,128 @@ metrics = [
     "smsp__inst_executed.sum",                  # instructions
 ]
 cmd = [NCU, "-i", "profile.ncu-rep", "--csv", "--page", "raw", "--metrics", ",".join(metrics)]
-result = subprocess.check_output(cmd, text=True).strip()
+پایله = subprocess.check_output(cmd, متن=ریښتیا).strip()
 
-reader = csv.reader(result.splitlines(keepends=True))
+reader = csv.reader(پایله.splitlines(keepends=ریښتیا))
 
 # model config
-CLS_START = -1
-CLS_NUM = 6
+CLS_پیل = -1
+CLS_عدد = 6
 N_LAYERS = 12
 
-summaries = defaultdict(lambda: 0.0)
-counts = defaultdict(lambda: 0)
-passes = defaultdict(lambda: 0.0)
-total = defaultdict(lambda: 0.0)
+summaries = defaultdict(مجهول: 0.0)
+counts = defaultdict(مجهول: 0)
+passes = defaultdict(مجهول: 0.0)
+ټول = defaultdict(مجهول: 0.0)
 no_cutlass = 0.0
 CC = ""
 phase = "fwd"
 
-kernel_profile_data = list(enumerate(reader))
+kernel_profile_معلومات = list(enumerate(reader))
 
-for rid, row in kernel_profile_data:
-    if rid <= 2:
-        continue
-    kernel = row[4]
+لكل rid, لیکه في kernel_profile_معلومات:
+    إذا rid <= 2:
+        استمر
+    kernel = لیکه[4]
     kid = rid - 2
-    if "fused_classifier" in kernel:
+    إذا "fused_classifier" في kernel:
         #  classifier: layernorm -> matmul -> fused -> bw matmul (x2) -> bw layernorm
-        CLS_START = kid - 2
+        CLS_پیل = kid - 2
 
-assert CLS_START != -1
+أكد CLS_پیل != -1
 
 # Check every kernel to find the maximum DRAM bandwidth and Tensor Core utilisation values
 max_dram_bw = 0.0
 max_tensor = 0.0
-for rid, row in kernel_profile_data:
-    if rid <= 2:
-        continue
-    time = float(row[13])
-    read = float(row[11])
-    write = float(row[12])
-    tensor = float(row[16])
-    dram_bw = (read + write) / (time / 1000.0)
+لكل rid, لیکه في kernel_profile_معلومات:
+    إذا rid <= 2:
+        استمر
+    time = عائم(لیکه[13])
+    اقرأ = عائم(لیکه[11])
+    اكتب = عائم(لیکه[12])
+    tensor = عائم(لیکه[16])
+    dram_bw = (اقرأ + اكتب) / (time / 1000.0)
     max_dram_bw = max(max_dram_bw, dram_bw)
     max_tensor = max(max_tensor, tensor)
 
 # round the maximum tensor core utilisation to 50% or 100%
 # consumer GPUs can only achieve 50% of peak tensor throughput on this counter
 # and for GPUs without tensor cores, we set the value to 50% to avoid division by zero
-max_tensor = (max_tensor > 50.0) and 100.0 or 50.0
+max_tensor = (max_tensor > 50.0) و 100.0 أو 50.0
 
-print()
-print("Kernel calls:")
-for rid, row in kernel_profile_data:
-    if rid == 0:
+چاپ()
+چاپ("Kernel calls:")
+لكل rid, لیکه في kernel_profile_معلومات:
+    إذا rid == 0:
         #  headings
-        print(  f"id pass    {'name':<40} {'time':>8} {'RAM BW':>8} {'tensor':>8} {'RAM rd':>8} {'RAM wt':>8} {'L2 rd':>8} {'L2 wt':>8} {'inst':>8}")
-        continue
-    if rid == 1:
+        چاپ(  f"id pass    {'name':<40} {'time':>8} {'RAM BW':>8} {'tensor':>8} {'RAM rd':>8} {'RAM wt':>8} {'L2 rd':>8} {'L2 wt':>8} {'inst':>8}")
+        استمر
+    إذا rid == 1:
         # units
         units = f"           {'':<40} {'ms':>8} {'GB/s':>8} {'core %':>8} {'GiB':>8} {'GiB':>8} {'GiB':>8} {'GiB':>8} {'MInst':>8}"
-        print(units)
-        print("." * len(units))
-        continue
-    if rid == 2:
-        CC = row[10]
+        چاپ(units)
+        چاپ("." * اوږدوالی(units))
+        استمر
+    إذا rid == 2:
+        CC = لیکه[10]
 
     # actual data
-    kernel = row[4]
-    time = float(row[13])
-    read = float(row[11])
-    write = float(row[12])
-    l2_read = float(row[14])
-    l2_write = float(row[15])
-    tensor = float(row[16])
-    inst = float(row[17]) / 1e6
-    dram_bw = (read + write) / (time / 1000.0)
+    kernel = لیکه[4]
+    time = عائم(لیکه[13])
+    اقرأ = عائم(لیکه[11])
+    اكتب = عائم(لیکه[12])
+    l2_read = عائم(لیکه[14])
+    l2_write = عائم(لیکه[15])
+    tensor = عائم(لیکه[16])
+    inst = عائم(لیکه[17]) / 1e6
+    dram_bw = (اقرأ + اكتب) / (time / 1000.0)
 
     kid = rid - 2
 
     multiplier = 1
-    if "encoder" in kernel:
+    إذا "encoder" في kernel:
         pass_name = "enc"
-        if phase == "bwd":
+        إذا phase == "bwd":
             phase = "bwd-enc"
-    elif CLS_START <= kid < CLS_START + CLS_NUM:
+    وإلاإذا CLS_پیل <= kid < CLS_پیل + CLS_عدد:
         # the classifier part, counts only once
         pass_name = "cls"
         phase = "bwd"
-    elif "adamw" in kernel or "global_norm" in kernel or "copy_and_cast" in kernel:
+    وإلاإذا "adamw" في kernel أو "global_norm" في kernel أو "copy_and_cast" في kernel:
         # encoder layer or adam
         pass_name = "opt"
     # before the first optimizer run, we create weight copies.
     # they aren't part of regular processing, so they get a multiplier
     # of zero
-    elif phase == "bwd-enc":
+    وإلاإذا phase == "bwd-enc":
         pass_name = "init"
         multiplier = 0
-    else:
+    وإلا:
         pass_name = phase
         multiplier = N_LAYERS
         time *= N_LAYERS
-        read *= N_LAYERS
-        write *= N_LAYERS
+        اقرأ *= N_LAYERS
+        اكتب *= N_LAYERS
         l2_read *= N_LAYERS
         l2_write *= N_LAYERS
         inst *= N_LAYERS
 
     # split at "(" -- argument list
-    fn_name = kernel.split("(")[0]
+    fn_name = kernel.وېشل("(")[0]
     # some names include the return value, others don't?
-    if " " in fn_name:
-        fn_name = fn_name.split(" ")[1]
-    if "<" in fn_name:
-        fn_name = fn_name.split("<")[0]
+    إذا " " في fn_name:
+        fn_name = fn_name.وېشل(" ")[1]
+    إذا "<" في fn_name:
+        fn_name = fn_name.وېشل("<")[0]
 
     # group together matmul kernels
-    if "cutlass" in fn_name:
-        pass
-    elif fn_name.startswith("ampere_bf16"):
+    إذا "cutlass" في fn_name:
+        تیرشه
+    وإلاإذا fn_name.startswith("ampere_bf16"):
         fn_name = "ampere_bf16"
-    elif fn_name.startswith("cudnn_generated_fort_native_sdpa"):
+    وإلاإذا fn_name.startswith("cudnn_generated_fort_native_sdpa"):
         fn_name = "cudnn_generated_fort_native_sdpa"
-    else:
+    وإلا:
         no_cutlass += time
 
     # convert L2 to GiB
@@ -175,40 +175,40 @@ for rid, row in kernel_profile_data:
     summaries[fn_name] += time
     counts[fn_name] += multiplier
     passes[pass_name] += time
-    if pass_name != "init":
-        total['time'] += time
-        total['read'] += read
-        total['write'] += write
-        total['l2_read'] += l2_read
-        total['l2_write'] += l2_write
-        total['inst'] += inst
-        total['tensor'] += tensor * time # % so multiplied by time
-        total['efficiency'] += efficiency * time
+    إذا pass_name != "init":
+        ټول['time'] += time
+        ټول['read'] += اقرأ
+        ټول['write'] += اكتب
+        ټول['l2_read'] += l2_read
+        ټول['l2_write'] += l2_write
+        ټول['inst'] += inst
+        ټول['tensor'] += tensor * time # % so multiplied by time
+        ټول['efficiency'] += efficiency * time
 
     pass_info = f"{pass_name}×{multiplier}"
-    print(f"{kid:02} {pass_info:7} {fn_name:<40} {time:8.2f} {dram_bw:8.1f} {tensor:8.1f} {read:8.2f} {write:8.2f} {l2_read:8.2f} {l2_write:8.2f} {inst:8.2f}")
+    چاپ(f"{kid:02} {pass_info:7} {fn_name:<40} {time:8.2f} {dram_bw:8.1f} {tensor:8.1f} {read:8.2f} {write:8.2f} {l2_read:8.2f} {l2_write:8.2f} {inst:8.2f}")
 
 
-total_time = total['time']
-avg_dram_bw = (total['read'] + total['write']) / (total_time / 1000.0)
-avg_tensor_util = total['tensor'] / total_time
-print("." * len(units))
-print(f"           {'Total':<40} {total['time']:8.2f} {avg_dram_bw:8.1f} {avg_tensor_util:8.1f} {total['read']:8.2f} {total['write']:8.2f} {total['l2_read']:8.2f} {total['l2_write']:8.2f} {total['inst']:8.2f}")
+ټول_وخت = ټول['time']
+avg_dram_bw = (ټول['read'] + ټول['write']) / (ټول_وخت / 1000.0)
+avg_tensor_util = ټول['tensor'] / ټول_وخت
+چاپ("." * اوږدوالی(units))
+چاپ(f"           {'Total':<40} {total['time']:8.2f} {avg_dram_bw:8.1f} {avg_tensor_util:8.1f} {total['read']:8.2f} {total['write']:8.2f} {total['l2_read']:8.2f} {total['l2_write']:8.2f} {total['inst']:8.2f}")
 
-print()
-print("Kernel type summaries:")
-print(f"  {'name':<40} {'time':>6} {'frac':>6}  {'count':>6}")
-ordered_time = sorted(summaries.items(), key=lambda x: x[1], reverse=True)
-for entry, value in ordered_time:
+چاپ()
+چاپ("Kernel type summaries:")
+چاپ(f"  {'name':<40} {'time':>6} {'frac':>6}  {'count':>6}")
+ordered_وخت = sorted(summaries.توکي(), کلی=مجهول x: x[1], سرچپه=ریښتیا)
+لكل ثبت, ارزښت في ordered_وخت:
     # crop entry to be at most 40 characters
-    if len(entry) > 40:
-        entry_text = entry[:37] + "..."
-    else:
-        entry_text = entry
-    print(f"  {entry_text:<40} {value:6.2f} {100*value / total_time:6.2f}% {counts[entry]:>6d}")
+    إذا اوږدوالی(ثبت) > 40:
+        ثبت_متن = ثبت[:37] + "..."
+    وإلا:
+        ثبت_متن = ثبت
+    چاپ(f"  {entry_text:<40} {value:6.2f} {100*value / total_time:6.2f}% {counts[entry]:>6d}")
 
 
-ts = total_time / 1000
+ts = ټول_وخت / 1000
 summary = f"""
 In total, a training step takes {total_time:.1f}ms, distributed as:
   {passes['enc']:.1f}ms ({100 * passes['enc'] / total_time:.1f}%) in the encoder,
@@ -225,4 +225,4 @@ Assuming that every kernel should be either fully DRAM bandwidth or tensor core 
 with a peak DRAM bandwidth of {max_dram_bw:.1f}GB/s and a peak tensor throughput of {max_tensor:.1f}%,
 our overall efficiency is {(total['efficiency'] * 100.0 / total_time):.1f}%.
 """
-print(summary)
+چاپ(summary)

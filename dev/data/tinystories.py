@@ -25,98 +25,98 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
-import glob
-import json
-import random
-from concurrent.futures import ProcessPoolExecutor, as_completed
+استورد argparse
+استورد os
+استورد glob
+استورد json
+استورد random
+من concurrent.futures استورد ProcessPoolExecutor, as_completed
 
-import tiktoken
-from transformers import AutoTokenizer
+استورد tiktoken
+من transformers استورد AutoTokenizer
 
-from data_common import download_file, write_datafile
+من معلومات_common استورد download_file, write_datafile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinystories")
+معلومات_CACHE_DIR = os.لار.join(os.لار.dirname(__file__), "tinystories")
 
-def download():
+تعریف download():
     """Downloads the TinyStories dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(معلومات_CACHE_DIR, exist_ok=ریښتیا)
 
     # download the TinyStories dataset, unless it's already downloaded
-    data_url = "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories_all_data.tar.gz"
-    data_filename = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data.tar.gz")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    معلومات_url = "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories_all_data.tar.gz"
+    معلومات_filename = os.لار.join(معلومات_CACHE_DIR, "TinyStories_all_data.tar.gz")
+    إذا ليس os.لار.exists(معلومات_filename):
+        چاپ(f"Downloading {data_url} to {data_filename}...")
+        download_file(معلومات_url, معلومات_filename)
+    وإلا:
+        چاپ(f"{data_filename} already exists, skipping download...")
 
     # unpack the tar.gz file into all the data shards (json files)
-    data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir, exist_ok=True)
-        print(f"Unpacking {data_filename}...")
+    معلومات_dir = os.لار.join(معلومات_CACHE_DIR, "TinyStories_all_data")
+    إذا ليس os.لار.exists(معلومات_dir):
+        os.makedirs(معلومات_dir, exist_ok=ریښتیا)
+        چاپ(f"Unpacking {data_filename}...")
         os.system(f"tar -xzf {data_filename} -C {data_dir}")
-    else:
-        print(f"{data_dir} already exists, skipping unpacking...")
+    وإلا:
+        چاپ(f"{data_dir} already exists, skipping unpacking...")
 
     # print a single example just for debugging and such
-    shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
-    print("Download done.")
-    print(f"Number of shards: {len(shard_filenames)}")
+    shard_filenames = sorted(glob.glob(os.لار.join(معلومات_dir, "*.json")))
+    چاپ("Download done.")
+    چاپ(f"Number of shards: {len(shard_filenames)}")
     # with open(shard_filenames[0], "r") as f:
     #     data = json.load(f)
     # print(f"Example story:\n{data[0]}")
 
-def process_shard(shard_index, shard_filename, model_desc):
-    if model_desc == "gpt-2":
+تعریف process_shard(shard_شاخص, shard_filename, model_desc):
+    إذا model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
-        encode = lambda s: enc.encode_ordinary(s)
-        eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    elif model_desc == "llama-3":
+        encode = مجهول s: enc.encode_ordinary(s)
+        eot = enc.special_نښې['<|endoftext|>'] # end of text token
+    وإلاإذا model_desc == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-        encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+        encode = مجهول s: tokenizer.encode(s, جمع_کړه_special_نښې=خطأ, verbose=خطأ, وېشل_special_نښې=ریښتیا)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
+    وإلا:
+        ارفع ارزښت_Error(f"unknown model descriptor {model_desc}")
 
-    with open(shard_filename, "r") as f:
-        data = json.load(f)
-    rng = random.Random(1337 + shard_index)
-    rng.shuffle(data)
-    all_tokens = []
-    for example in data:
-        text = example["story"]
-        text = text.strip()  # get rid of leading/trailing whitespace
-        tokens = encode(text)
-        all_tokens.append(eot)
-        all_tokens.extend(tokens)
-    return all_tokens
+    سره open(shard_filename, "r") كـ f:
+        معلومات = json.بارول(f)
+    rng = random.Random(1337 + shard_شاخص)
+    rng.shuffle(معلومات)
+    all_نښې = []
+    لكل example في معلومات:
+        متن = example["story"]
+        متن = متن.strip()  # get rid of leading/trailing whitespace
+        نښې = encode(متن)
+        all_نښې.append(eot)
+        all_نښې.extend(نښې)
+    أرجع all_نښې
 
-def tokenize(model_desc):
+تعریف tokenize(model_desc):
     # shard 0 will be the val split, rest is train
-    data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
-    shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
+    معلومات_dir = os.لار.join(معلومات_CACHE_DIR, "TinyStories_all_data")
+    shard_filenames = sorted(glob.glob(os.لار.join(معلومات_dir, "*.json")))
     val_shards = [shard_filenames[0]]
     train_shards = shard_filenames[1:]
-    for split_name, split_shards in [("val", val_shards), ("train", train_shards)]:
+    لكل وېشل_name, وېشل_shards في [("val", val_shards), ("train", train_shards)]:
 
-        print(f"Tokenizing {split_name} split...")
-        all_tokens = []
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(process_shard, shard_index, shard_filename, model_desc)
-                       for shard_index, shard_filename in enumerate(split_shards)]
-            for future in as_completed(futures):
-                all_tokens.extend(future.result())
+        چاپ(f"Tokenizing {split_name} split...")
+        all_نښې = []
+        سره ProcessPoolExecutor() كـ executor:
+            futures = [executor.submit(process_shard, shard_شاخص, shard_filename, model_desc)
+                       لكل shard_شاخص, shard_filename في enumerate(وېشل_shards)]
+            لكل future في as_completed(futures):
+                all_نښې.extend(future.پایله())
 
-        split_filename = os.path.join(DATA_CACHE_DIR, f"TinyStories_{split_name}.bin")
-        write_datafile(split_filename, all_tokens, model_desc)
+        وېشل_filename = os.لار.join(معلومات_CACHE_DIR, f"TinyStories_{split_name}.bin")
+        write_datafile(وېشل_filename, all_نښې, model_desc)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Tiny Stories dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+إذا __name__ == "__main__":
+    parser = argparse.دلیل_Parser(description="Tiny Stories dataset preprocessing")
+    parser.جمع_کړه_دلیل("-m", "--model_desc", type=str, افتراضي="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    دلیلونه = parser.parse_دلیلونه()
     download()
-    tokenize(args.model_desc)
+    tokenize(دلیلونه.model_desc)
