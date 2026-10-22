@@ -13,11 +13,11 @@ cuBLAS related utils
 // ----------------------------------------------------------------------------
 // cuBLAS Precision settings
 
-#if defined(ENABLE_FP32)
+#만약 defined(ENABLE_FP32)
 #define CUBLAS_LOWP CUDA_R_32F
 #elif defined(ENABLE_FP16)
 #define CUBLAS_LOWP CUDA_R_16F
-#else // default to bfloat16
+#아니면 // default to bfloat16
 #define CUBLAS_LOWP CUDA_R_16BF
 #endif
 
@@ -34,9 +34,9 @@ cublasLtHandle_t cublaslt_handle;
 // Error checking
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+void cublasCheck(cublasStatus_t status, const char *file, 정수 line)
 {
-    if (status != CUBLAS_STATUS_SUCCESS) {
+    만약 (status != CUBLAS_STATUS_SUCCESS) {
         printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
         exit(EXIT_FAILURE);
     }
