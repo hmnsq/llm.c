@@ -10,12 +10,12 @@
 namespace fe = cudnn_frontend;
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
+#ถ้า defined(ENABLE_FP32)
 static_assert(false, "cuDNN is not supported in FP32 mode.")
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
 #elif defined(ENABLE_FP16)
 #define CUDNN_16BIT fe::DataType_t::HALF
-#else // Default to bfloat16
+#มิฉะนั้น // Default to bfloat16
 #define CUDNN_16BIT fe::DataType_t::BFLOAT16
 #endif
 
@@ -23,23 +23,23 @@ static cudnnHandle_t cudnn_handle;
 static size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256MiB!)
 static void* cudnn_workspace = NULL;
 
-static void cuDNNCheck(cudnnStatus_t error, const char *file, int line) {
-    if (error != CUDNN_STATUS_SUCCESS) {
+static void cuDNNCheck(cudnnStatus_t error, const var_na *file, จำนวนเต็ม line) {
+    ถ้า (error != CUDNN_STATUS_SUCCESS) {
         printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, cudnnGetErrorString(error));
         exit(EXIT_FAILURE);
     }
 };
 #define cuDNNCheck(err) (cuDNNCheck(err, __FILE__, __LINE__))
 
-static void checkCudnnFE(const fe::error_object& e, const char *file, int line) {
-    if(!e.is_good()) {
+static void checkCudnnFE(const fe::error_object& e, const var_na *file, จำนวนเต็ม line) {
+    ถ้า(!e.is_good()) {
         printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, e.err_msg.c_str());
         exit(EXIT_FAILURE);
     }
 }
 #define checkCudnnFE(err) checkCudnnFE(err, __FILE__, __LINE__)
 
-enum UIDs {
+ga_nanaa UIDs {
     Q_UID,
     K_UID,
     V_UID,
@@ -53,19 +53,19 @@ enum UIDs {
 };
 
 // Need a cache because graph->build_operation_graph() is slow but everything else seems fast
-using cache_type_fwd = std::map<std::tuple<int,int,int,int, int>, std::shared_ptr<fe::graph::Graph>>;
-using cache_type_bwd = std::map<std::tuple<int,int,int,int>, std::shared_ptr<fe::graph::Graph>>;
+using cache_type_fwd = std::map<std::tuple<จำนวนเต็ม,จำนวนเต็ม,จำนวนเต็ม,จำนวนเต็ม, จำนวนเต็ม>, std::shared_ptr<fe::graph::Graph>>;
+using cache_type_bwd = std::map<std::tuple<จำนวนเต็ม,จำนวนเต็ม,จำนวนเต็ม,จำนวนเต็ม>, std::shared_ptr<fe::graph::Graph>>;
 
 // Loosely based on cuDNN frontend samples functions and massively simplified
-auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_only) {
+auto lookup_cache_or_build_graph_fwd(จำนวนเต็ม B,จำนวนเต็ม H,จำนวนเต็ม T,จำนวนเต็ม HS, จำนวนเต็ม is_inference_only) {
 
     static cache_type_fwd user_maintained_cache_fwd;
 
     auto key = std::make_tuple(B, H, T, HS, is_inference_only);
 
     auto it = user_maintained_cache_fwd.find(key);
-    if (it != user_maintained_cache_fwd.end()) {
-        return it->second;
+    ถ้า (it != user_maintained_cache_fwd.end()) {
+        คืน it->second;
     }
 
     auto graph = std::make_shared<fe::graph::Graph>();
@@ -105,7 +105,7 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
     O->set_output(true).set_dim({B, H, T, HS}).set_stride({H * HS * T, HS, H * HS, 1}).set_uid(O_UID);
 
     assert(stats == nullptr || is_inference_only == false);
-    if (is_inference_only == false) {
+    ถ้า (is_inference_only == false) {
         stats->set_output(true).set_data_type(fe::DataType_t::FLOAT)
                                .set_dim({B, H, T, 1})
                                .set_stride({H * T, T, 1, 1})
@@ -121,8 +121,8 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
     checkCudnnFE(graph->build_plans(cudnn_handle));
     // Reallocate the workspace if the required size is greater than the current workspace
     // In H100 this may be around 16B
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ถ้า (graph->get_workspace_size() > cudnn_workspace_size) {
+        ถ้า (cudnn_workspace_size > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
         cudnn_workspace_size = graph->get_workspace_size();
@@ -131,17 +131,17 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
 
     user_maintained_cache_fwd.insert({key, graph});
 
-    return graph;
+    คืน graph;
 }
 
-auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
+auto lookup_cache_or_build_graph_bwd(จำนวนเต็ม B, จำนวนเต็ม NH, จำนวนเต็ม T, จำนวนเต็ม HS) {
     static cache_type_bwd user_maintained_cache_bwd;
 
     auto key = std::make_tuple(B, NH, T, HS);
 
     auto it = user_maintained_cache_bwd.find(key);
-    if (it != user_maintained_cache_bwd.end()) {
-        return it->second;
+    ถ้า (it != user_maintained_cache_bwd.end()) {
+        คืน it->second;
     }
 
     auto graph = std::make_shared<fe::graph::Graph>();
@@ -184,7 +184,7 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
                             .set_uid(Attn_scale_UID)
                             .set_data_type(fe::DataType_t::FLOAT));
     auto sdpa_backward_options = fe::graph::SDPA_backward_attributes().set_name("flash_attention_backward")
-#if CUDNN_FRONTEND_MAJOR_VERSION > 1 || CUDNN_FRONTEND_MINOR_VERSION >= 5
+#ถ้า CUDNN_FRONTEND_MAJOR_VERSION > 1 || CUDNN_FRONTEND_MINOR_VERSION >= 5
                             .set_deterministic_algorithm(true) // 1.5+ needs this for determinism
 #endif
                             .set_causal_mask(true)
@@ -207,8 +207,8 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
 
     // Reallocate the workspace if the required size is greater than the current workspace
     // By default, cuDNN uses up to 256MiB of workspace, so we don't want to just allocate the maximum
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ถ้า (graph->get_workspace_size() > cudnn_workspace_size) {
+        ถ้า (cudnn_workspace_size > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
         cudnn_workspace_size = graph->get_workspace_size();
@@ -216,15 +216,15 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
     }
 
     user_maintained_cache_bwd.insert({key, graph});
-    return graph;
+    คืน graph;
 }
 
 void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
                              float* stats, // output for backward pass: (B, NH, T)
                              floatX* inp,  // input: (B, T, 3, NH, HS) QKV
-                             int B, int T, int NH, int C, cudaStream_t stream) {
+                             จำนวนเต็ม B, จำนวนเต็ม T, จำนวนเต็ม NH, จำนวนเต็ม C, cudaStream_t stream) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
+    จำนวนเต็ม HS = C / NH; // number of features per head
     bool is_inference_only = (stats == nullptr);
 
     cuDNNCheck(cudnnSetStream(cudnn_handle, stream));
@@ -244,7 +244,7 @@ void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
         {Q_UID, devPtrQ}, {K_UID, devPtrK}, {V_UID, devPtrV}, {Attn_scale_UID, &attn_scale_cpu}, {O_UID, devPtrO}};
 
     // Add the stats tensor unless we are only doing inference (only needed for backward pass)
-    if (is_inference_only == false) {
+    ถ้า (is_inference_only == false) {
         variant_pack[Stats_UID] = stats;
     }
 
@@ -255,9 +255,9 @@ void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
 
 void attention_backward_cudnn(floatX* dqkvr,                                       // output
                               floatX* dout, floatX* qkvr, floatX* o, float* stats, // inputs
-                              int B, int T, int NH, int C, cudaStream_t stream) {
+                              จำนวนเต็ม B, จำนวนเต็ม T, จำนวนเต็ม NH, จำนวนเต็ม C, cudaStream_t stream) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
+    จำนวนเต็ม HS = C / NH; // number of features per head
 
     // Get graph and tensors from cache (or generate it on first use)
     auto graph = lookup_cache_or_build_graph_bwd(B, NH, T, HS);
@@ -292,6 +292,6 @@ void create_cudnn() {
 }
 
 void destroy_cudnn() {
-    if (cudnn_workspace != NULL) { cudaCheck(cudaFree(cudnn_workspace)); }
+    ถ้า (cudnn_workspace != NULL) { cudaCheck(cudaFree(cudnn_workspace)); }
     cuDNNCheck(cudnnDestroy(cudnn_handle));
 }

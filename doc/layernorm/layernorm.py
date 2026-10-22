@@ -15,7 +15,7 @@ class LayerNorm:
         out = norm * w + b # B,T,C
 
         cache = (x, w, mean, rstd)
-        return out, cache
+        คืน out, cache
 
     @staticmethod
     def backward(dout, cache):
@@ -29,7 +29,7 @@ class LayerNorm:
         dnorm = dout * w
         dx = dnorm - dnorm.mean(-1, keepdim=True) - norm * (dnorm * norm).mean(-1, keepdim=True)
         dx *= rstd
-        return dx, dw, db
+        คืน dx, dw, db
 
 # create a small dummy example and check w.r.t PyTorch backward
 B = 2
