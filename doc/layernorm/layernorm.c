@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#ଅନ୍ତର୍ଭାଵ <stdio.h>
+#ଅନ୍ତର୍ଭାଵ <stdlib.h>
+#ଅନ୍ତର୍ଭାଵ <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+ଶୂନ୍ୟ layernorm_forward(ଦଶମିକ* out, ଦଶମିକ* mean, ଦଶମିକ* rstd,
+                       ଦଶମିକ* inp, ଦଶମିକ* weight, ଦଶମିକ* bias,
+                       ପୂର୍ଣ୍ଣସଂଖ୍ୟା B, ପୂର୍ଣ୍ଣସଂଖ୍ୟା T, ପୂର୍ଣ୍ଣସଂଖ୍ୟା C) {
+    ଦଶମିକ eps = 1e-5f;
+    ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା b = 0; b < B; b++) {
+        ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            ଦଶମିକ* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            ଦଶମିକ m = 0.0f;
+            ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            ଦଶମିକ v = 0.0f;
+            ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < C; i++) {
+                ଦଶମିକ xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            ଦଶମିକ s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            ଦଶମିକ* out_bt = out + b * T * C + t * C;
+            ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < C; i++) {
+                ଦଶମିକ n = (s * (x[i] - m)); // normalized output
+                ଦଶମିକ o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+ଶୂନ୍ୟ layernorm_backward(ଦଶମିକ* dinp, ଦଶମିକ* dweight, ଦଶମିକ* dbias,
+                        ଦଶମିକ* dout, ଦଶମିକ* inp, ଦଶମିକ* weight, ଦଶମିକ* mean, ଦଶମିକ* rstd,
+                        ପୂର୍ଣ୍ଣସଂଖ୍ୟା B, ପୂର୍ଣ୍ଣସଂଖ୍ୟା T, ପୂର୍ଣ୍ଣସଂଖ୍ୟା C) {
+    ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା b = 0; b < B; b++) {
+        ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା t = 0; t < T; t++) {
+            ଦଶମିକ* dout_bt = dout + b * T * C + t * C;
+            ଦଶମିକ* inp_bt = inp + b * T * C + t * C;
+            ଦଶମିକ* dinp_bt = dinp + b * T * C + t * C;
+            ଦଶମିକ mean_bt = mean[b * T + t];
+            ଦଶମିକ rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            ଦଶମିକ dnorm_mean = 0.0f;
+            ଦଶମିକ dnorm_norm_mean = 0.0f;
+            ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < C; i++) {
+                ଦଶମିକ norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ଦଶମିକ dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < C; i++) {
+                ଦଶମିକ norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ଦଶମିକ dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                ଦଶମିକ dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+ପୂର୍ଣ୍ଣସଂଖ୍ୟା check_tensor(ଦଶମିକ *a, ଦଶମିକ *b, ପୂର୍ଣ୍ଣସଂଖ୍ୟା n, ଅକ୍ଷର* label) {
+    ପୂର୍ଣ୍ଣସଂଖ୍ୟା ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    ପାଇଁ (ପୂର୍ଣ୍ଣସଂଖ୍ୟା i = 0; i < n; i++) {
+        ଯଦି (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } ଅନ୍ୟଥା {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    ଫେରନ୍ତୁ ok;
 }
 
-int main() {
+ପୂର୍ଣ୍ଣସଂଖ୍ୟା ମୁଖ୍ୟ() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    ପୂର୍ଣ୍ଣସଂଖ୍ୟା B = 2; // batch
+    ପୂର୍ଣ୍ଣସଂଖ୍ୟା T = 3; // time / sequence length
+    ପୂର୍ଣ୍ଣସଂଖ୍ୟା C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    ଦଶମିକ* x = (ଦଶମିକ*) malloc(B * T * C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* w = (ଦଶମିକ*) malloc(C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* b = (ଦଶମିକ*) malloc(C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* out = (ଦଶମିକ*) malloc(B * T * C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* mean = (ଦଶମିକ*) malloc(B * T * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* rstd = (ଦଶମିକ*) malloc(B * T * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* dout = (ଦଶମିକ*) malloc(B * T * C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* dx = (ଦଶମିକ*) malloc(B * T * C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* dw = (ଦଶମିକ*) malloc(C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* db = (ଦଶମିକ*) malloc(C * ଆକାର(ଦଶମିକ));
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    ଯଦି (file == ଖାଲି) {
         printf("Error opening file\n");
-        return 1;
+        ଫେରନ୍ତୁ 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
+    fread(x, ଆକାର(ଦଶମିକ), B * T * C, file);
+    fread(w, ଆକାର(ଦଶମିକ), C, file);
+    fread(b, ଆକାର(ଦଶମିକ), C, file);
+    fread(out, ଆକାର(ଦଶମିକ), B * T * C, file);
+    fread(mean, ଆକାର(ଦଶମିକ), B * T, file);
+    fread(rstd, ଆକାର(ଦଶମିକ), B * T, file);
+    fread(dout, ଆକାର(ଦଶମିକ), B * T * C, file);
+    fread(dx, ଆକାର(ଦଶମିକ), B * T * C, file);
+    fread(dw, ଆକାର(ଦଶମିକ), C, file);
+    fread(db, ଆକାର(ଦଶମିକ), C, file);
     fclose(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    ଦଶମିକ* c_out = (ଦଶମିକ*) malloc(B * T * C * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* c_mean = (ଦଶମିକ*) malloc(B * T * ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* c_rstd = (ଦଶମିକ*) malloc(B * T * ଆକାର(ଦଶମିକ));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    ଦଶମିକ* c_dx = (ଦଶମିକ*) calloc(B * T * C, ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* c_dw = (ଦଶମିକ*) calloc(B * T, ଆକାର(ଦଶମିକ));
+    ଦଶମିକ* c_db = (ଦଶମିକ*) calloc(B * T, ଆକାର(ଦଶମିକ));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    ମୁକ୍ତ(x);
+    ମୁକ୍ତ(w);
+    ମୁକ୍ତ(b);
+    ମୁକ୍ତ(out);
+    ମୁକ୍ତ(mean);
+    ମୁକ୍ତ(rstd);
+    ମୁକ୍ତ(dout);
+    ମୁକ୍ତ(dx);
+    ମୁକ୍ତ(dw);
+    ମୁକ୍ତ(db);
+    ଫେରନ୍ତୁ 0;
 }
