@@ -17,9 +17,9 @@
 #include <winsock2.h>
 
 #define CLOCK_MONOTONIC 0
-static inline int clock_gettime(int ignore_variable, struct timespec* tv)
+static inline số_nguyên clock_gettime(số_nguyên ignore_variable, struct timespec* tv)
 {
-    return timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
+    trả_về timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
 }
 
 #define OMP /* turn it on */
@@ -38,8 +38,8 @@ typedef struct glob_t {
 } glob_t;
 
 static inline void replace_forward_slashes(char* str) {
-    while (*str) {
-        if (*str == '/') {
+    trong_khi (*str) {
+        nếu (*str == '/') {
             *str = '\\';
         }
         str++;
@@ -47,13 +47,13 @@ static inline void replace_forward_slashes(char* str) {
 }
 
 static inline void globfree(glob_t *pglob) {
-    for (size_t i = 0; i < pglob->gl_pathc; ++i) {
+    cho (size_t i = 0; i < pglob->gl_pathc; ++i) {
         free(pglob->gl_pathv[i]); // Free the allocated memory for each filename
     }
     free(pglob->gl_pathv); // Free the allocated memory for the list of filenames
 }
 
-static inline int glob(const char* pattern, int ignored_flags, int (*ignored_errfunc)(const char* epath, int eerrno), glob_t* pglob){
+static inline số_nguyên glob(const char* pattern, số_nguyên ignored_flags, số_nguyên (*ignored_errfunc)(const char* epath, số_nguyên eerrno), glob_t* pglob){
     struct _finddata_t find_file_data;
     char full_path[576]; // stored in pglob->gl_pathv[n]
     char directory_path[512] = {0}; // Store the directory path from the pattern
@@ -63,7 +63,7 @@ static inline int glob(const char* pattern, int ignored_flags, int (*ignored_err
 
     replace_forward_slashes (pattern_copy); // Replace forward slashes with backslashes
 
-    if (strchr(pattern_copy, '\\') != (void*) NULL) {
+    nếu (strchr(pattern_copy, '\\') != (void*) NULL) {
         strncpy_s(directory_path, sizeof(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
         directory_path[strrchr(pattern_copy, '\\') - pattern_copy + 1] = '\0';
     }
@@ -71,8 +71,8 @@ static inline int glob(const char* pattern, int ignored_flags, int (*ignored_err
     // find the first file matching the pattern in the directory
     intptr_t find_handle = _findfirst(pattern_copy, &find_file_data);
 
-    if (find_handle == -1) {
-        return 1; // No files found
+    nếu (find_handle == -1) {
+        trả_về 1; // No files found
     }
 
     size_t file_count = 0;
@@ -80,32 +80,32 @@ static inline int glob(const char* pattern, int ignored_flags, int (*ignored_err
 
     pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
 
-    if (pglob->gl_pathv == NULL) {
+    nếu (pglob->gl_pathv == NULL) {
         _findclose(find_handle);
-        return 2; // Memory allocation failed
+        trả_về 2; // Memory allocation failed
     }
 
     do {
-        if (file_count >= max_files) {
+        nếu (file_count >= max_files) {
             _findclose(find_handle);
-            return 2; // Too many files found
+            trả_về 2; // Too many files found
             }
 
         snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
 
         pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
+        nếu (pglob->gl_pathv[file_count] == NULL) {
             _findclose(find_handle);
-            return 2; // Memory allocation for filename failed
+            trả_về 2; // Memory allocation for filename failed
         }
         file_count++;
-    } while (_findnext(find_handle, &find_file_data) == 0);
+    } trong_khi (_findnext(find_handle, &find_file_data) == 0);
 
     _findclose(find_handle);
 
     pglob->gl_pathc = file_count;
-    return 0;
+    trả_về 0;
 }
 
 // dirent.h support
@@ -118,13 +118,13 @@ typedef struct dirent {
 typedef struct DIR {
     intptr_t handle;
     struct _finddata_t findFileData;
-    int firstRead;
+    số_nguyên firstRead;
 } DIR;
 
 static inline DIR *opendir(const char *name) {
     DIR *dir = (DIR *)malloc(sizeof(DIR));
-    if (dir == NULL) {
-        return NULL;
+    nếu (dir == NULL) {
+        trả_về NULL;
     }
 
     char searchPath[MAX_PATH_LENGTH];
@@ -132,41 +132,41 @@ static inline DIR *opendir(const char *name) {
     snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
 
     dir->handle = _findfirst(searchPath, &dir->findFileData);
-    if (dir->handle == -1) {
+    nếu (dir->handle == -1) {
         free(dir);
-        return NULL;
+        trả_về NULL;
     }
 
     dir->firstRead = 1;
-    return dir;
+    trả_về dir;
 }
 
 static inline struct dirent *readdir(DIR *directory) {
     static struct dirent result;
 
-    if (directory->firstRead) {
+    nếu (directory->firstRead) {
         directory->firstRead = 0;
-    } else {
-        if (_findnext(directory->handle, &directory->findFileData) != 0) {
-            return NULL;
+    } không_thì {
+        nếu (_findnext(directory->handle, &directory->findFileData) != 0) {
+            trả_về NULL;
         }
     }
 
     strncpy(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
     result.d_name[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    return &result;
+    trả_về &result;
 }
 
-static inline int closedir(DIR *directory) {
-    if (directory == NULL) {
-        return -1;
+static inline số_nguyên closedir(DIR *directory) {
+    nếu (directory == NULL) {
+        trả_về -1;
     }
 
-    if (_findclose(directory->handle) != 0) {
-        return -1;
+    nếu (_findclose(directory->handle) != 0) {
+        trả_về -1;
     }
 
     free(directory);
-    return 0;
+    trả_về 0;
 }
 #endif // UNISTD_H

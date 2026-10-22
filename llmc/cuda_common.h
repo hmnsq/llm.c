@@ -32,9 +32,9 @@ extern cudaDeviceProp deviceProp;
 
 // try to make sure that 2 blocks fit on A100/H100 to maximise latency tolerance
 // this needs to be defines rather than queried to be used for __launch_bounds__
-#if __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
+#nếu __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
 #define MAX_1024_THREADS_BLOCKS 2
-#else
+#không_thì
 #define MAX_1024_THREADS_BLOCKS 1
 #endif
 
@@ -49,8 +49,8 @@ constexpr std::bool_constant<true> False;
 // Error checking
 
 // CUDA error checking. Underscore added so this function can be called directly not just via macro
-inline void cudaCheck_(cudaError_t error, const char *file, int line) {
-  if (error != cudaSuccess) {
+inline void cudaCheck_(cudaError_t error, const char *file, số_nguyên line) {
+  nếu (error != cudaSuccess) {
     printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
     exit(EXIT_FAILURE);
   }
@@ -59,9 +59,9 @@ inline void cudaCheck_(cudaError_t error, const char *file, int line) {
 
 // like cudaFree, but checks for errors _and_ resets the pointer.
 template<class T>
-inline void cudaFreeCheck(T** ptr, const char *file, int line) {
+inline void cudaFreeCheck(T** ptr, const char *file, số_nguyên line) {
     cudaError_t error = cudaFree(*ptr);
-    if (error != cudaSuccess) {
+    nếu (error != cudaSuccess) {
         printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
         exit(EXIT_FAILURE);
     }
@@ -79,14 +79,14 @@ enum PrecisionMode {
 };
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
+#nếu defined(ENABLE_FP32)
 typedef float floatX;
 #define PRECISION_MODE PRECISION_FP32
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
 #elif defined(ENABLE_FP16)
 typedef half floatX;
 #define PRECISION_MODE PRECISION_FP16
-#else // Default to bfloat16
+#không_thì // Default to bfloat16
 typedef __nv_bfloat16 floatX;
 #define PRECISION_MODE PRECISION_BF16
 #endif
@@ -98,10 +98,10 @@ typedef __nv_bfloat16 floatX;
 // our own versions if none already exist, otherwise the compiler will complain.
 // If not, you easily get "no viable overload" (for sm52) and "function already exists" (sm_80)
 
-#if defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
+#nếu defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
 __device__ floatX __ldcs(const floatX* address) {
     unsigned short bf = __ldcs(reinterpret_cast<const unsigned short*>(address));
-    return __nv_bfloat16_raw{bf};
+    trả_về __nv_bfloat16_raw{bf};
 }
 
 __device__ void __stcs(floatX* address, floatX value) {
@@ -115,7 +115,7 @@ __device__ void __stcs(floatX* address, floatX value) {
 class NvtxRange {
  public:
     NvtxRange(const char* s) { nvtxRangePush(s); }
-    NvtxRange(const std::string& base_str, int number) {
+    NvtxRange(const std::string& base_str, số_nguyên number) {
         std::string range_string = base_str + " " + std::to_string(number);
         nvtxRangePush(range_string.c_str());
     }
@@ -146,7 +146,7 @@ inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffe
 
     std::swap(read_buffer, write_buffer);
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    trong_khi(rest_bytes > 0) {
         // initiate next read
         copy_amount = std::min(buffer_size, rest_bytes);
         cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
@@ -186,7 +186,7 @@ inline void file_to_device(void* dest, FILE* src, size_t num_bytes, size_t buffe
     std::swap(read_buffer, write_buffer);
 
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    trong_khi(rest_bytes > 0) {
         // initiate next read
         copy_amount = std::min(buffer_size, rest_bytes);
         cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_buffer, write_buffer_size, cudaMemcpyHostToDevice, stream));
