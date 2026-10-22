@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#ಅನ್ತರ್ಭಾವ <stdio.h>
+#ಅನ್ತರ್ಭಾವ <stdlib.h>
+#ಅನ್ತರ್ಭಾವ <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+ಶೂನ್ಯ layernorm_forward(ಭಿನ್ನ* out, ಭಿನ್ನ* mean, ಭಿನ್ನ* rstd,
+                       ಭಿನ್ನ* inp, ಭಿನ್ನ* weight, ಭಿನ್ನ* bias,
+                       ಪೂರ್ಣಾಙ್ಕ B, ಪೂರ್ಣಾಙ್ಕ T, ಪೂರ್ಣಾಙ್ಕ C) {
+    ಭಿನ್ನ eps = 1e-5f;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < B; b++) {
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            ಭಿನ್ನ* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            ಭಿನ್ನ m = 0.0f;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            ಭಿನ್ನ v = 0.0f;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < C; i++) {
+                ಭಿನ್ನ xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            ಭಿನ್ನ s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            ಭಿನ್ನ* out_bt = out + b * T * C + t * C;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < C; i++) {
+                ಭಿನ್ನ n = (s * (x[i] - m)); // normalized output
+                ಭಿನ್ನ o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+ಶೂನ್ಯ layernorm_backward(ಭಿನ್ನ* dinp, ಭಿನ್ನ* dweight, ಭಿನ್ನ* dbias,
+                        ಭಿನ್ನ* dout, ಭಿನ್ನ* inp, ಭಿನ್ನ* weight, ಭಿನ್ನ* mean, ಭಿನ್ನ* rstd,
+                        ಪೂರ್ಣಾಙ್ಕ B, ಪೂರ್ಣಾಙ್ಕ T, ಪೂರ್ಣಾಙ್ಕ C) {
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < B; b++) {
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ t = 0; t < T; t++) {
+            ಭಿನ್ನ* dout_bt = dout + b * T * C + t * C;
+            ಭಿನ್ನ* inp_bt = inp + b * T * C + t * C;
+            ಭಿನ್ನ* dinp_bt = dinp + b * T * C + t * C;
+            ಭಿನ್ನ mean_bt = mean[b * T + t];
+            ಭಿನ್ನ rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            ಭಿನ್ನ dnorm_mean = 0.0f;
+            ಭಿನ್ನ dnorm_norm_mean = 0.0f;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < C; i++) {
+                ಭಿನ್ನ norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ಭಿನ್ನ dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < C; i++) {
+                ಭಿನ್ನ norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ಭಿನ್ನ dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                ಭಿನ್ನ dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+ಪೂರ್ಣಾಙ್ಕ check_tensor(ಭಿನ್ನ *a, ಭಿನ್ನ *b, ಪೂರ್ಣಾಙ್ಕ n, ವರ್ಣ* label) {
+    ಪೂರ್ಣಾಙ್ಕ ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < n; i++) {
+        ಯದಿ (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } ಅನ್ಯಥಾ {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    ಪ್ರತ್ಯಾಗಮ ok;
 }
 
-int main() {
+ಪೂರ್ಣಾಙ್ಕ main() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    ಪೂರ್ಣಾಙ್ಕ B = 2; // batch
+    ಪೂರ್ಣಾಙ್ಕ T = 3; // time / sequence length
+    ಪೂರ್ಣಾಙ್ಕ C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    ಭಿನ್ನ* x = (ಭಿನ್ನ*) malloc(B * T * C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* w = (ಭಿನ್ನ*) malloc(C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* b = (ಭಿನ್ನ*) malloc(C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* out = (ಭಿನ್ನ*) malloc(B * T * C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* mean = (ಭಿನ್ನ*) malloc(B * T * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* rstd = (ಭಿನ್ನ*) malloc(B * T * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* dout = (ಭಿನ್ನ*) malloc(B * T * C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* dx = (ಭಿನ್ನ*) malloc(B * T * C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* dw = (ಭಿನ್ನ*) malloc(C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* db = (ಭಿನ್ನ*) malloc(C * ಪರಿಮಾಣ(ಭಿನ್ನ));
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    ಯದಿ (file == ರಿಕ್ತ) {
         printf("Error opening file\n");
-        return 1;
+        ಪ್ರತ್ಯಾಗಮ 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
+    fread(x, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T * C, file);
+    fread(w, ಪರಿಮಾಣ(ಭಿನ್ನ), C, file);
+    fread(b, ಪರಿಮಾಣ(ಭಿನ್ನ), C, file);
+    fread(out, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T * C, file);
+    fread(mean, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T, file);
+    fread(rstd, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T, file);
+    fread(dout, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T * C, file);
+    fread(dx, ಪರಿಮಾಣ(ಭಿನ್ನ), B * T * C, file);
+    fread(dw, ಪರಿಮಾಣ(ಭಿನ್ನ), C, file);
+    fread(db, ಪರಿಮಾಣ(ಭಿನ್ನ), C, file);
     fclose(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    ಭಿನ್ನ* c_out = (ಭಿನ್ನ*) malloc(B * T * C * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* c_mean = (ಭಿನ್ನ*) malloc(B * T * ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* c_rstd = (ಭಿನ್ನ*) malloc(B * T * ಪರಿಮಾಣ(ಭಿನ್ನ));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    ಭಿನ್ನ* c_dx = (ಭಿನ್ನ*) calloc(B * T * C, ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* c_dw = (ಭಿನ್ನ*) calloc(B * T, ಪರಿಮಾಣ(ಭಿನ್ನ));
+    ಭಿನ್ನ* c_db = (ಭಿನ್ನ*) calloc(B * T, ಪರಿಮಾಣ(ಭಿನ್ನ));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    ಮುಕ್ತ(x);
+    ಮುಕ್ತ(w);
+    ಮುಕ್ತ(b);
+    ಮುಕ್ತ(out);
+    ಮುಕ್ತ(mean);
+    ಮುಕ್ತ(rstd);
+    ಮುಕ್ತ(dout);
+    ಮುಕ್ತ(dx);
+    ಮುಕ್ತ(dw);
+    ಮುಕ್ತ(db);
+    ಪ್ರತ್ಯಾಗಮ 0;
 }

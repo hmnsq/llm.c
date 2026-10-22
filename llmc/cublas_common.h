@@ -4,20 +4,20 @@ cuBLAS related utils
 #ifndef CUBLAS_COMMON_H
 #define CUBLAS_COMMON_H
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <cublas_v2.h>
-#include <cublasLt.h>
+#ಅನ್ತರ್ಭಾವ <stddef.h>
+#ಅನ್ತರ್ಭಾವ <stdlib.h>
+#ಅನ್ತರ್ಭಾವ <stdio.h>
+#ಅನ್ತರ್ಭಾವ <cublas_v2.h>
+#ಅನ್ತರ್ಭಾವ <cublasLt.h>
 
 // ----------------------------------------------------------------------------
 // cuBLAS Precision settings
 
-#if defined(ENABLE_FP32)
+#ಯದಿ defined(ENABLE_FP32)
 #define CUBLAS_LOWP CUDA_R_32F
-#elif defined(ENABLE_FP16)
+#ನೋಚೇದ್ಯದಿ defined(ENABLE_FP16)
 #define CUBLAS_LOWP CUDA_R_16F
-#else // default to bfloat16
+#ಅನ್ಯಥಾ // default to bfloat16
 #define CUBLAS_LOWP CUDA_R_16BF
 #endif
 
@@ -25,8 +25,8 @@ cuBLAS related utils
 // cuBLAS globals for workspace, handle, settings
 
 // Hardcoding workspace to 32MiB but only Hopper needs 32 (for others 4 is OK)
-const size_t cublaslt_workspace_size = 32 * 1024 * 1024;
-void* cublaslt_workspace = NULL;
+ಧ್ರುವ size_t cublaslt_workspace_size = 32 * 1024 * 1024;
+ಶೂನ್ಯ* cublaslt_workspace = ರಿಕ್ತ;
 cublasComputeType_t cublas_compute = CUBLAS_COMPUTE_32F;
 cublasLtHandle_t cublaslt_handle;
 
@@ -34,10 +34,10 @@ cublasLtHandle_t cublaslt_handle;
 // Error checking
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+ಶೂನ್ಯ cublasCheck(cublasStatus_t status, ಧ್ರುವ ವರ್ಣ *file, ಪೂರ್ಣಾಙ್ಕ ಸಾಲು)
 {
-    if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
+    ಯದಿ (status != CUBLAS_STATUS_SUCCESS) {
+        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, ಸಾಲು);
         exit(EXIT_FAILURE);
     }
 }

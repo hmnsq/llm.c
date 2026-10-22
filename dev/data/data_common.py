@@ -2,24 +2,24 @@
 Common utilities for the datasets
 """
 
-import requests
-from tqdm import tqdm
-import numpy as np
+ಆನಯನ requests
+ತಃ tqdm ಆನಯನ tqdm
+ಆನಯನ numpy ಇವ np
 
 
 def download_file(url: str, fname: str, chunk_size=1024):
     """Helper function to download a file from a given url"""
-    resp = requests.get(url, stream=True)
-    total = int(resp.headers.get("content-length", 0))
-    with open(fname, "wb") as file, tqdm(
+    resp = requests.get(url, stream=ಸತ್ಯ)
+    total = ಪೂರ್ಣಾಙ್ಕ(resp.headers.get("content-length", 0))
+    with open(fname, "wb") ಇವ file, tqdm(
         desc=fname,
         total=total,
         unit="iB",
-        unit_scale=True,
-        unit_divisor=1024,
-    ) as bar:
-        for data in resp.iter_content(chunk_size=chunk_size):
-            size = file.write(data)
+        unit_scale=ಸತ್ಯ,
+        unit_ಭಾಜಕ=1024,
+    ) ಇವ bar:
+        ಪ್ರತಿ data ಅನ್ತಃ resp.iter_content(chunk_size=chunk_size):
+            size = file.ಲಿಖ(data)
             bar.update(size)
 
 
@@ -42,8 +42,8 @@ def write_datafile(filename, toks, model_desc="gpt-2"):
     - First comes a header with 256 int32s
     - The tokens follow, each as uint16 (gpt-2) or uint32 (llama)
     """
-    assert len(toks) < 2**31, "token count too large" # ~2.1B tokens
-    assert model_desc in ["gpt-2", "llama-3"], f"unknown model descriptor {model_desc}"
+    ಪ್ರತಿಜ್ಞಾ len(toks) < 2**31, "token count too large" # ~2.1B tokens
+    ಪ್ರತಿಜ್ಞಾ model_desc ಅನ್ತಃ ["gpt-2", "llama-3"], f"unknown model descriptor {model_desc}"
     info = HEADERS_INFO[model_desc]
     # construct the header
     header = np.zeros(256, dtype=np.int32) # header is always 256 int32 values
@@ -53,11 +53,11 @@ def write_datafile(filename, toks, model_desc="gpt-2"):
     # construct the data (numpy array of tokens)
     toks_np = np.array(toks, dtype=info["token_dtype"])
     # write to file
-    num_bytes = (256 * 4) + (len(toks) * toks_np.itemsize)
+    ಅಂಕೆ_bytes = (256 * 4) + (len(toks) * toks_np.itemsize)
     print(f"writing {len(toks):,} tokens to {filename} ({num_bytes:,} bytes) in the {model_desc} format")
-    with open(filename, "wb") as f:
-        f.write(header.tobytes())
-        f.write(toks_np.tobytes())
+    with open(filename, "wb") ಇವ f:
+        f.ಲಿಖ(header.tobytes())
+        f.ಲಿಖ(toks_np.tobytes())
 
 def write_evalfile(filename, datas):
     """
@@ -82,8 +82,8 @@ def write_evalfile(filename, datas):
     # now write the individual examples
     longest_example_bytes = 0 # in units of uint16s
     full_stream = [] # the stream of uint16s, we'll write a single time at the end
-    assert len(datas) < 2**16, "too many examples?"
-    for idx, data in enumerate(datas):
+    ಪ್ರತಿಜ್ಞಾ len(datas) < 2**16, "too many examples?"
+    ಪ್ರತಿ idx, data ಅನ್ತಃ enumerate(datas):
         stream = []
         # header of the example
         stream.append(2**16-1) # <START_EXAMPLE>
@@ -91,31 +91,31 @@ def write_evalfile(filename, datas):
         stream.append(idx) # <EXAMPLE_INDEX>
         stream.append(data["label"]) # <LABEL>
         ending_tokens = data["ending_tokens"]
-        assert len(ending_tokens) == 4, "expected 4 completions for now? can relax later"
+        ಪ್ರತಿಜ್ಞಾ len(ending_tokens) == 4, "expected 4 completions for now? can relax later"
         stream.append(len(ending_tokens)) # <NUM_COMPLETIONS>
         # the (shared) context tokens
         ctx_tokens = data["ctx_tokens"]
-        assert all(0 <= t < 2**16-1 for t in ctx_tokens), "bad context token"
+        ಪ್ರತಿಜ್ಞಾ all(0 <= t < 2**16-1 ಪ್ರತಿ t ಅನ್ತಃ ctx_tokens), "bad context token"
         stream.append(len(ctx_tokens))
         stream.extend(ctx_tokens)
         # the completion tokens
-        for end_tokens in ending_tokens:
-            assert all(0 <= t < 2**16-1 for t in end_tokens), "bad completion token"
+        ಪ್ರತಿ end_tokens ಅನ್ತಃ ending_tokens:
+            ಪ್ರತಿಜ್ಞಾ all(0 <= t < 2**16-1 ಪ್ರತಿ t ಅನ್ತಃ end_tokens), "bad completion token"
             stream.append(len(end_tokens))
             stream.extend(end_tokens)
         # write to full stream
         nbytes = len(stream)*2 # 2 bytes per uint16
-        assert nbytes < 2**16, "example too large?"
+        ಪ್ರತಿಜ್ಞಾ nbytes < 2**16, "example too large?"
         stream[1] = nbytes # fill in the <EXAMPLE_BYTES> field
         longest_example_bytes = max(longest_example_bytes, nbytes)
         full_stream.extend(stream)
     # construct the numpy array
     stream_np = np.array(full_stream, dtype=np.uint16)
     # fill in the longest_example field
-    assert 0 < longest_example_bytes < 2**16, f"bad longest_example"
+    ಪ್ರತಿಜ್ಞಾ 0 < longest_example_bytes < 2**16, f"bad longest_example"
     header[3] = longest_example_bytes
     # write to file (for HellaSwag val this is 10,042 examples, 3.6MB file)
     print(f"writing {len(datas):,} examples to {filename}")
-    with open(filename, "wb") as f:
-        f.write(header.tobytes())
-        f.write(stream_np.tobytes())
+    with open(filename, "wb") ಇವ f:
+        f.ಲಿಖ(header.tobytes())
+        f.ಲಿಖ(stream_np.tobytes())

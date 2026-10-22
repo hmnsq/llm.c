@@ -7,24 +7,24 @@ gcc -O3 -I../../llmc -o test_dataloader test_dataloader.c -lm && ./test_dataload
 TODOs:
 - test load/save state of DataLoader
 */
-#include <unistd.h>
-#include "../../llmc/dataloader.h"
+#ಅನ್ತರ್ಭಾವ <unistd.h>
+#ಅನ್ತರ್ಭಾವ "../../llmc/dataloader.h"
 
 #define SHARD_NAME_LEN 64
-char shard_name[SHARD_NAME_LEN];
-const int num_tokens = 140;
-int num_shards = 4;
+ವರ್ಣ shard_name[SHARD_NAME_LEN];
+ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_tokens = 140;
+ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_shards = 4;
 
-void check_range(const int *tokens, const int start, const int end, const char *file, int line) {
+ಶೂನ್ಯ check_range(ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ *tokens, ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ start, ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ end, ಧ್ರುವ ವರ್ಣ *file, ಪೂರ್ಣಾಙ್ಕ ಸಾಲು) {
     // checks that the tokens[0, ... end-start] are the range [start, end)
-    int n = end - start;
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != start + i) {
+    ಪೂರ್ಣಾಙ್ಕ n = end - start;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < n; i++) {
+        ಪೂರ್ಣಾಙ್ಕ token = tokens[i];
+        ಯದಿ (token != start + i) {
             fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, start + i);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
+            fprintf(stderr, "  Line: %d\n", ಸಾಲು);
             exit(EXIT_FAILURE);
         }
     }
@@ -32,15 +32,15 @@ void check_range(const int *tokens, const int start, const int end, const char *
 }
 #define checkRange(tokens, start, end) check_range(tokens, start, end, __FILE__, __LINE__)
 
-void check_equals(const int *tokens, const int n, const int expected, const char *file, int line) {
+ಶೂನ್ಯ check_equals(ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ *tokens, ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ n, ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ expected, ಧ್ರುವ ವರ್ಣ *file, ಪೂರ್ಣಾಙ್ಕ ಸಾಲು) {
     // checks that the tokens[0, ... n] are all equal to expected
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != expected) {
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < n; i++) {
+        ಪೂರ್ಣಾಙ್ಕ token = tokens[i];
+        ಯದಿ (token != expected) {
             fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, expected);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
+            fprintf(stderr, "  Line: %d\n", ಸಾಲು);
             exit(EXIT_FAILURE);
         }
     }
@@ -48,7 +48,7 @@ void check_equals(const int *tokens, const int n, const int expected, const char
 }
 #define checkEquals(tokens, n, expected) check_equals(tokens, n, expected, __FILE__, __LINE__)
 
-void test_simple(void) {
+ಶೂನ್ಯ test_simple(ಶೂನ್ಯ) {
     /*
     Tests the simplest DataLoader functionality:
     - multi-shard
@@ -57,22 +57,22 @@ void test_simple(void) {
     DataLoader should just return all the tokens in order
     */
     printf("test_simple... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 0;
+    ಪೂರ್ಣಾಙ್ಕ B = 4;
+    ಪೂರ್ಣಾಙ್ಕ T = 8;
+    ಪೂರ್ಣಾಙ್ಕ process_rank = 0;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_processes = 1;
+    ಪೂರ್ಣಾಙ್ಕ should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
     DataLoader loader;
-    dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
+    dataloader_init(&loader, shard_name, B, T, process_rank, ಅಂಕೆ_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    ಪೂರ್ಣಾಙ್ಕ batches_fit = ಅಂಕೆ_tokens / (B * T); // number of batches that fit per shard
+    ಪೂರ್ಣಾಙ್ಕ BT = B * T;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_epochs = 4;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ e = 0; e < ಅಂಕೆ_epochs; e++) { // epoch
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) { // shard
+            ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader);
                 checkRange(loader.inputs, start, start + BT);
                 checkRange(loader.targets, start + 1, start + BT + 1);
@@ -84,7 +84,7 @@ void test_simple(void) {
     printf("OK\n");
 }
 
-void test_multiprocess_simple(void) {
+ಶೂನ್ಯ test_multiprocess_simple(ಶೂನ್ಯ) {
     /*
     Same as simple above, but using 2 processes.
     (which we of course use in a serial, single process way here)
@@ -92,22 +92,22 @@ void test_multiprocess_simple(void) {
     we expect them to alternate in the "token space".
     */
     printf("test_multiprocess_simple... ");
-    int B = 4;
-    int T = 8;
-    int num_processes = 2;
-    int should_shuffle = 0;
+    ಪೂರ್ಣಾಙ್ಕ B = 4;
+    ಪೂರ್ಣಾಙ್ಕ T = 8;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_processes = 2;
+    ಪೂರ್ಣಾಙ್ಕ should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
     DataLoader loader0, loader1;
-    dataloader_init(&loader0, shard_name, B, T, 0, num_processes, should_shuffle);
-    dataloader_init(&loader1, shard_name, B, T, 1, num_processes, should_shuffle);
+    dataloader_init(&loader0, shard_name, B, T, 0, ಅಂಕೆ_processes, should_shuffle);
+    dataloader_init(&loader1, shard_name, B, T, 1, ಅಂಕೆ_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    ಪೂರ್ಣಾಙ್ಕ batches_fit = ಅಂಕೆ_tokens / (B * T * ಅಂಕೆ_processes); // number of batches that fit per shard
+    ಪೂರ್ಣಾಙ್ಕ BT = B * T;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_epochs = 4;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ e = 0; e < ಅಂಕೆ_epochs; e++) { // epoch
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) { // shard
+            ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader0);
                 dataloader_next_batch(&loader1);
                 checkRange(loader0.inputs, start, start + BT);
@@ -124,7 +124,7 @@ void test_multiprocess_simple(void) {
     printf("OK\n");
 }
 
-void test_shuffled(void) {
+ಶೂನ್ಯ test_shuffled(ಶೂನ್ಯ) {
     /*
     Tests the DataLoader when using shuffled:
     - multi-shard
@@ -135,35 +135,35 @@ void test_shuffled(void) {
     the correct number of times.
     */
     printf("test_shuffled... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 1; // should shuffle bit turn on
+    ಪೂರ್ಣಾಙ್ಕ B = 4;
+    ಪೂರ್ಣಾಙ್ಕ T = 8;
+    ಪೂರ್ಣಾಙ್ಕ process_rank = 0;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_processes = 1;
+    ಪೂರ್ಣಾಙ್ಕ should_shuffle = 1; // should shuffle bit turn on
     snprintf(shard_name, 64, "shard_????.bin");
     DataLoader loader;
-    dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
+    dataloader_init(&loader, shard_name, B, T, process_rank, ಅಂಕೆ_processes, should_shuffle);
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    ಪೂರ್ಣಾಙ್ಕ total_tokens = ಅಂಕೆ_shards * ಅಂಕೆ_tokens;
+    ಪೂರ್ಣಾಙ್ಕ *ಅಂಕೆ_seen_inputs = (ಪೂರ್ಣಾಙ್ಕ *)calloc(total_tokens, ಪರಿಮಾಣ(ಪೂರ್ಣಾಙ್ಕ));
+    ಪೂರ್ಣಾಙ್ಕ *ಅಂಕೆ_seen_targets = (ಪೂರ್ಣಾಙ್ಕ *)calloc(total_tokens, ಪರಿಮಾಣ(ಪೂರ್ಣಾಙ್ಕ));
+    ಪೂರ್ಣಾಙ್ಕ batches_fit = ಅಂಕೆ_tokens / (B * T); // number of batches that fit per shard
+    ಪೂರ್ಣಾಙ್ಕ BT = B * T;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_epochs = 4;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ e = 0; e < ಅಂಕೆ_epochs; e ++) { // epoch
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) { // shard
+            ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader);
                 // count up the tokens we see
-                for (int i = 0; i < BT; i++) {
-                    int input_token = loader.inputs[i];
-                    int target_token = loader.targets[i];
-                    assert(input_token >= 0 && input_token < total_tokens);
-                    assert(target_token >= 0 && target_token < total_tokens);
-                    num_seen_inputs[input_token]++;
-                    num_seen_targets[target_token]++;
+                ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < BT; i++) {
+                    ಪೂರ್ಣಾಙ್ಕ ಒಳಹರಿವು_token = loader.inputs[i];
+                    ಪೂರ್ಣಾಙ್ಕ target_token = loader.targets[i];
+                    ಪ್ರತಿಜ್ಞಾ(ಒಳಹರಿವು_token >= 0 && ಒಳಹರಿವು_token < total_tokens);
+                    ಪ್ರತಿಜ್ಞಾ(target_token >= 0 && target_token < total_tokens);
+                    ಅಂಕೆ_seen_inputs[ಒಳಹರಿವು_token]++;
+                    ಅಂಕೆ_seen_targets[target_token]++;
                 }
                 start += BT;
             }
@@ -171,27 +171,27 @@ void test_shuffled(void) {
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * BT; // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens;
+    ಪೂರ್ಣಾಙ್ಕ tokens_fit = batches_fit * BT; // number of tokens that fit per shard
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) {
+        ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens;
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
-        checkEquals(num_seen_inputs + start, tokens_fit, num_epochs);
-        checkEquals(num_seen_inputs + start + tokens_fit, num_tokens - tokens_fit, 0);
+        checkEquals(ಅಂಕೆ_seen_inputs + start, tokens_fit, ಅಂಕೆ_epochs);
+        checkEquals(ಅಂಕೆ_seen_inputs + start + tokens_fit, ಅಂಕೆ_tokens - tokens_fit, 0);
         // verify the target counts. same thing but offset by 1
-        checkEquals(num_seen_targets + start + 1, tokens_fit, num_epochs);
-        checkEquals(num_seen_targets + start + 1 + tokens_fit,
-            (s == (num_shards - 1)) ? num_tokens - tokens_fit - 1 : num_tokens - tokens_fit,0);
+        checkEquals(ಅಂಕೆ_seen_targets + start + 1, tokens_fit, ಅಂಕೆ_epochs);
+        checkEquals(ಅಂಕೆ_seen_targets + start + 1 + tokens_fit,
+            (s == (ಅಂಕೆ_shards - 1)) ? ಅಂಕೆ_tokens - tokens_fit - 1 : ಅಂಕೆ_tokens - tokens_fit,0);
     }
 
     dataloader_free(&loader);
-    free(num_seen_inputs);
-    free(num_seen_targets);
+    ಮುಕ್ತ(ಅಂಕೆ_seen_inputs);
+    ಮುಕ್ತ(ಅಂಕೆ_seen_targets);
     printf("OK\n");
 }
 
-void test_multiprocess_shuffled(void) {
+ಶೂನ್ಯ test_multiprocess_shuffled(ಶೂನ್ಯ) {
     /*
     Tests the DataLoader when using both multiprocess and shuffled:
     - multi-shard
@@ -203,38 +203,38 @@ void test_multiprocess_shuffled(void) {
     */
 
     printf("test_multiprocess_shuffled... ");
-    int B = 4;
-    int T = 8;
-    const int num_processes = 2;
-    int should_shuffle = 0;
+    ಪೂರ್ಣಾಙ್ಕ B = 4;
+    ಪೂರ್ಣಾಙ್ಕ T = 8;
+    ಧ್ರುವ ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_processes = 2;
+    ಪೂರ್ಣಾಙ್ಕ should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
-    DataLoader loaders[num_processes];
-    for (int i = 0; i < num_processes; i++) {
-        dataloader_init(&loaders[i], shard_name, B, T, i, num_processes, should_shuffle);
+    DataLoader loaders[ಅಂಕೆ_processes];
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < ಅಂಕೆ_processes; i++) {
+        dataloader_init(&loaders[i], shard_name, B, T, i, ಅಂಕೆ_processes, should_shuffle);
     }
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                for (int n = 0; n < num_processes; n++) { // dataloader
+    ಪೂರ್ಣಾಙ್ಕ total_tokens = ಅಂಕೆ_shards * ಅಂಕೆ_tokens;
+    ಪೂರ್ಣಾಙ್ಕ *ಅಂಕೆ_seen_inputs = (ಪೂರ್ಣಾಙ್ಕ *)calloc(total_tokens, ಪರಿಮಾಣ(ಪೂರ್ಣಾಙ್ಕ));
+    ಪೂರ್ಣಾಙ್ಕ *ಅಂಕೆ_seen_targets = (ಪೂರ್ಣಾಙ್ಕ *)calloc(total_tokens, ಪರಿಮಾಣ(ಪೂರ್ಣಾಙ್ಕ));
+    ಪೂರ್ಣಾಙ್ಕ batches_fit = ಅಂಕೆ_tokens / (B * T * ಅಂಕೆ_processes); // number of batches that fit per shard
+    ಪೂರ್ಣಾಙ್ಕ BT = B * T;
+    ಪೂರ್ಣಾಙ್ಕ ಅಂಕೆ_epochs = 4;
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ e = 0; e < ಅಂಕೆ_epochs; e ++) { // epoch
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) { // shard
+            ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens;
+            ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ b = 0; b < batches_fit; b++) { // batch
+                ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ n = 0; n < ಅಂಕೆ_processes; n++) { // dataloader
                     DataLoader *loader = &loaders[n];
                     dataloader_next_batch(loader);
                     // count up the tokens we see
-                    for (int i = 0; i < BT; i++) {
-                        int input_token = loader->inputs[i];
-                        int target_token = loader->targets[i];
-                        assert(input_token >= 0 && input_token < total_tokens);
-                        assert(target_token >= 0 && target_token < total_tokens);
-                        num_seen_inputs[input_token]++;
-                        num_seen_targets[target_token]++;
+                    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < BT; i++) {
+                        ಪೂರ್ಣಾಙ್ಕ ಒಳಹರಿವು_token = loader->inputs[i];
+                        ಪೂರ್ಣಾಙ್ಕ target_token = loader->targets[i];
+                        ಪ್ರತಿಜ್ಞಾ(ಒಳಹರಿವು_token >= 0 && ಒಳಹರಿವು_token < total_tokens);
+                        ಪ್ರತಿಜ್ಞಾ(target_token >= 0 && target_token < total_tokens);
+                        ಅಂಕೆ_seen_inputs[ಒಳಹರಿವು_token]++;
+                        ಅಂಕೆ_seen_targets[target_token]++;
                     }
                     start += BT;
                 }
@@ -243,48 +243,48 @@ void test_multiprocess_shuffled(void) {
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * (B * T * num_processes); // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens; // token id that starts this shard
+    ಪೂರ್ಣಾಙ್ಕ tokens_fit = batches_fit * (B * T * ಅಂಕೆ_processes); // number of tokens that fit per shard
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ s = 0; s < ಅಂಕೆ_shards; s++) {
+        ಪೂರ್ಣಾಙ್ಕ start = s * ಅಂಕೆ_tokens; // token id that starts this shard
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
-        checkEquals(num_seen_inputs + start, tokens_fit, num_epochs);
-        checkEquals(num_seen_inputs + start + tokens_fit, num_tokens - tokens_fit, 0);
+        checkEquals(ಅಂಕೆ_seen_inputs + start, tokens_fit, ಅಂಕೆ_epochs);
+        checkEquals(ಅಂಕೆ_seen_inputs + start + tokens_fit, ಅಂಕೆ_tokens - tokens_fit, 0);
         // verify the target counts. same thing but offset by 1
-        checkEquals(num_seen_targets + start + 1, tokens_fit, num_epochs);
-        checkEquals(num_seen_targets + start + 1 + tokens_fit,
-            (s == (num_shards - 1)) ? num_tokens - tokens_fit - 1 : num_tokens - tokens_fit,0);
+        checkEquals(ಅಂಕೆ_seen_targets + start + 1, tokens_fit, ಅಂಕೆ_epochs);
+        checkEquals(ಅಂಕೆ_seen_targets + start + 1 + tokens_fit,
+            (s == (ಅಂಕೆ_shards - 1)) ? ಅಂಕೆ_tokens - tokens_fit - 1 : ಅಂಕೆ_tokens - tokens_fit,0);
     }
 
     // cleanup
-    for (int i = 0; i < num_processes; i++) {
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < ಅಂಕೆ_processes; i++) {
         dataloader_free(&loaders[i]);
     }
-    free(num_seen_inputs);
-    free(num_seen_targets);
+    ಮುಕ್ತ(ಅಂಕೆ_seen_inputs);
+    ಮುಕ್ತ(ಅಂಕೆ_seen_targets);
     printf("OK\n");
 }
 
-int main(void) {
+ಪೂರ್ಣಾಙ್ಕ main(ಶೂನ್ಯ) {
 
     // generate a few dummy shards of data with incrementing tokens
-    int header[HEADER_SIZE];
-    uint16_t tokens[num_tokens];
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    ಪೂರ್ಣಾಙ್ಕ header[HEADER_SIZE];
+    uint16_t tokens[ಅಂಕೆ_tokens];
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ shard_id = 0; shard_id < ಅಂಕೆ_shards; shard_id++) {
         // ensure unique tokens across the shards for ez accounting below
-        int token_offset = shard_id * num_tokens;
-        for (int i = 0; i < num_tokens; i++) {
+        ಪೂರ್ಣಾಙ್ಕ token_offset = shard_id * ಅಂಕೆ_tokens;
+        ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ i = 0; i < ಅಂಕೆ_tokens; i++) {
             tokens[i] = token_offset + i;
         }
         // write the shard
         snprintf(shard_name, SHARD_NAME_LEN, "shard_%04d.bin", shard_id);
         header[0] = 20240520; // magic
         header[1] = 1; // version
-        header[2] = num_tokens; // number of tokens within
+        header[2] = ಅಂಕೆ_tokens; // number of tokens within
         FILE* shard_file = fopenCheck(shard_name, "wb");
-        fwrite(header, sizeof(int), HEADER_SIZE, shard_file);
-        fwrite(tokens, sizeof(uint16_t), num_tokens, shard_file);
+        fwrite(header, ಪರಿಮಾಣ(ಪೂರ್ಣಾಙ್ಕ), HEADER_SIZE, shard_file);
+        fwrite(tokens, ಪರಿಮಾಣ(uint16_t), ಅಂಕೆ_tokens, shard_file);
         fcloseCheck(shard_file);
         printf("Wrote shard %s\n", shard_name);
     }
@@ -295,10 +295,10 @@ int main(void) {
     test_multiprocess_shuffled();
 
     // clean up the shards
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    ಪ್ರತಿ (ಪೂರ್ಣಾಙ್ಕ shard_id = 0; shard_id < ಅಂಕೆ_shards; shard_id++) {
         snprintf(shard_name, SHARD_NAME_LEN, "shard_%04d.bin", shard_id);
         remove(shard_name);
     }
 
-    return EXIT_SUCCESS;
+    ಪ್ರತ್ಯಾಗಮ EXIT_SUCCESS;
 }

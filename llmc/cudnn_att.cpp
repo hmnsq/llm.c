@@ -3,43 +3,43 @@
 // TODO this currently duplicates some of the utilities from the main file
 
 #define NOMINMAX
-#include <unistd.h>
-#include "cudnn_att.h"
-#include <cudnn_frontend.h>
+#ಅನ್ತರ್ಭಾವ <unistd.h>
+#ಅನ್ತರ್ಭಾವ "cudnn_att.h"
+#ಅನ್ತರ್ಭಾವ <cudnn_frontend.h>
 
-namespace fe = cudnn_frontend;
+ನಾಮಾಕಾಶ fe = cudnn_frontend;
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
-static_assert(false, "cuDNN is not supported in FP32 mode.")
+#ಯದಿ defined(ENABLE_FP32)
+static_assert(ಅಸತ್ಯ, "cuDNN is not supported in FP32 mode.")
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
-#elif defined(ENABLE_FP16)
+#ನೋಚೇದ್ಯದಿ defined(ENABLE_FP16)
 #define CUDNN_16BIT fe::DataType_t::HALF
-#else // Default to bfloat16
+#ಅನ್ಯಥಾ // Default to bfloat16
 #define CUDNN_16BIT fe::DataType_t::BFLOAT16
 #endif
 
-static cudnnHandle_t cudnn_handle;
-static size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256MiB!)
-static void* cudnn_workspace = NULL;
+ಸ್ಥಿರ cudnnHandle_t cudnn_handle;
+ಸ್ಥಿರ size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256MiB!)
+ಸ್ಥಿರ ಶೂನ್ಯ* cudnn_workspace = ರಿಕ್ತ;
 
-static void cuDNNCheck(cudnnStatus_t error, const char *file, int line) {
-    if (error != CUDNN_STATUS_SUCCESS) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, cudnnGetErrorString(error));
+ಸ್ಥಿರ ಶೂನ್ಯ cuDNNCheck(cudnnStatus_t error, ಧ್ರುವ ವರ್ಣ *file, ಪೂರ್ಣಾಙ್ಕ ಸಾಲು) {
+    ಯದಿ (error != CUDNN_STATUS_SUCCESS) {
+        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, ಸಾಲು, cudnnGetErrorString(error));
         exit(EXIT_FAILURE);
     }
 };
 #define cuDNNCheck(err) (cuDNNCheck(err, __FILE__, __LINE__))
 
-static void checkCudnnFE(const fe::error_object& e, const char *file, int line) {
-    if(!e.is_good()) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, e.err_msg.c_str());
+ಸ್ಥಿರ ಶೂನ್ಯ checkCudnnFE(ಧ್ರುವ fe::error_object& e, ಧ್ರುವ ವರ್ಣ *file, ಪೂರ್ಣಾಙ್ಕ ಸಾಲು) {
+    ಯದಿ(!e.is_good()) {
+        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, ಸಾಲು, e.err_ಸಂದೇಶ.c_str());
         exit(EXIT_FAILURE);
     }
 }
 #define checkCudnnFE(err) checkCudnnFE(err, __FILE__, __LINE__)
 
-enum UIDs {
+ಗಣನಾ UIDs {
     Q_UID,
     K_UID,
     V_UID,
@@ -53,19 +53,19 @@ enum UIDs {
 };
 
 // Need a cache because graph->build_operation_graph() is slow but everything else seems fast
-using cache_type_fwd = std::map<std::tuple<int,int,int,int, int>, std::shared_ptr<fe::graph::Graph>>;
-using cache_type_bwd = std::map<std::tuple<int,int,int,int>, std::shared_ptr<fe::graph::Graph>>;
+using cache_type_fwd = std::map<std::tuple<ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ, ಪೂರ್ಣಾಙ್ಕ>, std::shared_ptr<fe::graph::Graph>>;
+using cache_type_bwd = std::map<std::tuple<ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ,ಪೂರ್ಣಾಙ್ಕ>, std::shared_ptr<fe::graph::Graph>>;
 
 // Loosely based on cuDNN frontend samples functions and massively simplified
-auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_only) {
+auto lookup_cache_or_build_graph_fwd(ಪೂರ್ಣಾಙ್ಕ B,ಪೂರ್ಣಾಙ್ಕ H,ಪೂರ್ಣಾಙ್ಕ T,ಪೂರ್ಣಾಙ್ಕ HS, ಪೂರ್ಣಾಙ್ಕ is_inference_only) {
 
-    static cache_type_fwd user_maintained_cache_fwd;
+    ಸ್ಥಿರ cache_type_fwd user_maintained_cache_fwd;
 
-    auto key = std::make_tuple(B, H, T, HS, is_inference_only);
+    auto ಕೀಲಿ = std::make_tuple(B, H, T, HS, is_inference_only);
 
-    auto it = user_maintained_cache_fwd.find(key);
-    if (it != user_maintained_cache_fwd.end()) {
-        return it->second;
+    auto it = user_maintained_cache_fwd.find(ಕೀಲಿ);
+    ಯದಿ (it != user_maintained_cache_fwd.end()) {
+        ಪ್ರತ್ಯಾಗಮ it->second;
     }
 
     auto graph = std::make_shared<fe::graph::Graph>();
@@ -90,23 +90,23 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
                                .set_dim({1, 1, 1, 1})
                                .set_stride({1, 1, 1, 1})
                                .set_uid(Attn_scale_UID)
-                               .set_is_pass_by_value(true)
+                               .set_is_pass_by_ಮೌಲ್ಯ(ಸತ್ಯ)
                                .set_data_type(fe::DataType_t::FLOAT));
 
     auto sdpa_options = fe::graph::SDPA_attributes().set_name("flash_attention");
     sdpa_options.set_is_inference(is_inference_only);
     sdpa_options.set_attn_scale(attn_scale);
-    sdpa_options.set_causal_mask(true);
+    sdpa_options.set_causal_mask(ಸತ್ಯ);
 
     // Create the graph operation and get the output tensors back
     auto [O, stats] = graph->sdpa(Q, K, V, sdpa_options);
 
     // Output is (B, T, NH, HS) BF16/FP16 and stats for backward pass is (B, NH, T) FP32
-    O->set_output(true).set_dim({B, H, T, HS}).set_stride({H * HS * T, HS, H * HS, 1}).set_uid(O_UID);
+    O->set_output(ಸತ್ಯ).set_dim({B, H, T, HS}).set_stride({H * HS * T, HS, H * HS, 1}).set_uid(O_UID);
 
-    assert(stats == nullptr || is_inference_only == false);
-    if (is_inference_only == false) {
-        stats->set_output(true).set_data_type(fe::DataType_t::FLOAT)
+    ಪ್ರತಿಜ್ಞಾ(stats == nullptr || is_inference_only == ಅಸತ್ಯ);
+    ಯದಿ (is_inference_only == ಅಸತ್ಯ) {
+        stats->set_output(ಸತ್ಯ).set_data_type(fe::DataType_t::FLOAT)
                                .set_dim({B, H, T, 1})
                                .set_stride({H * T, T, 1, 1})
                                .set_uid(Stats_UID);
@@ -121,27 +121,27 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
     checkCudnnFE(graph->build_plans(cudnn_handle));
     // Reallocate the workspace if the required size is greater than the current workspace
     // In H100 this may be around 16B
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ಯದಿ (graph->get_workspace_size() > cudnn_workspace_size) {
+        ಯದಿ (cudnn_workspace_size > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
         cudnn_workspace_size = graph->get_workspace_size();
         cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
     }
 
-    user_maintained_cache_fwd.insert({key, graph});
+    user_maintained_cache_fwd.insert({ಕೀಲಿ, graph});
 
-    return graph;
+    ಪ್ರತ್ಯಾಗಮ graph;
 }
 
-auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
-    static cache_type_bwd user_maintained_cache_bwd;
+auto lookup_cache_or_build_graph_bwd(ಪೂರ್ಣಾಙ್ಕ B, ಪೂರ್ಣಾಙ್ಕ NH, ಪೂರ್ಣಾಙ್ಕ T, ಪೂರ್ಣಾಙ್ಕ HS) {
+    ಸ್ಥಿರ cache_type_bwd user_maintained_cache_bwd;
 
-    auto key = std::make_tuple(B, NH, T, HS);
+    auto ಕೀಲಿ = std::make_tuple(B, NH, T, HS);
 
-    auto it = user_maintained_cache_bwd.find(key);
-    if (it != user_maintained_cache_bwd.end()) {
-        return it->second;
+    auto it = user_maintained_cache_bwd.find(ಕೀಲಿ);
+    ಯದಿ (it != user_maintained_cache_bwd.end()) {
+        ಪ್ರತ್ಯಾಗಮ it->second;
     }
 
     auto graph = std::make_shared<fe::graph::Graph>();
@@ -180,22 +180,22 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
     auto attn_scale = graph->tensor(fe::graph::Tensor_attributes().set_name("attn_scale")
                             .set_dim({1, 1, 1, 1})
                             .set_stride({1, 1, 1, 1})
-                            .set_is_pass_by_value(true)
+                            .set_is_pass_by_ಮೌಲ್ಯ(ಸತ್ಯ)
                             .set_uid(Attn_scale_UID)
                             .set_data_type(fe::DataType_t::FLOAT));
     auto sdpa_backward_options = fe::graph::SDPA_backward_attributes().set_name("flash_attention_backward")
-#if CUDNN_FRONTEND_MAJOR_VERSION > 1 || CUDNN_FRONTEND_MINOR_VERSION >= 5
-                            .set_deterministic_algorithm(true) // 1.5+ needs this for determinism
+#ಯದಿ CUDNN_FRONTEND_MAJOR_VERSION > 1 || CUDNN_FRONTEND_MINOR_VERSION >= 5
+                            .set_deterministic_algorithm(ಸತ್ಯ) // 1.5+ needs this for determinism
 #endif
-                            .set_causal_mask(true)
+                            .set_causal_mask(ಸತ್ಯ)
                             .set_attn_scale(attn_scale);
 
     // Create the graph operation and get the output tensors back
     auto [dQ, dK, dV] = graph->sdpa_backward(Q, K, V, O, dO, stats, sdpa_backward_options);
 
-    dQ->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dQ_UID);
-    dK->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dK_UID);
-    dV->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dV_UID);
+    dQ->set_output(ಸತ್ಯ).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dQ_UID);
+    dK->set_output(ಸತ್ಯ).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dK_UID);
+    dV->set_output(ಸತ್ಯ).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dV_UID);
 
     checkCudnnFE(graph->validate());
 
@@ -207,25 +207,25 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
 
     // Reallocate the workspace if the required size is greater than the current workspace
     // By default, cuDNN uses up to 256MiB of workspace, so we don't want to just allocate the maximum
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ಯದಿ (graph->get_workspace_size() > cudnn_workspace_size) {
+        ಯದಿ (cudnn_workspace_size > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
         cudnn_workspace_size = graph->get_workspace_size();
         cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
     }
 
-    user_maintained_cache_bwd.insert({key, graph});
-    return graph;
+    user_maintained_cache_bwd.insert({ಕೀಲಿ, graph});
+    ಪ್ರತ್ಯಾಗಮ graph;
 }
 
-void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
-                             float* stats, // output for backward pass: (B, NH, T)
+ಶೂನ್ಯ attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
+                             ಭಿನ್ನ* stats, // output for backward pass: (B, NH, T)
                              floatX* inp,  // input: (B, T, 3, NH, HS) QKV
-                             int B, int T, int NH, int C, cudaStream_t stream) {
+                             ಪೂರ್ಣಾಙ್ಕ B, ಪೂರ್ಣಾಙ್ಕ T, ಪೂರ್ಣಾಙ್ಕ NH, ಪೂರ್ಣಾಙ್ಕ C, cudaStream_t stream) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
-    bool is_inference_only = (stats == nullptr);
+    ಪೂರ್ಣಾಙ್ಕ HS = C / NH; // number of features per head
+    ತಾರ್ಕಿಕ is_inference_only = (stats == nullptr);
 
     cuDNNCheck(cudnnSetStream(cudnn_handle, stream));
 
@@ -233,18 +233,18 @@ void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
     auto graph = lookup_cache_or_build_graph_fwd(B, NH, T, HS, is_inference_only);
 
     // Prepare all the tensor pointers for executing the graph
-    void* devPtrQ = inp;
-    void* devPtrK = (inp + C);
-    void* devPtrV = (inp + 2 * C);
-    float attn_scale_cpu = 1.0 / sqrtf(HS);
-    void* devPtrO = out;
+    ಶೂನ್ಯ* devPtrQ = inp;
+    ಶೂನ್ಯ* devPtrK = (inp + C);
+    ಶೂನ್ಯ* devPtrV = (inp + 2 * C);
+    ಭಿನ್ನ attn_scale_cpu = 1.0 / sqrtf(HS);
+    ಶೂನ್ಯ* devPtrO = out;
 
     // Build variant pack
-    std::unordered_map<int64_t , void*> variant_pack = {
+    std::unordered_map<int64_t , ಶೂನ್ಯ*> variant_pack = {
         {Q_UID, devPtrQ}, {K_UID, devPtrK}, {V_UID, devPtrV}, {Attn_scale_UID, &attn_scale_cpu}, {O_UID, devPtrO}};
 
     // Add the stats tensor unless we are only doing inference (only needed for backward pass)
-    if (is_inference_only == false) {
+    ಯದಿ (is_inference_only == ಅಸತ್ಯ) {
         variant_pack[Stats_UID] = stats;
     }
 
@@ -253,30 +253,30 @@ void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
     cudaCheck(cudaGetLastError());
 }
 
-void attention_backward_cudnn(floatX* dqkvr,                                       // output
-                              floatX* dout, floatX* qkvr, floatX* o, float* stats, // inputs
-                              int B, int T, int NH, int C, cudaStream_t stream) {
+ಶೂನ್ಯ attention_backward_cudnn(floatX* dqkvr,                                       // output
+                              floatX* dout, floatX* qkvr, floatX* o, ಭಿನ್ನ* stats, // inputs
+                              ಪೂರ್ಣಾಙ್ಕ B, ಪೂರ್ಣಾಙ್ಕ T, ಪೂರ್ಣಾಙ್ಕ NH, ಪೂರ್ಣಾಙ್ಕ C, cudaStream_t stream) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
+    ಪೂರ್ಣಾಙ್ಕ HS = C / NH; // number of features per head
 
     // Get graph and tensors from cache (or generate it on first use)
     auto graph = lookup_cache_or_build_graph_bwd(B, NH, T, HS);
 
     // Prepare all the tensor pointers for executing the graph
-    void* devPtrQ = qkvr;
-    void* devPtrK = (qkvr + NH * HS);
-    void* devPtrV = (qkvr + 2 * NH * HS);
-    void* devPtrO = o;
-    void* devPtrdO = dout;
-    void* devPtrStats = stats;
-    float attn_scale_cpu = 1.0 / sqrtf(HS);
+    ಶೂನ್ಯ* devPtrQ = qkvr;
+    ಶೂನ್ಯ* devPtrK = (qkvr + NH * HS);
+    ಶೂನ್ಯ* devPtrV = (qkvr + 2 * NH * HS);
+    ಶೂನ್ಯ* devPtrO = o;
+    ಶೂನ್ಯ* devPtrdO = dout;
+    ಶೂನ್ಯ* devPtrStats = stats;
+    ಭಿನ್ನ attn_scale_cpu = 1.0 / sqrtf(HS);
 
-    void* devPtrdQ = dqkvr;
-    void* devPtrdK = (dqkvr + NH * HS);
-    void* devPtrdV = (dqkvr + 2 * NH * HS);
+    ಶೂನ್ಯ* devPtrdQ = dqkvr;
+    ಶೂನ್ಯ* devPtrdK = (dqkvr + NH * HS);
+    ಶೂನ್ಯ* devPtrdV = (dqkvr + 2 * NH * HS);
 
     // Build variant pack that links each tensor to its data pointer
-    std::unordered_map<int64_t, void*> variant_pack = {
+    std::unordered_map<int64_t, ಶೂನ್ಯ*> variant_pack = {
         {Q_UID, devPtrQ}, {K_UID, devPtrK}, {V_UID, devPtrV}, {O_UID, devPtrO}, {dO_UID, devPtrdO}, {Stats_UID, devPtrStats},
         {dQ_UID, devPtrdQ}, {dK_UID, devPtrdK}, {dV_UID, devPtrdV},
         {Attn_scale_UID, &attn_scale_cpu}};
@@ -287,11 +287,11 @@ void attention_backward_cudnn(floatX* dqkvr,                                    
     cudaCheck(cudaGetLastError());
 }
 
-void create_cudnn() {
+ಶೂನ್ಯ create_cudnn() {
     cuDNNCheck(cudnnCreate(&cudnn_handle));
 }
 
-void destroy_cudnn() {
-    if (cudnn_workspace != NULL) { cudaCheck(cudaFree(cudnn_workspace)); }
+ಶೂನ್ಯ destroy_cudnn() {
+    ಯದಿ (cudnn_workspace != ರಿಕ್ತ) { cudaCheck(cudaFree(cudnn_workspace)); }
     cuDNNCheck(cudnnDestroy(cudnn_handle));
 }
