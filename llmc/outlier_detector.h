@@ -17,14 +17,14 @@ reconsider this choice in the future, as the compute cost here is minimal.
 
 typedef struct {
     double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
+    цео count;
+    цео index;
     double sum;
     double sum_sq;
 } OutlierDetector;
 
 void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
+    за (цео i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
         detector->buffer[i] = 0.0;
     }
     detector->count = 0;
@@ -35,15 +35,15 @@ void init_detector(OutlierDetector *detector) {
 
 double update_detector(OutlierDetector *detector, double new_value) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    ако (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
         // here we are still building up a window of observations
         detector->buffer[detector->count] = new_value;
         detector->sum += new_value;
         detector->sum_sq += new_value * new_value;
         detector->count++;
-        return nan(""); // not enough data yet
+        врати nan(""); // not enough data yet
 
-    } else {
+    } инако {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
@@ -60,11 +60,11 @@ double update_detector(OutlierDetector *detector, double new_value) {
         double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
         double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
         double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        ако (std_dev == 0.0) {
+            врати 0.0;
         }
         double z = (new_value - mean) / std_dev;
 
-        return z;
+        врати z;
     }
 }

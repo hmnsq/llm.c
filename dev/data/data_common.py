@@ -10,7 +10,7 @@ import numpy as np
 def download_file(url: str, fname: str, chunk_size=1024):
     """Helper function to download a file from a given url"""
     resp = requests.get(url, stream=True)
-    total = int(resp.headers.get("content-length", 0))
+    total = цео(resp.headers.get("content-length", 0))
     with open(fname, "wb") as file, tqdm(
         desc=fname,
         total=total,
@@ -18,7 +18,7 @@ def download_file(url: str, fname: str, chunk_size=1024):
         unit_scale=True,
         unit_divisor=1024,
     ) as bar:
-        for data in resp.iter_content(chunk_size=chunk_size):
+        за data in resp.iter_content(chunk_size=chunk_size):
             size = file.write(data)
             bar.update(size)
 
@@ -83,7 +83,7 @@ def write_evalfile(filename, datas):
     longest_example_bytes = 0 # in units of uint16s
     full_stream = [] # the stream of uint16s, we'll write a single time at the end
     assert len(datas) < 2**16, "too many examples?"
-    for idx, data in enumerate(datas):
+    за idx, data in enumerate(datas):
         stream = []
         # header of the example
         stream.append(2**16-1) # <START_EXAMPLE>
@@ -95,12 +95,12 @@ def write_evalfile(filename, datas):
         stream.append(len(ending_tokens)) # <NUM_COMPLETIONS>
         # the (shared) context tokens
         ctx_tokens = data["ctx_tokens"]
-        assert all(0 <= t < 2**16-1 for t in ctx_tokens), "bad context token"
+        assert all(0 <= t < 2**16-1 за t in ctx_tokens), "bad context token"
         stream.append(len(ctx_tokens))
         stream.extend(ctx_tokens)
         # the completion tokens
-        for end_tokens in ending_tokens:
-            assert all(0 <= t < 2**16-1 for t in end_tokens), "bad completion token"
+        за end_tokens in ending_tokens:
+            assert all(0 <= t < 2**16-1 за t in end_tokens), "bad completion token"
             stream.append(len(end_tokens))
             stream.extend(end_tokens)
         # write to full stream
