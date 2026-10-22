@@ -27,19 +27,19 @@ gpt2-xl (1558M)
 The validation set of HellaSwag has a total of 10,042 examples.
 """
 
-import os
-import json
-import requests
-import tiktoken
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from transformers import GPT2LMHeadModel
-from data_common import download_file, write_evalfile
+আমদানি os
+আমদানি json
+আমদানি requests
+আমদানি tiktoken
+তঃ tqdm আমদানি tqdm
+আমদানি torch
+আমদানি torch.nn ইব nn
+তঃ torch.nn আমদানি functional ইব F
+তঃ transformers আমদানি GPT2LMHeadModel
+তঃ তথ্য_common আমদানি download_file, write_evalfile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
+তথ্য_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
 
 hellaswags = {
     "train": "https://raw.githubusercontent.com/rowanz/hellaswag/master/data/hellaswag_train.jsonl",
@@ -51,13 +51,13 @@ enc = tiktoken.get_encoding("gpt2")
 
 def download(split):
     """Downloads HellaSwag DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
-    data_url = hellaswags[split]
-    data_filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl")
-    if not os.path.exists(data_filename):
+    os.makedirs(তথ্য_CACHE_DIR, exist_ok=সত্য)
+    তথ্য_url = hellaswags[split]
+    তথ্য_filename = os.path.join(তথ্য_CACHE_DIR, f"hellaswag_{split}.jsonl")
+    যদি নয় os.path.exists(তথ্য_filename):
         print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
+        download_file(তথ্য_url, তথ্য_filename)
+    অন্যথা:
         print(f"{data_filename} already exists, skipping download...")
 
 def render_example(example):
@@ -72,7 +72,7 @@ def render_example(example):
     endings = example["endings"]
 
     # data needed to reproduce this eval on the C size
-    data = {
+    তথ্য = {
         "label": label,
         "ctx_tokens": None,
         "ending_tokens": [],
@@ -80,32 +80,32 @@ def render_example(example):
 
     # gather up all the tokens
     ctx_tokens = enc.encode(ctx)
-    data["ctx_tokens"] = ctx_tokens
+    তথ্য["ctx_tokens"] = ctx_tokens
     tok_rows = []
     mask_rows = []
-    for end in endings:
+    জন্য end মধ্যে endings:
         end_tokens = enc.encode(" " + end) # note: prepending " " because GPT-2 tokenizer
         tok_rows.append(ctx_tokens + end_tokens)
         mask_rows.append([0]*len(ctx_tokens) + [1]*len(end_tokens))
-        data["ending_tokens"].append(end_tokens)
+        তথ্য["ending_tokens"].append(end_tokens)
 
     # have to be careful during the collation because the number of tokens in each row can differ
-    max_len = max(len(row) for row in tok_rows)
+    max_len = max(len(row) জন্য row মধ্যে tok_rows)
     tokens = torch.zeros((4, max_len), dtype=torch.long)
     mask = torch.zeros((4, max_len), dtype=torch.long)
-    for i, (tok_row, mask_row) in enumerate(zip(tok_rows, mask_rows)):
+    জন্য i, (tok_row, mask_row) মধ্যে enumerate(zip(tok_rows, mask_rows)):
         tokens[i, :len(tok_row)] = torch.tensor(tok_row)
         mask[i, :len(mask_row)] = torch.tensor(mask_row)
 
-    return data, tokens, mask, label
+    ফেরত তথ্য, tokens, mask, label
 
 def iterate_examples(split):
     # there are 10,042 examples in total in val
     download(split)
-    with open(os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") as f:
-        for line in f:
-            example = json.loads(line)
-            yield example
+    with open(os.path.join(তথ্য_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") ইব f:
+        জন্য সারি মধ্যে f:
+            example = json.loads(সারি)
+            দাও example
 
 @torch.no_grad()
 def evaluate(model_type, device):
@@ -117,12 +117,12 @@ def evaluate(model_type, device):
     # model = torch.compile(model)
 
     datas = []
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
-    for example in iterate_examples("val"):
-        data, tokens, mask, label = render_example(example)
-        datas.append(data)
+    অঙ্ক_correct_norm = 0
+    অঙ্ক_correct = 0
+    অঙ্ক_যোগ = 0
+    জন্য example মধ্যে iterate_examples("val"):
+        তথ্য, tokens, mask, label = render_example(example)
+        datas.append(তথ্য)
         tokens = tokens.to(device)
         mask = mask.to(device)
 
@@ -131,44 +131,44 @@ def evaluate(model_type, device):
         # evaluate the autoregressive loss at all positions
         shift_logits = (logits[..., :-1, :]).contiguous()
         shift_tokens = (tokens[..., 1:]).contiguous()
-        flat_shift_logits = shift_logits.view(-1, shift_logits.size(-1))
+        flat_shift_logits = shift_logits.view(-1, shift_logits.আকার_2(-1))
         flat_shift_tokens = shift_tokens.view(-1)
         shift_losses = F.cross_entropy(flat_shift_logits, flat_shift_tokens, reduction='none')
-        shift_losses = shift_losses.view(tokens.size(0), -1)
+        shift_losses = shift_losses.view(tokens.আকার_2(0), -1)
         # now get the average loss just for the completion region (where mask == 1), in each row
         shift_mask = (mask[..., 1:]).contiguous() # we must shift mask, so we start at the last prompt token
         masked_shift_losses = shift_losses * shift_mask
         # sum and divide by the number of 1s in the mask
-        sum_loss = masked_shift_losses.sum(dim=1)
-        avg_loss = sum_loss / shift_mask.sum(dim=1)
+        যোগ_loss = masked_shift_losses.যোগ_2(dim=1)
+        avg_loss = যোগ_loss / shift_mask.যোগ_2(dim=1)
         # now we have a loss for each of the 4 completions
         # the one with the lowest loss should be the most likely
-        pred = sum_loss.argmin().item()
+        pred = যোগ_loss.argmin().item()
         pred_norm = avg_loss.argmin().item()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
+        অঙ্ক_যোগ += 1
+        অঙ্ক_correct += পূর্ণসংখ্যা(pred == label)
+        অঙ্ক_correct_norm += পূর্ণসংখ্যা(pred_norm == label)
         print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
 
         # debug: pretty print a few examples, and the losses in each case
-        if num_total < 10:
+        যদি অঙ্ক_যোগ < 10:
             print("---")
             print(f"Context:\n {example['ctx']}")
             print(f"Endings:")
-            for i, end in enumerate(example["endings"]):
+            জন্য i, end মধ্যে enumerate(example["endings"]):
                 print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
             print(f"predicted: {pred_norm}, actual: {label}")
 
     # now write the data to a .bin file
-    filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_val.bin")
+    filename = os.path.join(তথ্য_CACHE_DIR, f"hellaswag_val.bin")
     write_evalfile(filename, datas)
 
-if __name__ == "__main__":
-    import argparse
+যদি __name__ == "__main__":
+    আমদানি argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
-    parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
+    parser.add_argument("-m", "--model_type", type=str, পূর্বনির্ধারিত="gpt2", help="the model type to use")
+    parser.add_argument("-d", "--device", type=str, পূর্বনির্ধারিত="cuda", help="the device to use")
     args = parser.parse_args()
     evaluate(args.model_type, args.device)

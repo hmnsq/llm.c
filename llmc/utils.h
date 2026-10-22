@@ -7,15 +7,15 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+#অন্তর্ভাব <unistd.h>
+#অন্তর্ভাব <string.h>
+#অন্তর্ভাব <stdio.h>
+#অন্তর্ভাব <stdlib.h>
+#অন্তর্ভাব <sys/stat.h>
 // implementation of dirent for Windows is in dev/unistd.h
 #ifndef _WIN32
-#include <dirent.h>
-#include <arpa/inet.h>
+#অন্তর্ভাব <dirent.h>
+#অন্তর্ভাব <arpa/inet.h>
 #endif
 
 // ----------------------------------------------------------------------------
@@ -23,64 +23,64 @@
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
+বাহ্যিক অন্তঃরেখ FILE *fopen_check(ধ্রুবক অক্ষর *path, ধ্রুবক অক্ষর *mode, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
     FILE *fp = fopen(path, mode);
-    if (fp == NULL) {
-        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
+    যদি (fp == ফাঁকা) {
+        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         fprintf(stderr, "  Path: %s\n", path);
         fprintf(stderr, "  Mode: %s\n", mode);
         fprintf(stderr, "---> HINT 1: dataset files/code have moved to dev/data recently (May 20, 2024). You may have to mv them from the legacy data/ dir to dev/data/(dataset), or re-run the data preprocessing script. Refer back to the main README\n");
         fprintf(stderr, "---> HINT 2: possibly try to re-run `python train_gpt2.py`\n");
         exit(EXIT_FAILURE);
     }
-    return fp;
+    ফেরত fp;
 }
 
 #define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
-    size_t result = fread(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
-        } else {
+বাহ্যিক অন্তঃরেখ শূন্য fread_check(শূন্য *ptr, size_t আকার_2, size_t nmemb, FILE *stream, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    size_t ফলাফল = fread(ptr, আকার_2, nmemb, stream);
+    যদি (ফলাফল != nmemb) {
+        যদি (feof(stream)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, সারি);
+        } অন্যথা যদি (ferror(stream)) {
+            fprintf(stderr, "Error: File read error at %s:%d\n", file, সারি);
+        } অন্যথা {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
-                    file, line, nmemb, result);
+                    file, সারি, nmemb, ফলাফল);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
-        fprintf(stderr, "  Read elements: %zu\n", result);
+        fprintf(stderr, "  Read elements: %zu\n", ফলাফল);
         exit(EXIT_FAILURE);
     }
 }
 
-#define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
+#define freadCheck(ptr, আকার_2, nmemb, stream) fread_check(ptr, আকার_2, nmemb, stream, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
-    if (fclose(fp) != 0) {
-        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য fclose_check(FILE *fp, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    যদি (fclose(fp) != 0) {
+        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
-    if (close(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য sclose_check(পূর্ণসংখ্যা sockfd, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    যদি (close(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         exit(EXIT_FAILURE);
     }
 }
@@ -88,12 +88,12 @@ extern inline void sclose_check(int sockfd, const char *file, int line) {
 #define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
 #ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
-    if (closesocket(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য closesocket_check(পূর্ণসংখ্যা sockfd, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    যদি (closesocket(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         exit(EXIT_FAILURE);
     }
 }
@@ -101,87 +101,87 @@ extern inline void closesocket_check(int sockfd, const char *file, int line) {
 #define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
 #endif
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
-    if (fseek(fp, off, whence) != 0) {
-        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য fseek_check(FILE *fp, long off, পূর্ণসংখ্যা whence, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    যদি (fseek(fp, off, whence) != 0) {
+        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
         fprintf(stderr, "  Whence: %d\n", whence);
         fprintf(stderr, "  File:   %s\n", file);
-        fprintf(stderr, "  Line:   %d\n", line);
+        fprintf(stderr, "  Line:   %d\n", সারি);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
-    size_t result = fwrite(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
-        } else {
+বাহ্যিক অন্তঃরেখ শূন্য fwrite_check(শূন্য *ptr, size_t আকার_2, size_t nmemb, FILE *stream, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    size_t ফলাফল = fwrite(ptr, আকার_2, nmemb, stream);
+    যদি (ফলাফল != nmemb) {
+        যদি (feof(stream)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, সারি);
+        } অন্যথা যদি (ferror(stream)) {
+            fprintf(stderr, "Error: File write error at %s:%d\n", file, সারি);
+        } অন্যথা {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
-                    file, line, nmemb, result);
+                    file, সারি, nmemb, ফলাফল);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", সারি);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
-        fprintf(stderr, "  Written elements: %zu\n", result);
+        fprintf(stderr, "  Written elements: %zu\n", ফলাফল);
         exit(EXIT_FAILURE);
     }
 }
 
-#define fwriteCheck(ptr, size, nmemb, stream) fwrite_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
+#define fwriteCheck(ptr, আকার_2, nmemb, stream) fwrite_check(ptr, আকার_2, nmemb, stream, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য *malloc_check(size_t আকার_2, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    শূন্য *ptr = malloc(আকার_2);
+    যদি (ptr == ফাঁকা) {
+        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, সারি);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        fprintf(stderr, "  Size: %zu bytes\n", size);
+        fprintf(stderr, "  Line: %d\n", সারি);
+        fprintf(stderr, "  Size: %zu bytes\n", আকার_2);
         exit(EXIT_FAILURE);
     }
-    return ptr;
+    ফেরত ptr;
 }
 
-#define mallocCheck(size) malloc_check(size, __FILE__, __LINE__)
+#define mallocCheck(আকার_2) malloc_check(আকার_2, __FILE__, __LINE__)
 
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
-        if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
-            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
+বাহ্যিক অন্তঃরেখ শূন্য token_check(ধ্রুবক পূর্ণসংখ্যা* tokens, পূর্ণসংখ্যা token_গুনতি, পূর্ণসংখ্যা vocab_আকার, ধ্রুবক অক্ষর *file, পূর্ণসংখ্যা সারি) {
+    জন্য(পূর্ণসংখ্যা i = 0; i < token_গুনতি; i++) {
+        যদি(!(0 <= tokens[i] && tokens[i] < vocab_আকার)) {
+            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, সারি);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
+            fprintf(stderr, "  Line: %d\n", সারি);
             fprintf(stderr, "  Token: %d\n", tokens[i]);
             fprintf(stderr, "  Position: %d\n", i);
-            fprintf(stderr, "  Vocab: %d\n", vocab_size);
+            fprintf(stderr, "  Vocab: %d\n", vocab_আকার);
             exit(EXIT_FAILURE);
         }
     }
 }
-#define tokenCheck(tokens, count, vocab) token_check(tokens, count, vocab, __FILE__, __LINE__)
+#define tokenCheck(tokens, গুনতি, vocab) token_check(tokens, গুনতি, vocab, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // I/O ops
 
-extern inline void create_dir_if_not_exists(const char *dir) {
-    if (dir == NULL) { return; }
-    struct stat st = {0};
-    if (stat(dir, &st) == -1) {
-        if (mkdir(dir, 0700) == -1) {
+বাহ্যিক অন্তঃরেখ শূন্য create_dir_if_not_exists(ধ্রুবক অক্ষর *dir) {
+    যদি (dir == ফাঁকা) { ফেরত; }
+    কাঠামো stat st = {0};
+    যদি (stat(dir, &st) == -1) {
+        যদি (mkdir(dir, 0700) == -1) {
             printf("ERROR: could not create directory: %s\n", dir);
             exit(EXIT_FAILURE);
         }
@@ -189,35 +189,35 @@ extern inline void create_dir_if_not_exists(const char *dir) {
     }
 }
 
-extern inline int find_max_step(const char* output_log_dir) {
+বাহ্যিক অন্তঃরেখ পূর্ণসংখ্যা find_max_step(ধ্রুবক অক্ষর* output_log_dir) {
     // find the DONE file in the log dir with highest step count
-    if (output_log_dir == NULL) { return -1; }
+    যদি (output_log_dir == ফাঁকা) { ফেরত -1; }
     DIR* dir;
-    struct dirent* entry;
-    int max_step = -1;
+    কাঠামো dirent* entry;
+    পূর্ণসংখ্যা max_step = -1;
     dir = opendir(output_log_dir);
-    if (dir == NULL) { return -1; }
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "DONE_", 5) == 0) {
-            int step = atoi(entry->d_name + 5);
-            if (step > max_step) {
+    যদি (dir == ফাঁকা) { ফেরত -1; }
+    যখন ((entry = readdir(dir)) != ফাঁকা) {
+        যদি (strncmp(entry->d_name, "DONE_", 5) == 0) {
+            পূর্ণসংখ্যা step = atoi(entry->d_name + 5);
+            যদি (step > max_step) {
                 max_step = step;
             }
         }
     }
     closedir(dir);
-    return max_step;
+    ফেরত max_step;
 }
 
-extern inline int ends_with_bin(const char* str) {
+বাহ্যিক অন্তঃরেখ পূর্ণসংখ্যা ends_with_bin(ধ্রুবক অক্ষর* str) {
     // checks if str ends with ".bin". could be generalized in the future.
-    if (str == NULL) { return 0; }
+    যদি (str == ফাঁকা) { ফেরত 0; }
     size_t len = strlen(str);
-    const char* suffix = ".bin";
+    ধ্রুবক অক্ষর* suffix = ".bin";
     size_t suffix_len = strlen(suffix);
-    if (len < suffix_len) { return 0; }
-    int suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
-    return suffix_matches;
+    যদি (len < suffix_len) { ফেরত 0; }
+    পূর্ণসংখ্যা suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
+    ফেরত suffix_matches;
 }
 
 #endif
