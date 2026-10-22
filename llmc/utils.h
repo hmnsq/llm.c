@@ -7,15 +7,15 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+#ضمن <unistd.h>
+#ضمن <string.h>
+#ضمن <stdio.h>
+#ضمن <stdlib.h>
+#ضمن <sys/stat.h>
 // implementation of dirent for Windows is in dev/unistd.h
 #ifndef _WIN32
-#include <dirent.h>
-#include <arpa/inet.h>
+#ضمن <dirent.h>
+#ضمن <arpa/inet.h>
 #endif
 
 // ----------------------------------------------------------------------------
@@ -23,9 +23,9 @@
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
+خارجي مضمن FILE *fopen_check(ثابت حرف *path, ثابت حرف *mode, ثابت حرف *file, صحيح line) {
     FILE *fp = fopen(path, mode);
-    if (fp == NULL) {
+    𐡄𐡍 (fp == عدم) {
         fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -36,19 +36,19 @@ extern inline FILE *fopen_check(const char *path, const char *mode, const char *
         fprintf(stderr, "---> HINT 2: possibly try to re-run `python train_gpt2.py`\n");
         exit(EXIT_FAILURE);
     }
-    return fp;
+    أرجع fp;
 }
 
 #define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+خارجي مضمن فراغ fread_check(فراغ *ptr, size_t size, size_t nmemb, FILE *stream, ثابت حرف *file, صحيح line) {
     size_t result = fread(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
+    𐡄𐡍 (result != nmemb) {
+        𐡄𐡍 (feof(stream)) {
             fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
+        } وإلا 𐡄𐡍 (ferror(stream)) {
             fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
-        } else {
+        } وإلا {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
                     file, line, nmemb, result);
         }
@@ -63,8 +63,8 @@ extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *strea
 
 #define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
-    if (fclose(fp) != 0) {
+خارجي مضمن فراغ fclose_check(FILE *fp, ثابت حرف *file, صحيح line) {
+    𐡄𐡍 (fclose(fp) != 0) {
         fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -75,8 +75,8 @@ extern inline void fclose_check(FILE *fp, const char *file, int line) {
 
 #define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
-    if (close(sockfd) != 0) {
+خارجي مضمن فراغ sclose_check(صحيح sockfd, ثابت حرف *file, صحيح line) {
+    𐡄𐡍 (close(sockfd) != 0) {
         fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -88,8 +88,8 @@ extern inline void sclose_check(int sockfd, const char *file, int line) {
 #define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
 #ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
-    if (closesocket(sockfd) != 0) {
+خارجي مضمن فراغ closesocket_check(صحيح sockfd, ثابت حرف *file, صحيح line) {
+    𐡄𐡍 (closesocket(sockfd) != 0) {
         fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -101,8 +101,8 @@ extern inline void closesocket_check(int sockfd, const char *file, int line) {
 #define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
 #endif
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
-    if (fseek(fp, off, whence) != 0) {
+خارجي مضمن فراغ fseek_check(FILE *fp, long off, صحيح whence, ثابت حرف *file, صحيح line) {
+    𐡄𐡍 (fseek(fp, off, whence) != 0) {
         fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
@@ -115,14 +115,14 @@ extern inline void fseek_check(FILE *fp, long off, int whence, const char *file,
 
 #define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+خارجي مضمن فراغ fwrite_check(فراغ *ptr, size_t size, size_t nmemb, FILE *stream, ثابت حرف *file, صحيح line) {
     size_t result = fwrite(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
+    𐡄𐡍 (result != nmemb) {
+        𐡄𐡍 (feof(stream)) {
             fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
+        } وإلا 𐡄𐡍 (ferror(stream)) {
             fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
-        } else {
+        } وإلا {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
                     file, line, nmemb, result);
         }
@@ -140,9 +140,9 @@ extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stre
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
+خارجي مضمن فراغ *malloc_check(size_t size, ثابت حرف *file, صحيح line) {
+    فراغ *ptr = malloc(size);
+    𐡄𐡍 (ptr == عدم) {
         fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -150,7 +150,7 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
         fprintf(stderr, "  Size: %zu bytes\n", size);
         exit(EXIT_FAILURE);
     }
-    return ptr;
+    أرجع ptr;
 }
 
 #define mallocCheck(size) malloc_check(size, __FILE__, __LINE__)
@@ -158,9 +158,9 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
-        if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
+خارجي مضمن فراغ token_check(ثابت صحيح* tokens, صحيح token_count, صحيح vocab_size, ثابت حرف *file, صحيح line) {
+    لكل(صحيح i = 0; i < token_count; i++) {
+        𐡄𐡍(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
             fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
@@ -177,11 +177,11 @@ extern inline void token_check(const int* tokens, int token_count, int vocab_siz
 // ----------------------------------------------------------------------------
 // I/O ops
 
-extern inline void create_dir_if_not_exists(const char *dir) {
-    if (dir == NULL) { return; }
-    struct stat st = {0};
-    if (stat(dir, &st) == -1) {
-        if (mkdir(dir, 0700) == -1) {
+خارجي مضمن فراغ create_dir_if_not_exists(ثابت حرف *dir) {
+    𐡄𐡍 (dir == عدم) { أرجع; }
+    بنية stat st = {0};
+    𐡄𐡍 (stat(dir, &st) == -1) {
+        𐡄𐡍 (mkdir(dir, 0700) == -1) {
             printf("ERROR: could not create directory: %s\n", dir);
             exit(EXIT_FAILURE);
         }
@@ -189,35 +189,35 @@ extern inline void create_dir_if_not_exists(const char *dir) {
     }
 }
 
-extern inline int find_max_step(const char* output_log_dir) {
+خارجي مضمن صحيح find_max_step(ثابت حرف* output_log_dir) {
     // find the DONE file in the log dir with highest step count
-    if (output_log_dir == NULL) { return -1; }
+    𐡄𐡍 (output_log_dir == عدم) { أرجع -1; }
     DIR* dir;
-    struct dirent* entry;
-    int max_step = -1;
+    بنية dirent* entry;
+    صحيح max_step = -1;
     dir = opendir(output_log_dir);
-    if (dir == NULL) { return -1; }
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "DONE_", 5) == 0) {
-            int step = atoi(entry->d_name + 5);
-            if (step > max_step) {
+    𐡄𐡍 (dir == عدم) { أرجع -1; }
+    طالما ((entry = readdir(dir)) != عدم) {
+        𐡄𐡍 (strncmp(entry->d_name, "DONE_", 5) == 0) {
+            صحيح step = atoi(entry->d_name + 5);
+            𐡄𐡍 (step > max_step) {
                 max_step = step;
             }
         }
     }
     closedir(dir);
-    return max_step;
+    أرجع max_step;
 }
 
-extern inline int ends_with_bin(const char* str) {
+خارجي مضمن صحيح ends_with_bin(ثابت حرف* str) {
     // checks if str ends with ".bin". could be generalized in the future.
-    if (str == NULL) { return 0; }
+    𐡄𐡍 (str == عدم) { أرجع 0; }
     size_t len = strlen(str);
-    const char* suffix = ".bin";
+    ثابت حرف* suffix = ".bin";
     size_t suffix_len = strlen(suffix);
-    if (len < suffix_len) { return 0; }
-    int suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
-    return suffix_matches;
+    𐡄𐡍 (len < suffix_len) { أرجع 0; }
+    صحيح suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
+    أرجع suffix_matches;
 }
 
 #endif
