@@ -6,20 +6,20 @@
 #define _USE_MATH_DEFINES
 #define WIN32_LEAN_AND_MEAN
 
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
-#include <stdlib.h> // for malloc and free
-#include <string.h>
-#include <direct.h> // for _mkdir and _stat
-#include <io.h> // needed for _access below and _findfirst, _findnext, _findclose
+#ضمن <stdio.h>
+#ضمن <math.h>
+#ضمن <time.h>
+#ضمن <stdlib.h> // for malloc and free
+#ضمن <string.h>
+#ضمن <direct.h> // for _mkdir and _stat
+#ضمن <io.h> // needed for _access below and _findfirst, _findnext, _findclose
 #pragma comment(lib, "Ws2_32.lib")  // Link Ws2_32.lib for socket functions
-#include <winsock2.h>
+#ضمن <winsock2.h>
 
 #define CLOCK_MONOTONIC 0
-static inline int clock_gettime(int ignore_variable, struct timespec* tv)
+ساكن مضمن صحيح clock_gettime(صحيح ignore_variable, بنية timespec* tv)
 {
-    return timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
+    ܦܢܐ timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
 }
 
 #define OMP /* turn it on */
@@ -32,141 +32,141 @@ static inline int clock_gettime(int ignore_variable, struct timespec* tv)
 #define mkdir(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
 #define stat _stat
 
-typedef struct glob_t {
+تعريفنوع بنية glob_t {
     size_t gl_pathc;    // Count of matched pathnames
-    char **gl_pathv;    // List of matched pathnames
+    حرف **gl_pathv;    // List of matched pathnames
 } glob_t;
 
-static inline void replace_forward_slashes(char* str) {
-    while (*str) {
-        if (*str == '/') {
+ساكن مضمن فراغ replace_forward_slashes(حرف* str) {
+    ܟܡܐ (*str) {
+        ܐܢ (*str == '/') {
             *str = '\\';
         }
         str++;
     }
 }
 
-static inline void globfree(glob_t *pglob) {
-    for (size_t i = 0; i < pglob->gl_pathc; ++i) {
-        free(pglob->gl_pathv[i]); // Free the allocated memory for each filename
+ساكن مضمن فراغ globfree(glob_t *pglob) {
+    لكل (size_t i = 0; i < pglob->gl_pathc; ++i) {
+        حرر(pglob->gl_pathv[i]); // Free the allocated memory for each filename
     }
-    free(pglob->gl_pathv); // Free the allocated memory for the list of filenames
+    حرر(pglob->gl_pathv); // Free the allocated memory for the list of filenames
 }
 
-static inline int glob(const char* pattern, int ignored_flags, int (*ignored_errfunc)(const char* epath, int eerrno), glob_t* pglob){
-    struct _finddata_t find_file_data;
-    char full_path[576]; // stored in pglob->gl_pathv[n]
-    char directory_path[512] = {0}; // Store the directory path from the pattern
-    char pattern_copy[512]; // Copy of the pattern to modify
+ساكن مضمن صحيح glob(ثابت حرف* pattern, صحيح ignored_flags, صحيح (*ignored_errfunc)(ثابت حرف* epath, صحيح eerrno), glob_t* pglob){
+    بنية _finddata_t find_file_data;
+    حرف full_path[576]; // stored in pglob->gl_pathv[n]
+    حرف directory_path[512] = {0}; // Store the directory path from the pattern
+    حرف pattern_copy[512]; // Copy of the pattern to modify
 
-    strncpy_s(pattern_copy, sizeof(pattern_copy) - 1, pattern, sizeof(pattern_copy) - 1);
+    strncpy_s(pattern_copy, حجم(pattern_copy) - 1, pattern, حجم(pattern_copy) - 1);
 
     replace_forward_slashes (pattern_copy); // Replace forward slashes with backslashes
 
-    if (strchr(pattern_copy, '\\') != (void*) NULL) {
-        strncpy_s(directory_path, sizeof(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
+    ܐܢ (strchr(pattern_copy, '\\') != (فراغ*) عدم) {
+        strncpy_s(directory_path, حجم(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
         directory_path[strrchr(pattern_copy, '\\') - pattern_copy + 1] = '\0';
     }
 
     // find the first file matching the pattern in the directory
     intptr_t find_handle = _findfirst(pattern_copy, &find_file_data);
 
-    if (find_handle == -1) {
-        return 1; // No files found
+    ܐܢ (find_handle == -1) {
+        ܦܢܐ 1; // No files found
     }
 
     size_t file_count = 0;
     size_t max_files = 64000; // hard-coded limit for the number of files
 
-    pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
+    pglob->gl_pathv = (حرف **) malloc(max_files * حجم(حرف*)); // freed in globfree
 
-    if (pglob->gl_pathv == NULL) {
+    ܐܢ (pglob->gl_pathv == عدم) {
         _findclose(find_handle);
-        return 2; // Memory allocation failed
+        ܦܢܐ 2; // Memory allocation failed
     }
 
-    do {
-        if (file_count >= max_files) {
+    ܥܒܕ {
+        ܐܢ (file_count >= max_files) {
             _findclose(find_handle);
-            return 2; // Too many files found
+            ܦܢܐ 2; // Too many files found
             }
 
-        snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
+        snprintf(full_path, حجم(full_path), "%s%s", directory_path, find_file_data.name);
 
         pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
+        ܐܢ (pglob->gl_pathv[file_count] == عدم) {
             _findclose(find_handle);
-            return 2; // Memory allocation for filename failed
+            ܦܢܐ 2; // Memory allocation for filename failed
         }
         file_count++;
-    } while (_findnext(find_handle, &find_file_data) == 0);
+    } ܟܡܐ (_findnext(find_handle, &find_file_data) == 0);
 
     _findclose(find_handle);
 
     pglob->gl_pathc = file_count;
-    return 0;
+    ܦܢܐ 0;
 }
 
 // dirent.h support
 
 #define MAX_PATH_LENGTH 512
-typedef struct dirent {
-    char d_name[MAX_PATH_LENGTH];
+تعريفنوع بنية dirent {
+    حرف d_name[MAX_PATH_LENGTH];
 } dirent;
 
-typedef struct DIR {
+تعريفنوع بنية DIR {
     intptr_t handle;
-    struct _finddata_t findFileData;
-    int firstRead;
+    بنية _finddata_t findFileData;
+    صحيح firstRead;
 } DIR;
 
-static inline DIR *opendir(const char *name) {
-    DIR *dir = (DIR *)malloc(sizeof(DIR));
-    if (dir == NULL) {
-        return NULL;
+ساكن مضمن DIR *opendir(ثابت حرف *name) {
+    DIR *dir = (DIR *)malloc(حجم(DIR));
+    ܐܢ (dir == عدم) {
+        ܦܢܐ عدم;
     }
 
-    char searchPath[MAX_PATH_LENGTH];
+    حرف searchPath[MAX_PATH_LENGTH];
 
     snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
 
     dir->handle = _findfirst(searchPath, &dir->findFileData);
-    if (dir->handle == -1) {
-        free(dir);
-        return NULL;
+    ܐܢ (dir->handle == -1) {
+        حرر(dir);
+        ܦܢܐ عدم;
     }
 
     dir->firstRead = 1;
-    return dir;
+    ܦܢܐ dir;
 }
 
-static inline struct dirent *readdir(DIR *directory) {
-    static struct dirent result;
+ساكن مضمن بنية dirent *readdir(DIR *directory) {
+    ساكن بنية dirent result;
 
-    if (directory->firstRead) {
+    ܐܢ (directory->firstRead) {
         directory->firstRead = 0;
-    } else {
-        if (_findnext(directory->handle, &directory->findFileData) != 0) {
-            return NULL;
+    } ܐܚܪܢܐ {
+        ܐܢ (_findnext(directory->handle, &directory->findFileData) != 0) {
+            ܦܢܐ عدم;
         }
     }
 
     strncpy(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
     result.d_name[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    return &result;
+    ܦܢܐ &result;
 }
 
-static inline int closedir(DIR *directory) {
-    if (directory == NULL) {
-        return -1;
+ساكن مضمن صحيح closedir(DIR *directory) {
+    ܐܢ (directory == عدم) {
+        ܦܢܐ -1;
     }
 
-    if (_findclose(directory->handle) != 0) {
-        return -1;
+    ܐܢ (_findclose(directory->handle) != 0) {
+        ܦܢܐ -1;
     }
 
-    free(directory);
-    return 0;
+    حرر(directory);
+    ܦܢܐ 0;
 }
 #endif // UNISTD_H
