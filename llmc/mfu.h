@@ -1,13 +1,13 @@
 #ifndef MFU_H
 #define MFU_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#if __has_include(<nvml.h>)
+#अन्तर्भाव <stdio.h>
+#अन्तर्भाव <stdlib.h>
+#अन्तर्भाव <string.h>
+#यदि __has_include(<nvml.h>)
 #define USE_NVML 1
-#include <nvml.h>
-#else
+#अन्तर्भाव <nvml.h>
+#अन्यथा
 #define USE_NVML 0
 #endif
 
@@ -16,44 +16,44 @@
 #define MFUH_PRECISION_FP16 1
 #define MFUH_PRECISION_BF16 2
 
-#if USE_NVML
-inline void nvml_check(nvmlReturn_t status, const char *file, int line) {
-    if (status != NVML_SUCCESS) {
-        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, line, nvmlErrorString(status));
-        exit(EXIT_FAILURE);
+#यदि USE_NVML
+अन्तःस्थ शून्य nvml_check(nvmlReturn_t status, अचर वर्ण *file, पूर्णाङ्क पङ्क्ति) {
+    यदि (status != NVML_SUCCESS) {
+        म_लिखो("[NVML ERROR] at file %s:%d:\n%s\n", file, पङ्क्ति, nvmlErrorString(status));
+        निकास(निकास_त्रुटि);
     }
 };
 #define nvmlCheck(err) (nvml_check(err, __FILE__, __LINE__))
 #endif
 
 
-typedef struct {
-    float TF_32;       // tensor-core performance 32 bit
-    float BF_16_32;    // bf16 with 32 bit accumulate
-    float FP_16_32;    // fp16 with 32 bit accumulate
-    float FP_16_16;    // fp16 with 16 bit accumulate
-    float FP_8_32;     // and so on
-    float FP_8_16;
-    float CLOCK;        // clock frequency from the spec sheet
-    float CORES;        // #TCs from the spec sheet
+प्रकारनिर्देश संरचना {
+    भिन्न TF_32;       // tensor-core performance 32 bit
+    भिन्न BF_16_32;    // bf16 with 32 bit accumulate
+    भिन्न FP_16_32;    // fp16 with 32 bit accumulate
+    भिन्न FP_16_16;    // fp16 with 16 bit accumulate
+    भिन्न FP_8_32;     // and so on
+    भिन्न FP_8_16;
+    भिन्न CLOCK;        // clock frequency from the spec sheet
+    भिन्न CORES;        // #TCs from the spec sheet
 } PerfData;
 
 // basic default data from the nvidia whitepapers
-static const PerfData VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
-static const PerfData AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
-static const PerfData AMPERE_CONSUMER = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
-static const PerfData HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
-static const PerfData ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
+स्थिर अचर PerfData VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
+स्थिर अचर PerfData AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
+स्थिर अचर PerfData AMPERE_CONSUMER = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
+स्थिर अचर PerfData HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
+स्थिर अचर PerfData ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
 
-typedef struct {
-    const char* name;
-    const PerfData* perf_data;
-    float new_cores;
-    float new_mhz;
+प्रकारनिर्देश संरचना {
+    अचर वर्ण* name;
+    अचर PerfData* perf_data;
+    भिन्न new_cores;
+    भिन्न new_mhz;
 } GPUEntry;
 
 // the overrides for each specific GPU
-static GPUEntry gpu_db[] = {
+स्थिर GPUEntry gpu_db[] = {
     {"Tesla V100-SXM2-16GB", &VOLTA, 640, 1530},
     {"Tesla V100-PCIE-32GB", &VOLTA, 640, 1530},
     {"NVIDIA A100-PCIE-40GB", &AMPERE_DATACENTER, 432, 1410},
@@ -94,7 +94,7 @@ static GPUEntry gpu_db[] = {
     {"NVIDIA H100 80GB HBM3", &HOPPER, 528, 1830}, // HBM3 = SXM5
 };
 
-float get_flops_promised(const char* device, int precision_mode) {
+भिन्न get_flops_promised(अचर वर्ण* device, पूर्णाङ्क precision_mode) {
     /*
     This function is used to estimate the Model Flops Utilization (MFU)
     basically we have to figure out how many flops the GPU can do per second.
@@ -117,78 +117,78 @@ float get_flops_promised(const char* device, int precision_mode) {
     */
 
    // validate the precision mode as one of the three possible values
-    if (!(precision_mode == MFUH_PRECISION_FP32 || precision_mode == MFUH_PRECISION_FP16 || precision_mode == MFUH_PRECISION_BF16)) {
-        fprintf(stderr, "Invalid precision mode: %d\n", precision_mode);
-        return -1.0f;
+    यदि (!(precision_mode == MFUH_PRECISION_FP32 || precision_mode == MFUH_PRECISION_FP16 || precision_mode == MFUH_PRECISION_BF16)) {
+        ख_लिखो(मानक_त्रुटि, "Invalid precision mode: %d\n", precision_mode);
+        फर्काऊ -1.0f;
     }
 
     // do a linear search until you find our GPU, then calculate the flops promised
-    int num_gpu_entries = sizeof(gpu_db) / sizeof(gpu_db[0]);
-    for (int i = 0; i < num_gpu_entries; i++) {
-        if (strcmp(gpu_db[i].name, device) == 0) {
-            const PerfData* perf_data = gpu_db[i].perf_data;
+    पूर्णाङ्क अङ्क_gpu_entries = परिमाण(gpu_db) / परिमाण(gpu_db[0]);
+    लागि (पूर्णाङ्क i = 0; i < अङ्क_gpu_entries; i++) {
+        यदि (म_भेद(gpu_db[i].name, device) == 0) {
+            अचर PerfData* perf_data = gpu_db[i].perf_data;
 
             // look up the default flops value for the given precision mode
-            float value = -1.0f;
-            if (precision_mode == MFUH_PRECISION_BF16) { value = perf_data->BF_16_32; }
-            if (precision_mode == MFUH_PRECISION_FP32) { value = perf_data->TF_32; }
-            if (precision_mode == MFUH_PRECISION_FP16) { value = perf_data->FP_16_32; }
+            भिन्न मान = -1.0f;
+            यदि (precision_mode == MFUH_PRECISION_BF16) { मान = perf_data->BF_16_32; }
+            यदि (precision_mode == MFUH_PRECISION_FP32) { मान = perf_data->TF_32; }
+            यदि (precision_mode == MFUH_PRECISION_FP16) { मान = perf_data->FP_16_32; }
 
             // we'd get here if we're e.g. trying to use BF16 on Volta GPU or something...
-            if (value < 0.0f) {
-                fprintf(stderr, "No data for GPU %s and precision mode %d\n", device, precision_mode);
-                return -1.0f;
+            यदि (मान < 0.0f) {
+                ख_लिखो(मानक_त्रुटि, "No data for GPU %s and precision mode %d\n", device, precision_mode);
+                फर्काऊ -1.0f;
             }
 
             // adjust flops based on the specific core count and clock frequency of this GPU
-            float new_cores = gpu_db[i].new_cores;
-            float new_mhz = gpu_db[i].new_mhz;
-            float adjusted = value * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
-            return adjusted;
+            भिन्न new_cores = gpu_db[i].new_cores;
+            भिन्न new_mhz = gpu_db[i].new_mhz;
+            भिन्न adjusted = मान * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
+            फर्काऊ adjusted;
         }
     }
 
-    return -1.0f; // ¯\_(ツ)_/¯
+    फर्काऊ -1.0f; // ¯\_(ツ)_/¯
 }
 
-struct GPUUtilInfo {
-    unsigned int clock;
-    unsigned int max_clock;
-    unsigned int power;
-    unsigned int power_limit;
-    unsigned int fan;
-    unsigned int temperature;
-    unsigned int temp_slowdown;
+संरचना GPUUtilInfo {
+    अचिन्हित पूर्णाङ्क घड़ी;
+    अचिन्हित पूर्णाङ्क max_clock;
+    अचिन्हित पूर्णाङ्क power;
+    अचिन्हित पूर्णाङ्क power_limit;
+    अचिन्हित पूर्णाङ्क fan;
+    अचिन्हित पूर्णाङ्क temperature;
+    अचिन्हित पूर्णाङ्क temp_slowdown;
 
-    float gpu_utilization;
-    float mem_utilization;
-    const char* throttle_reason;
+    भिन्न gpu_utilization;
+    भिन्न mem_utilization;
+    अचर वर्ण* throttle_reason;
 };
 
 // lazily initialize nvml and generate a handle to the GPU
-#if USE_NVML
+#यदि USE_NVML
 nvmlDevice_t nvml_get_device() {
-    static bool needs_init = true;
-    static nvmlDevice_t device;
-    if(needs_init) {
+    स्थिर bool needs_init = true;
+    स्थिर nvmlDevice_t device;
+    यदि(needs_init) {
         needs_init = false;
         nvmlCheck(nvmlInit());
         nvmlCheck(nvmlDeviceGetHandleByIndex_v2(0, &device));
     }
-    return device;
+    फर्काऊ device;
 }
 
 // convert throttle reason bitfield into a text reason.
 // this is a lossy conversion; we just want to give some idea of what is happening
-const char* get_throttle_reason(unsigned long long bits) {
-    if(bits & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
-        return "power cap";
-    } else if (bits & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
-        return "thermal cap";
-    } else if (bits & (nvmlClocksThrottleReasonAll)) {
-        return "other cap";
-    } else {
-        return "no cap";
+अचर वर्ण* get_throttle_reason(अचिन्हित दीर्घ दीर्घ bits) {
+    यदि(bits & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
+        फर्काऊ "power cap";
+    } अन्यथा यदि (bits & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
+        फर्काऊ "thermal cap";
+    } अन्यथा यदि (bits & (nvmlClocksThrottleReasonAll)) {
+        फर्काऊ "other cap";
+    } अन्यथा {
+        फर्काऊ "no cap";
     }
 }
 
@@ -197,13 +197,13 @@ GPUUtilInfo get_gpu_utilization_info() {
     GPUUtilInfo info;
     nvmlDevice_t device = nvml_get_device();
     // query different infos directly
-    nvmlCheck(nvmlDeviceGetClockInfo(device, NVML_CLOCK_SM, &info.clock));
+    nvmlCheck(nvmlDeviceGetClockInfo(device, NVML_CLOCK_SM, &info.घड़ी));
     nvmlCheck(nvmlDeviceGetMaxClockInfo(device, NVML_CLOCK_SM, &info.max_clock));
     nvmlCheck(nvmlDeviceGetPowerManagementLimit(device, &info.power_limit));
     nvmlCheck(nvmlDeviceGetPowerUsage(device, &info.power));
     nvmlCheck(nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &info.temperature));
     nvmlCheck(nvmlDeviceGetTemperatureThreshold(device, NVML_TEMPERATURE_THRESHOLD_SLOWDOWN, &info.temp_slowdown));
-    unsigned long long throttle;
+    अचिन्हित दीर्घ दीर्घ throttle;
     nvmlCheck(nvmlDeviceGetCurrentClocksThrottleReasons(device, &throttle));
     info.throttle_reason = get_throttle_reason(throttle);
     nvmlCheck(nvmlDeviceGetFanSpeed(device, &info.fan));
@@ -211,34 +211,34 @@ GPUUtilInfo get_gpu_utilization_info() {
     // for "utilization", we look at recorded samples. In principle, we could query the driver for how many samples
     // to request, but then we'd need to dynamically allocate sufficient space. Let's just hard-code a limit of 128,
     // and have no memory management required
-    constexpr const int BUFFER_LIMIT = 128;
+    constexpr अचर पूर्णाङ्क BUFFER_LIMIT = 128;
     nvmlSample_t buffer[BUFFER_LIMIT];
-    nvmlValueType_t v_type;
-    unsigned int sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float gpu_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        gpu_utilization += (float)buffer[i].sampleValue.uiVal;
+    nvml_मान_Type_t v_type;
+    अचिन्हित पूर्णाङ्क sample_गन्ती = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_गन्ती, buffer));
+    भिन्न gpu_utilization = 0.f;
+    लागि(अचिन्हित i = 0; i < sample_गन्ती; ++i) {
+        gpu_utilization += (भिन्न)buffer[i].sample_मान.uiVal;
     }
-    gpu_utilization /= (float)sample_count;
+    gpu_utilization /= (भिन्न)sample_गन्ती;
 
     // sample count may have been modified by the query above; reset back to buffer size
-    sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float mem_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        mem_utilization += (float)buffer[i].sampleValue.uiVal;
+    sample_गन्ती = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_गन्ती, buffer));
+    भिन्न mem_utilization = 0.f;
+    लागि(अचिन्हित i = 0; i < sample_गन्ती; ++i) {
+        mem_utilization += (भिन्न)buffer[i].sample_मान.uiVal;
     }
-    mem_utilization /= (float)sample_count;
+    mem_utilization /= (भिन्न)sample_गन्ती;
 
     info.gpu_utilization = gpu_utilization;
     info.mem_utilization = mem_utilization;
-    return info;
+    फर्काऊ info;
 }
-#else
+#अन्यथा
 GPUUtilInfo get_gpu_utilization_info() {
-    fprintf(stderr, "Error: Compiled without nvml support. Cannot perform additional GPU state tracking.");
-    exit(EXIT_FAILURE);
+    ख_लिखो(मानक_त्रुटि, "Error: Compiled without nvml support. Cannot perform additional GPU state tracking.");
+    निकास(निकास_त्रुटि);
 }
 #endif
 #endif // MFU_H

@@ -5,48 +5,48 @@ compile and run as (from dev/test directory)
 gcc -O3 -I../../llmc -o test_outlier_detector test_outlier_detector.c -lm && ./test_outlier_detector
 */
 
-#include <stdlib.h>
-#include "../../llmc/outlier_detector.h"
+#अन्तर्भाव <stdlib.h>
+#अन्तर्भाव "../../llmc/outlier_detector.h"
 
-int main(void) {
+पूर्णाङ्क main(शून्य) {
     OutlierDetector detector;
     init_detector(&detector);
 
-    srand(1337); // init rng
+    बेक्रम(1337); // init rng
 
     // generate OUTLIER_DETECTOR_WINDOW_SIZE * 2 random numbers between -1 and 1
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE * 2; i++) {
-        double val = (double)rand() / RAND_MAX * 2 - 1;  // Random number between -1 and 1
-        double zscore = update_detector(&detector, val);
+    लागि (पूर्णाङ्क i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE * 2; i++) {
+        द्विगुण val = (द्विगुण)अक्रम() / अक्रम_उच्च * 2 - 1;  // Random number between -1 and 1
+        द्विगुण zscore = update_detector(&detector, val);
 
-        printf("Step %d: Value = %.4f, zscore = %.4f\n", i, val, zscore);
+        म_लिखो("Step %d: Value = %.4f, zscore = %.4f\n", i, val, zscore);
 
         // check that the first OUTLIER_DETECTOR_WINDOW_SIZE values return nan
-        if (i < OUTLIER_DETECTOR_WINDOW_SIZE) {
-            if (!isnan(zscore)) {
-                printf("Error: Expected nan, got %.4f\n", zscore);
-                return EXIT_FAILURE;
+        यदि (i < OUTLIER_DETECTOR_WINDOW_SIZE) {
+            यदि (!isnan(zscore)) {
+                म_लिखो("Error: Expected nan, got %.4f\n", zscore);
+                फर्काऊ निकास_त्रुटि;
             }
-        } else {
+        } अन्यथा {
             // check that the zscore is within reasonable bounds
-            if (zscore < -3.0 || zscore > 3.0) {
-                printf("Error: Z-score %.4f is outside of expected range\n", zscore);
-                return EXIT_FAILURE;
+            यदि (zscore < -3.0 || zscore > 3.0) {
+                म_लिखो("Error: Z-score %.4f is outside of expected range\n", zscore);
+                फर्काऊ निकास_त्रुटि;
             }
         }
     }
 
     // simulate an outlier
-    double outlier = 10.0; // <--- loss spike
-    double zscore = update_detector(&detector, outlier);
-    printf("Outlier Step: Value = %.4f, zscore = %.4f\n", outlier, zscore);
+    द्विगुण outlier = 10.0; // <--- loss spike
+    द्विगुण zscore = update_detector(&detector, outlier);
+    म_लिखो("Outlier Step: Value = %.4f, zscore = %.4f\n", outlier, zscore);
 
     // check that the z-score here is large
-    if (zscore < 5.0) {
-        printf("Error: Z-score %.4f is not large enough for an outlier\n", zscore);
-        return EXIT_FAILURE;
+    यदि (zscore < 5.0) {
+        म_लिखो("Error: Z-score %.4f is not large enough for an outlier\n", zscore);
+        फर्काऊ निकास_त्रुटि;
     }
 
-    printf("OK\n");
-    return EXIT_SUCCESS;
+    म_लिखो("OK\n");
+    फर्काऊ निकास_सफल;
 }
