@@ -21,64 +21,64 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
+దిగుమతి argparse
+దిగుమతి os
 
-import tiktoken
-from transformers import AutoTokenizer
+దిగుమతి tiktoken
+తః transformers దిగుమతి AutoTokenizer
 
-from data_common import download_file, write_datafile
+తః దత్తాంశం_common దిగుమతి download_file, write_datafile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
+దత్తాంశం_CACHE_DIR = os.మార్గం.join(os.మార్గం.dirname(__file__), "tinyshakespeare")
 
-def download():
+నిర్వచనం download():
     """Downloads the TinyShakespeare dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(దత్తాంశం_CACHE_DIR, exist_ok=నిజం)
     # download the TinyShakespeare dataset, unless it's already downloaded
-    data_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    దత్తాంశం_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+    దత్తాంశం_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "tiny_shakespeare.txt")
+    ఒకవేళ కాదు os.మార్గం.exists(దత్తాంశం_filename):
+        ముద్రించు(f"Downloading {data_url} to {data_filename}...")
+        download_file(దత్తాంశం_url, దత్తాంశం_filename)
+    లేకపోతే:
+        ముద్రించు(f"{data_filename} already exists, skipping download...")
 
-def tokenize(model_desc):
-    if model_desc == "gpt-2":
+నిర్వచనం tokenize(model_desc):
+    ఒకవేళ model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
-        encode = lambda s: enc.encode_ordinary(s)
-        eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    elif model_desc == "llama-3":
+        encode = అజ్ఞాత s: enc.encode_ordinary(s)
+        eot = enc.special_టోకెన్లు['<|endoftext|>'] # end of text token
+    లేదావేళ model_desc == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-        encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+        encode = అజ్ఞాత s: tokenizer.encode(s, కూడు_special_టోకెన్లు=అబద్ధం, verbose=అబద్ధం, విభజించు_special_టోకెన్లు=నిజం)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    text = open(data_filename, 'r').read()
+    లేకపోతే:
+        లేపు విలువ_Error(f"unknown model descriptor {model_desc}")
+    దత్తాంశం_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "tiny_shakespeare.txt")
+    పాఠ్యం = open(దత్తాంశం_filename, 'r').పఠ()
     # let's treat every individual chunk of text as a separate "document"
-    sections = text.split("\n\n")
-    tokens = []
-    for i, s in enumerate(sections):
-        tokens.append(eot)
+    sections = పాఠ్యం.విభజించు("\n\n")
+    టోకెన్లు = []
+    కొరకు i, s లో enumerate(sections):
+        టోకెన్లు.append(eot)
         # there was a mild bug where I originally intended to remove \n\n, but instead just added
         # the EOT right after each \n\n, so I'm keeping that behavior for backwards compatibility
         # therefore we have to here add an extra \n\n at the end of each section, except the last
-        spad = s + "\n\n" if i != len(sections) - 1 else s
-        tokens.extend(encode(spad))
+        spad = s + "\n\n" ఒకవేళ i != పొడవు(sections) - 1 లేకపోతే s
+        టోకెన్లు.extend(encode(spad))
     # let's take the first 32,768 tokens as the validation split (~10%)
-    val_tokens = tokens[:32768]
-    train_tokens = tokens[32768:]
+    val_టోకెన్లు = టోకెన్లు[:32768]
+    train_టోకెన్లు = టోకెన్లు[32768:]
     # save to file
-    val_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_val.bin")
-    train_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_train.bin")
-    write_datafile(val_filename, val_tokens, model_desc)
-    write_datafile(train_filename, train_tokens, model_desc)
+    val_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "tiny_shakespeare_val.bin")
+    train_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "tiny_shakespeare_train.bin")
+    write_datafile(val_filename, val_టోకెన్లు, model_desc)
+    write_datafile(train_filename, train_టోకెన్లు, model_desc)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Tiny Shakespeare dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+ఒకవేళ __name__ == "__main__":
+    parser = argparse.వాదం_Parser(description="Tiny Shakespeare dataset preprocessing")
+    parser.కూడు_వాదం("-m", "--model_desc", type=str, అప్రమేయ="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    వాదనలు = parser.parse_వాదనలు()
     download()
-    tokenize(args.model_desc)
+    tokenize(వాదనలు.model_desc)

@@ -1,92 +1,92 @@
-#define TESTING
-#include "train_gpt2.c"
+#నిర్వచించు TESTING
+#అన్తర్భావ "train_gpt2.c"
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, const char* label) {
-    int print_upto = 5;
-    int ok = 1;
-    float maxdiff = 0.0f;
-    float tol = 2e-2f;
-    printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
+పూర్ణాంకం check_tensor(దశాంశం *a, దశాంశం *b, పూర్ణాంకం n, స్థిరరాశి అక్షరం* label) {
+    పూర్ణాంకం print_upto = 5;
+    పూర్ణాంకం ok = 1;
+    దశాంశం maxdiff = 0.0f;
+    దశాంశం tol = 2e-2f;
+    రాయి("%s\n", label);
+    కొరకు (పూర్ణాంకం i = 0; i < n; i++) {
         // look at the diffence at position i of these two tensors
-        float diff = fabsf(a[i] - b[i]);
+        దశాంశం diff = fabsf(a[i] - b[i]);
 
         // keep track of the overall error
         ok = ok && (diff <= tol);
-        if (diff > maxdiff) { maxdiff = diff; }
+        ఒకవేళ (diff > maxdiff) { maxdiff = diff; }
 
         // for the first few elements of each tensor, pretty print
         // the actual numbers, so we can do a visual, qualitative proof/assessment
-        if (i < print_upto) {
-            if (diff <= tol) {
-                if (i < print_upto) { printf("OK "); }
-            } else {
-                if (i < print_upto) { printf("NOT OK "); }
+        ఒకవేళ (i < print_upto) {
+            ఒకవేళ (diff <= tol) {
+                ఒకవేళ (i < print_upto) { రాయి("OK "); }
+            } లేకపోతే {
+                ఒకవేళ (i < print_upto) { రాయి("NOT OK "); }
             }
-            printf("%f %f\n", a[i], b[i]);
+            రాయి("%f %f\n", a[i], b[i]);
         }
     }
     // print the final result for this tensor
-    if (ok) {
-        printf("TENSOR OK, maxdiff = %e\n", maxdiff);
-    } else {
-        printf("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
+    ఒకవేళ (ok) {
+        రాయి("TENSOR OK, maxdiff = %e\n", maxdiff);
+    } లేకపోతే {
+        రాయి("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
     }
-    return ok;
+    తిరిగి ok;
 }
 
-int main(int argc, char *argv[]) {
+పూర్ణాంకం ప్రధాన(పూర్ణాంకం argc, అక్షరం *argv[]) {
 
     // build the GPT-2 model from a checkpoint
     GPT2 model;
     gpt2_build_from_checkpoint(&model, "gpt2_124M.bin");
 
-    int C = model.config.channels;
-    int V = model.config.vocab_size;
-    int Vp = model.config.padded_vocab_size;
-    int maxT = model.config.max_seq_len;
-    int L = model.config.num_layers;
+    పూర్ణాంకం C = model.config.channels;
+    పూర్ణాంకం V = model.config.vocab_కొలత;
+    పూర్ణాంకం Vp = model.config.padded_vocab_కొలత;
+    పూర్ణాంకం maxT = model.config.max_seq_len;
+    పూర్ణాంకం L = model.config.అంకె_layers;
 
     // load additional information that we will use for debugging and error checking
     FILE *state_file = fopen("gpt2_124M_debug_state.bin", "rb");
-    if (state_file == NULL) { printf("Error opening state file\n"); return 1; }
-    int state_header[256];
-    freadCheck(state_header, sizeof(int), 256, state_file);
-    if (state_header[0] != 20240327) { printf("Bad magic state file\n"); return 1; }
-    if (state_header[1] != 2) {
-        printf("Bad version in state file\n");
-        printf("---> HINT: try to re-run `python train_gpt2.py`\n");
-        return 1;
+    ఒకవేళ (state_file == ఖాళీ) { రాయి("Error opening state file\n"); తిరిగి 1; }
+    పూర్ణాంకం state_శీర్షిక[256];
+    freadCheck(state_శీర్షిక, పరిమాణం(పూర్ణాంకం), 256, state_file);
+    ఒకవేళ (state_శీర్షిక[0] != 20240327) { రాయి("Bad magic state file\n"); తిరిగి 1; }
+    ఒకవేళ (state_శీర్షిక[1] != 2) {
+        రాయి("Bad version in state file\n");
+        రాయి("---> HINT: try to re-run `python train_gpt2.py`\n");
+        తిరిగి 1;
     }
-    int B = state_header[2]; // batch size, e.g. 4
-    int T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
-    printf("[State]\n");
-    printf("batch_size: %d\n", B);
-    printf("seq_len: %d\n", T);
+    పూర్ణాంకం B = state_శీర్షిక[2]; // batch size, e.g. 4
+    పూర్ణాంకం T = state_శీర్షిక[3]; // time / sequence length (e.g. 64, up to maxT)
+    రాయి("[State]\n");
+    రాయి("batch_size: %d\n", B);
+    రాయి("seq_len: %d\n", T);
 
     ParameterTensors expected_grads;
-    float* expected_grads_memory = malloc_and_point_parameters(&expected_grads, model.param_sizes);
+    దశాంశం* expected_grads_జ్ఞాపకం = malloc_and_బిందువు_parameters(&expected_grads, model.param_sizes);
 
     // inputs and expected outputs, only used for error checking
-    int* x = (int*) malloc(B * T * sizeof(int));
-    int* y = (int*) malloc(B * T * sizeof(int));
-    float* expected_logits = (float*) malloc(B * T * V * sizeof(float));
-    float* expected_loss = (float*) malloc(1 * sizeof(float));
+    పూర్ణాంకం* x = (పూర్ణాంకం*) జ్ఞాపకం_ఇవ్వు(B * T * పరిమాణం(పూర్ణాంకం));
+    పూర్ణాంకం* y = (పూర్ణాంకం*) జ్ఞాపకం_ఇవ్వు(B * T * పరిమాణం(పూర్ణాంకం));
+    దశాంశం* expected_logits = (దశాంశం*) జ్ఞాపకం_ఇవ్వు(B * T * V * పరిమాణం(దశాంశం));
+    దశాంశం* expected_loss = (దశాంశం*) జ్ఞాపకం_ఇవ్వు(1 * పరిమాణం(దశాంశం));
 
     // read reference information from Python
-    freadCheck(x, sizeof(int), B*T, state_file);
-    freadCheck(y, sizeof(int), B*T, state_file);
-    freadCheck(expected_logits, sizeof(float), B*T*V, state_file);
-    freadCheck(expected_loss, sizeof(float), 1, state_file);
-    freadCheck(expected_grads_memory, sizeof(float), model.num_parameters, state_file);
+    freadCheck(x, పరిమాణం(పూర్ణాంకం), B*T, state_file);
+    freadCheck(y, పరిమాణం(పూర్ణాంకం), B*T, state_file);
+    freadCheck(expected_logits, పరిమాణం(దశాంశం), B*T*V, state_file);
+    freadCheck(expected_loss, పరిమాణం(దశాంశం), 1, state_file);
+    freadCheck(expected_grads_జ్ఞాపకం, పరిమాణం(దశాంశం), model.అంకె_parameters, state_file);
     fcloseCheck(state_file);
 
     // overall OK signal for the test
-    int allok = 1;
+    పూర్ణాంకం allok = 1;
 
     // let's do 10 training iterations, following the pytorch code
-    float expected_losses[10] = {
+    దశాంశం expected_losses[10] = {
         5.270007133483887f,
         4.059706687927246f,
         3.3751230239868164f,
@@ -98,55 +98,55 @@ int main(int argc, char *argv[]) {
         0.6240804195404053f,
         0.37651097774505615f
     };
-    for (int step = 0; step < 10; step++) {
+    కొరకు (పూర్ణాంకం అడుగు = 0; అడుగు < 10; అడుగు++) {
 
-        struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
+        నిర్మాణం timespec ప్రారంభం, చివర;
+        clock_gettime(CLOCK_MONOTONIC, &ప్రారంభం);
 
         gpt2_forward(&model, x, y, B, T);
         gpt2_zero_grad(&model);
         gpt2_backward(&model);
 
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        clock_gettime(CLOCK_MONOTONIC, &చివర);
+        ద్విగుణ సమయం_elapsed_s = (చివర.tv_sec - ప్రారంభం.tv_sec) + (చివర.tv_nsec - ప్రారంభం.tv_nsec) / 1e9;
 
-        if (step == 0) {
+        ఒకవేళ (అడుగు == 0) {
             // error checking at step 0 for reference activations/gradients
             // at this point, target should be equal to expected_logits, let's compare
-            int logits_ok = 1;
-            float* calculated_logits = model.acts.logits;
-            float max_diff = 0.0f;
-            for (int bt = 0; bt < B*T; bt++) {
-                for (int v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
-                    int i = bt * Vp + v; // linearized index, using Vp
-                    if (i < 10) {
-                        printf("%f, %f\n", expected_logits[i], calculated_logits[i]);
+            పూర్ణాంకం logits_ok = 1;
+            దశాంశం* calculated_logits = model.acts.logits;
+            దశాంశం max_diff = 0.0f;
+            కొరకు (పూర్ణాంకం bt = 0; bt < B*T; bt++) {
+                కొరకు (పూర్ణాంకం v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
+                    పూర్ణాంకం i = bt * Vp + v; // linearized index, using Vp
+                    ఒకవేళ (i < 10) {
+                        రాయి("%f, %f\n", expected_logits[i], calculated_logits[i]);
                     }
-                    float diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
+                    దశాంశం diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
                     max_diff = fmaxf(max_diff, diff);
-                    if (diff >= 1e-2f) {
-                        printf("MISMATCH AT INDEX %d,%d: ", bt, v);
-                        printf("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
+                    ఒకవేళ (diff >= 1e-2f) {
+                        రాయి("MISMATCH AT INDEX %d,%d: ", bt, v);
+                        రాయి("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
                         logits_ok = 0;
                         bt = B*T; // to break out of both loops
-                        break;
+                        ఆపు;
                     }
                 }
             }
-            if(!logits_ok) { printf("NOT "); }
-            printf("OK (LOGITS), max_diff = %e\n", max_diff);
+            ఒకవేళ(!logits_ok) { రాయి("NOT "); }
+            రాయి("OK (LOGITS), max_diff = %e\n", max_diff);
             allok = allok && logits_ok;
 
             // compare the achieved loss
-            if (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
-                printf("LOSS MISMATCH: %f %f\n", model.mean_loss, *expected_loss);
+            ఒకవేళ (fabsf(model.సగటు_loss - *expected_loss) >= 1e-2) {
+                రాయి("LOSS MISMATCH: %f %f\n", model.సగటు_loss, *expected_loss);
                 allok = 0;
-            } else {
-                printf("LOSS OK: %f %f\n", model.mean_loss, *expected_loss);
+            } లేకపోతే {
+                రాయి("LOSS OK: %f %f\n", model.సగటు_loss, *expected_loss);
             }
 
             // finally check all the gradients
-            int gradoks[16];
+            పూర్ణాంకం gradoks[16];
             ParameterTensors grads = model.grads;
             gradoks[0] = check_tensor(grads.wte, expected_grads.wte, V*C, "dwte");
             gradoks[1] = check_tensor(grads.wpe, expected_grads.wpe, maxT*C, "dwpe");
@@ -164,32 +164,32 @@ int main(int argc, char *argv[]) {
             gradoks[13] = check_tensor(grads.fcprojb, expected_grads.fcprojb, L*C, "dfcprojb");
             gradoks[14] = check_tensor(grads.lnfw, expected_grads.lnfw, C, "dlnfw");
             gradoks[15] = check_tensor(grads.lnfb, expected_grads.lnfb, C, "dlnfb");
-            for (int i = 0; i < 16; i++) {
+            కొరకు (పూర్ణాంకం i = 0; i < 16; i++) {
                 allok = allok && gradoks[i];
             }
         }
 
-        gpt2_update(&model, 1e-4f, 0.9f, 0.999f, 1e-8f, 0.01f, step+1);
+        gpt2_update(&model, 1e-4f, 0.9f, 0.999f, 1e-8f, 0.01f, అడుగు+1);
 
         // compare the losses
-        float expected_loss = expected_losses[step];
-        float actual_loss = model.mean_loss;
-        int step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
-        allok = allok && step_loss_ok;
+        దశాంశం expected_loss = expected_losses[అడుగు];
+        దశాంశం actual_loss = model.సగటు_loss;
+        పూర్ణాంకం అడుగు_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
+        allok = allok && అడుగు_loss_ok;
 
         // print the timing information at the end
-        printf("step %d: loss %f (took %f ms) OK = %d\n", step, model.mean_loss, time_elapsed_s * 1000, step_loss_ok);
+        రాయి("step %d: loss %f (took %f ms) OK = %d\n", అడుగు, model.సగటు_loss, సమయం_elapsed_s * 1000, అడుగు_loss_ok);
     }
 
     // final judgement
-    printf("overall okay: %d\n", allok);
+    రాయి("overall okay: %d\n", allok);
 
     // free everything
-    free(x);
-    free(y);
-    free(expected_logits);
-    free(expected_loss);
-    free(expected_grads_memory);
+    విడుదల(x);
+    విడుదల(y);
+    విడుదల(expected_logits);
+    విడుదల(expected_loss);
+    విడుదల(expected_grads_జ్ఞాపకం);
     gpt2_free(&model);
-    return 0;
+    తిరిగి 0;
 }

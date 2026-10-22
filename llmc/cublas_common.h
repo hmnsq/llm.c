@@ -1,32 +1,32 @@
 /*
 cuBLAS related utils
 */
-#ifndef CUBLAS_COMMON_H
-#define CUBLAS_COMMON_H
+#నిర్వచితం_కాకపోతే CUBLAS_COMMON_H
+#నిర్వచించు CUBLAS_COMMON_H
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <cublas_v2.h>
-#include <cublasLt.h>
+#అన్తర్భావ <stddef.h>
+#అన్తర్భావ <stdlib.h>
+#అన్తర్భావ <stdio.h>
+#అన్తర్భావ <cublas_v2.h>
+#అన్తర్భావ <cublasLt.h>
 
 // ----------------------------------------------------------------------------
 // cuBLAS Precision settings
 
-#if defined(ENABLE_FP32)
-#define CUBLAS_LOWP CUDA_R_32F
-#elif defined(ENABLE_FP16)
-#define CUBLAS_LOWP CUDA_R_16F
-#else // default to bfloat16
-#define CUBLAS_LOWP CUDA_R_16BF
-#endif
+#ఒకవేళ defined(ENABLE_FP32)
+#నిర్వచించు CUBLAS_LOWP CUDA_R_32F
+#లేదావేళ defined(ENABLE_FP16)
+#నిర్వచించు CUBLAS_LOWP CUDA_R_16F
+#లేకపోతే // default to bfloat16
+#నిర్వచించు CUBLAS_LOWP CUDA_R_16BF
+#అయితే_ముగింపు
 
 // ----------------------------------------------------------------------------
 // cuBLAS globals for workspace, handle, settings
 
 // Hardcoding workspace to 32MiB but only Hopper needs 32 (for others 4 is OK)
-const size_t cublaslt_workspace_size = 32 * 1024 * 1024;
-void* cublaslt_workspace = NULL;
+స్థిరరాశి size_t cublaslt_workspace_కొలత = 32 * 1024 * 1024;
+శూన్య* cublaslt_workspace = ఖాళీ;
 cublasComputeType_t cublas_compute = CUBLAS_COMPUTE_32F;
 cublasLtHandle_t cublaslt_handle;
 
@@ -34,13 +34,13 @@ cublasLtHandle_t cublaslt_handle;
 // Error checking
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+శూన్య cublasCheck(cublas_స్థితి_t స్థితి_2, స్థిరరాశి అక్షరం *file, పూర్ణాంకం పంక్తి)
 {
-    if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
-        exit(EXIT_FAILURE);
+    ఒకవేళ (స్థితి_2 != CUBLAS_స్థితి_SUCCESS) {
+        రాయి("[cuBLAS ERROR]: %d %s %d\n", స్థితి_2, file, పంక్తి);
+        నిష్క్రమించు(EXIT_FAILURE);
     }
 }
-#define cublasCheck(status) { cublasCheck((status), __FILE__, __LINE__); }
+#నిర్వచించు cublasCheck(స్థితి_2) { cublasCheck((స్థితి_2), __FILE__, __LINE__); }
 
-#endif // CUBLAS_COMMON_H
+#అయితే_ముగింపు // CUBLAS_COMMON_H

@@ -1,41 +1,41 @@
 /*
 Implements a simple Sampler, used during model inference to sample tokens.
 */
-#ifndef SAMPLER_H
-#define SAMPLER_H
+#నిర్వచితం_కాకపోతే SAMPLER_H
+#నిర్వచించు SAMPLER_H
 
-#include <math.h>
+#అన్తర్భావ <math.h>
 
 // Simple xorshift RNG
-unsigned int random_u32(unsigned long long *state) {
+గుర్తులేని పూర్ణాంకం random_u32(గుర్తులేని దీర్ఘ దీర్ఘ *state) {
     // xorshift rng: https://en.wikipedia.org/wiki/Xorshift#xorshift.2A
     *state ^= *state >> 12;
     *state ^= *state << 25;
     *state ^= *state >> 27;
-    return (*state * 0x2545F4914F6CDD1Dull) >> 32;
+    తిరిగి (*state * 0x2545F4914F6CDD1Dull) >> 32;
 }
 
-float random_f32(unsigned long long *state) { // random float32 in [0,1)
-    return (random_u32(state) >> 8) / 16777216.0f;
+దశాంశం random_f32(గుర్తులేని దీర్ఘ దీర్ఘ *state) { // random float32 in [0,1)
+    తిరిగి (random_u32(state) >> 8) / 16777216.0f;
 }
 
-int sample_softmax(const float* logits, int n, float coin) {
+పూర్ణాంకం sample_softmax(స్థిరరాశి దశాంశం* logits, పూర్ణాంకం n, దశాంశం coin) {
     // sample index from logits (converted to probabilities using softmax)
     // coin is a random number in [0, 1), usually from random_f32()
-    double norm = 0;
-    for (int i = 0; i < n; i++) {
+    ద్విగుణ norm = 0;
+    కొరకు (పూర్ణాంకం i = 0; i < n; i++) {
         norm += expf(logits[i]);
     }
     // instead of dividing all exp(logits), we can just multiply coin.
     coin *= norm;
-    float cdf = 0.0f;
-    for (int i = 0; i < n; i++) {
+    దశాంశం cdf = 0.0f;
+    కొరకు (పూర్ణాంకం i = 0; i < n; i++) {
         cdf += expf(logits[i]);
-        if (coin < cdf) {
-            return i;
+        ఒకవేళ (coin < cdf) {
+            తిరిగి i;
         }
     }
-    return n - 1; // in case of rounding errors
+    తిరిగి n - 1; // in case of rounding errors
 }
 
-#endif
+#అయితే_ముగింపు

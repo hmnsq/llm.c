@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#అన్తర్భావ <stdio.h>
+#అన్తర్భావ <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
-#define OUTLIER_DETECTOR_WINDOW_SIZE 128
+#నిర్వచించు OUTLIER_DETECTOR_కిటికీ_కొలత 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+రకనిర్వచనం నిర్మాణం {
+    ద్విగుణ బఫరు[OUTLIER_DETECTOR_కిటికీ_కొలత];
+    పూర్ణాంకం లెక్క;
+    పూర్ణాంకం సూచీ;
+    ద్విగుణ కూడిక;
+    ద్విగుణ కూడిక_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
-        detector->buffer[i] = 0.0;
+శూన్య init_detector(OutlierDetector *detector) {
+    కొరకు (పూర్ణాంకం i = 0; i < OUTLIER_DETECTOR_కిటికీ_కొలత; i++) {
+        detector->బఫరు[i] = 0.0;
     }
-    detector->count = 0;
-    detector->index = 0;
-    detector->sum = 0.0;
-    detector->sum_sq = 0.0;
+    detector->లెక్క = 0;
+    detector->సూచీ = 0;
+    detector->కూడిక = 0.0;
+    detector->కూడిక_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+ద్విగుణ update_detector(OutlierDetector *detector, ద్విగుణ new_విలువ) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    ఒకవేళ (detector->లెక్క < OUTLIER_DETECTOR_కిటికీ_కొలత) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->బఫరు[detector->లెక్క] = new_విలువ;
+        detector->కూడిక += new_విలువ;
+        detector->కూడిక_sq += new_విలువ * new_విలువ;
+        detector->లెక్క++;
+        తిరిగి nan(""); // not enough data yet
 
-    } else {
+    } లేకపోతే {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        ద్విగుణ old_విలువ = detector->బఫరు[detector->సూచీ];
+        detector->కూడిక -= old_విలువ;
+        detector->కూడిక_sq -= old_విలువ * old_విలువ;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->బఫరు[detector->సూచీ] = new_విలువ;
+        detector->కూడిక += new_విలువ;
+        detector->కూడిక_sq += new_విలువ * new_విలువ;
         // move the index to the next position
-        detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
+        detector->సూచీ = (detector->సూచీ + 1) % OUTLIER_DETECTOR_కిటికీ_కొలత;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        ద్విగుణ సగటు = detector->కూడిక / OUTLIER_DETECTOR_కిటికీ_కొలత;
+        ద్విగుణ variance = (detector->కూడిక_sq / OUTLIER_DETECTOR_కిటికీ_కొలత) - (సగటు * సగటు);
+        ద్విగుణ std_dev = వర్గమూలం(variance);
+        ఒకవేళ (std_dev == 0.0) {
+            తిరిగి 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        ద్విగుణ z = (new_విలువ - సగటు) / std_dev;
 
-        return z;
+        తిరిగి z;
     }
 }

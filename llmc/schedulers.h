@@ -1,100 +1,100 @@
 /*
 Implements various learning rate schedulers.
 */
-#ifndef SCHEDULERS_H
-#define SCHEDULERS_H
+#నిర్వచితం_కాకపోతే SCHEDULERS_H
+#నిర్వచించు SCHEDULERS_H
 
-#include <assert.h>
-#include <math.h>
-#include <string.h>
+#అన్తర్భావ <assert.h>
+#అన్తర్భావ <math.h>
+#అన్తర్భావ <string.h>
 
-typedef struct {
-    const char* type;
-    float learning_rate;
-    int warmup_iterations;
-    int train_num_batches;
-    float final_learning_rate_frac;
-} LearningRateScheduler;
+రకనిర్వచనం నిర్మాణం {
+    స్థిరరాశి అక్షరం* type;
+    దశాంశం learning_రేటు;
+    పూర్ణాంకం warmup_iterations;
+    పూర్ణాంకం train_అంకె_batches;
+    దశాంశం final_learning_రేటు_frac;
+} Learning_రేటు_Scheduler;
 
-void lr_scheduler_init(LearningRateScheduler *scheduler, const char* scheduler_type, float learning_rate, int warmup_iterations, int train_num_batches, float final_learning_rate_frac) {
+శూన్య lr_scheduler_init(Learning_రేటు_Scheduler *scheduler, స్థిరరాశి అక్షరం* scheduler_type, దశాంశం learning_రేటు, పూర్ణాంకం warmup_iterations, పూర్ణాంకం train_అంకె_batches, దశాంశం final_learning_రేటు_frac) {
     scheduler->type = scheduler_type;
-    scheduler->learning_rate = learning_rate;
+    scheduler->learning_రేటు = learning_రేటు;
     scheduler->warmup_iterations = warmup_iterations;
-    scheduler->train_num_batches = train_num_batches;
-    scheduler->final_learning_rate_frac = final_learning_rate_frac;
+    scheduler->train_అంకె_batches = train_అంకె_batches;
+    scheduler->final_learning_రేటు_frac = final_learning_రేటు_frac;
 }
 
 // cosine: warmup linearly to max LR, then cosine decay to LR * final_learning_rate_frac
-float get_learning_rate_cosine(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float coeff = 0.5f * (1.0f + cosf(M_PI * decay_ratio)); // coeff starts at 1 and goes to 0
-        assert(0.0f <= coeff && coeff <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
-        lr = min_lr + coeff * (scheduler->learning_rate - min_lr);
+దశాంశం get_learning_రేటు_cosine(Learning_రేటు_Scheduler *scheduler, పూర్ణాంకం అడుగు) {
+    దశాంశం lr = scheduler->learning_రేటు;
+    ఒకవేళ (అడుగు < scheduler->warmup_iterations) {
+        lr = scheduler->learning_రేటు * ((దశాంశం)(అడుగు + 1)) / scheduler->warmup_iterations;
+    } లేకపోతే {
+        దశాంశం decay_నిష్పత్తి = ((దశాంశం)(అడుగు - scheduler->warmup_iterations)) / (scheduler->train_అంకె_batches - scheduler->warmup_iterations);
+        ప్రతిజ్ఞా(0.0f <= decay_నిష్పత్తి && decay_నిష్పత్తి <= 1.0f);
+        దశాంశం coeff = 0.5f * (1.0f + cosf(M_PI * decay_నిష్పత్తి)); // coeff starts at 1 and goes to 0
+        ప్రతిజ్ఞా(0.0f <= coeff && coeff <= 1.0f);
+        దశాంశం min_lr = scheduler->learning_రేటు * scheduler->final_learning_రేటు_frac;
+        lr = min_lr + coeff * (scheduler->learning_రేటు - min_lr);
     }
-    return lr;
+    తిరిగి lr;
 }
 
 // linear: warmup linearly to max LR, then decay linearly to LR * final_learning_rate_frac
-float get_learning_rate_linear(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
-        lr = scheduler->learning_rate - decay_ratio * (scheduler->learning_rate - min_lr);
+దశాంశం get_learning_రేటు_రేఖీయ(Learning_రేటు_Scheduler *scheduler, పూర్ణాంకం అడుగు) {
+    దశాంశం lr = scheduler->learning_రేటు;
+    ఒకవేళ (అడుగు < scheduler->warmup_iterations) {
+        lr = scheduler->learning_రేటు * ((దశాంశం)(అడుగు + 1)) / scheduler->warmup_iterations;
+    } లేకపోతే {
+        దశాంశం decay_నిష్పత్తి = ((దశాంశం)(అడుగు - scheduler->warmup_iterations)) / (scheduler->train_అంకె_batches - scheduler->warmup_iterations);
+        ప్రతిజ్ఞా(0.0f <= decay_నిష్పత్తి && decay_నిష్పత్తి <= 1.0f);
+        దశాంశం min_lr = scheduler->learning_రేటు * scheduler->final_learning_రేటు_frac;
+        lr = scheduler->learning_రేటు - decay_నిష్పత్తి * (scheduler->learning_రేటు - min_lr);
     }
-    return lr;
+    తిరిగి lr;
 }
 
 // constant
-float get_learning_rate_constant(LearningRateScheduler *scheduler, int step) {
-    return scheduler->learning_rate;
+దశాంశం get_learning_రేటు_constant(Learning_రేటు_Scheduler *scheduler, పూర్ణాంకం అడుగు) {
+    తిరిగి scheduler->learning_రేటు;
 }
 
 // wsd schedule: warmup linearly, keep constant, last 20% decay using 1 - sqrt decay to final_frac (should be 0.0)
 // https://arxiv.org/abs/2405.18392
-float get_learning_rate_wsd(LearningRateScheduler *scheduler, int step) {
-    int decay_point = (int)(0.8f * scheduler->train_num_batches);
-    float max_lr = scheduler->learning_rate;
-    float lr = max_lr;
-    if (step < scheduler->warmup_iterations) {
-        float decay_ratio = ((float)(step + 1)) / scheduler->warmup_iterations;
-        lr = max_lr * decay_ratio;
-    } else if (step < decay_point) {
+దశాంశం get_learning_రేటు_wsd(Learning_రేటు_Scheduler *scheduler, పూర్ణాంకం అడుగు) {
+    పూర్ణాంకం decay_బిందువు = (పూర్ణాంకం)(0.8f * scheduler->train_అంకె_batches);
+    దశాంశం max_lr = scheduler->learning_రేటు;
+    దశాంశం lr = max_lr;
+    ఒకవేళ (అడుగు < scheduler->warmup_iterations) {
+        దశాంశం decay_నిష్పత్తి = ((దశాంశం)(అడుగు + 1)) / scheduler->warmup_iterations;
+        lr = max_lr * decay_నిష్పత్తి;
+    } లేకపోతే ఒకవేళ (అడుగు < decay_బిందువు) {
         // noop, keep lr constant
-    } else {
-        float decay_ratio = ((float)(step - decay_point)) / (scheduler->train_num_batches - decay_point);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = max_lr * scheduler->final_learning_rate_frac;
-        return min_lr + (1.0f - sqrtf(decay_ratio)) * (max_lr - min_lr);
+    } లేకపోతే {
+        దశాంశం decay_నిష్పత్తి = ((దశాంశం)(అడుగు - decay_బిందువు)) / (scheduler->train_అంకె_batches - decay_బిందువు);
+        ప్రతిజ్ఞా(0.0f <= decay_నిష్పత్తి && decay_నిష్పత్తి <= 1.0f);
+        దశాంశం min_lr = max_lr * scheduler->final_learning_రేటు_frac;
+        తిరిగి min_lr + (1.0f - sqrtf(decay_నిష్పత్తి)) * (max_lr - min_lr);
     }
-    return lr;
+    తిరిగి lr;
 }
 
 // return the learning rate at a given step
-float get_learning_rate(LearningRateScheduler *scheduler, int step) {
-    float step_learning_rate;
-    if (strcmp(scheduler->type, "cosine") == 0) {
-        step_learning_rate = get_learning_rate_cosine(scheduler, step);
-    } else if (strcmp(scheduler->type, "linear") == 0) {
-        step_learning_rate = get_learning_rate_linear(scheduler, step);
-    } else if (strcmp(scheduler->type, "constant") == 0) {
-        step_learning_rate = get_learning_rate_constant(scheduler, step);
-    } else if (strcmp(scheduler->type, "wsd") == 0) {
-        step_learning_rate = get_learning_rate_wsd(scheduler, step);
-    } else {
+దశాంశం get_learning_రేటు(Learning_రేటు_Scheduler *scheduler, పూర్ణాంకం అడుగు) {
+    దశాంశం అడుగు_learning_రేటు;
+    ఒకవేళ (strcmp(scheduler->type, "cosine") == 0) {
+        అడుగు_learning_రేటు = get_learning_రేటు_cosine(scheduler, అడుగు);
+    } లేకపోతే ఒకవేళ (strcmp(scheduler->type, "linear") == 0) {
+        అడుగు_learning_రేటు = get_learning_రేటు_రేఖీయ(scheduler, అడుగు);
+    } లేకపోతే ఒకవేళ (strcmp(scheduler->type, "constant") == 0) {
+        అడుగు_learning_రేటు = get_learning_రేటు_constant(scheduler, అడుగు);
+    } లేకపోతే ఒకవేళ (strcmp(scheduler->type, "wsd") == 0) {
+        అడుగు_learning_రేటు = get_learning_రేటు_wsd(scheduler, అడుగు);
+    } లేకపోతే {
         fprintf(stderr, "Unknown learning rate scheduler type: %s\n", scheduler->type);
-        exit(EXIT_FAILURE);
+        నిష్క్రమించు(EXIT_FAILURE);
     }
-    return step_learning_rate;
+    తిరిగి అడుగు_learning_రేటు;
 }
 
-#endif // SCHEDULERS_H
+#అయితే_ముగింపు // SCHEDULERS_H

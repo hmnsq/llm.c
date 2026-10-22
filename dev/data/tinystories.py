@@ -25,98 +25,98 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
-import glob
-import json
-import random
-from concurrent.futures import ProcessPoolExecutor, as_completed
+దిగుమతి argparse
+దిగుమతి os
+దిగుమతి glob
+దిగుమతి json
+దిగుమతి random
+తః concurrent.futures దిగుమతి ProcessPoolExecutor, as_completed
 
-import tiktoken
-from transformers import AutoTokenizer
+దిగుమతి tiktoken
+తః transformers దిగుమతి AutoTokenizer
 
-from data_common import download_file, write_datafile
+తః దత్తాంశం_common దిగుమతి download_file, write_datafile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinystories")
+దత్తాంశం_CACHE_DIR = os.మార్గం.join(os.మార్గం.dirname(__file__), "tinystories")
 
-def download():
+నిర్వచనం download():
     """Downloads the TinyStories dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(దత్తాంశం_CACHE_DIR, exist_ok=నిజం)
 
     # download the TinyStories dataset, unless it's already downloaded
-    data_url = "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories_all_data.tar.gz"
-    data_filename = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data.tar.gz")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    దత్తాంశం_url = "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories_all_data.tar.gz"
+    దత్తాంశం_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "TinyStories_all_data.tar.gz")
+    ఒకవేళ కాదు os.మార్గం.exists(దత్తాంశం_filename):
+        ముద్రించు(f"Downloading {data_url} to {data_filename}...")
+        download_file(దత్తాంశం_url, దత్తాంశం_filename)
+    లేకపోతే:
+        ముద్రించు(f"{data_filename} already exists, skipping download...")
 
     # unpack the tar.gz file into all the data shards (json files)
-    data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir, exist_ok=True)
-        print(f"Unpacking {data_filename}...")
+    దత్తాంశం_dir = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "TinyStories_all_data")
+    ఒకవేళ కాదు os.మార్గం.exists(దత్తాంశం_dir):
+        os.makedirs(దత్తాంశం_dir, exist_ok=నిజం)
+        ముద్రించు(f"Unpacking {data_filename}...")
         os.system(f"tar -xzf {data_filename} -C {data_dir}")
-    else:
-        print(f"{data_dir} already exists, skipping unpacking...")
+    లేకపోతే:
+        ముద్రించు(f"{data_dir} already exists, skipping unpacking...")
 
     # print a single example just for debugging and such
-    shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
-    print("Download done.")
-    print(f"Number of shards: {len(shard_filenames)}")
+    shard_filenames = sorted(glob.glob(os.మార్గం.join(దత్తాంశం_dir, "*.json")))
+    ముద్రించు("Download done.")
+    ముద్రించు(f"Number of shards: {len(shard_filenames)}")
     # with open(shard_filenames[0], "r") as f:
     #     data = json.load(f)
     # print(f"Example story:\n{data[0]}")
 
-def process_shard(shard_index, shard_filename, model_desc):
-    if model_desc == "gpt-2":
+నిర్వచనం process_shard(shard_సూచీ, shard_filename, model_desc):
+    ఒకవేళ model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
-        encode = lambda s: enc.encode_ordinary(s)
-        eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    elif model_desc == "llama-3":
+        encode = అజ్ఞాత s: enc.encode_ordinary(s)
+        eot = enc.special_టోకెన్లు['<|endoftext|>'] # end of text token
+    లేదావేళ model_desc == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-        encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+        encode = అజ్ఞాత s: tokenizer.encode(s, కూడు_special_టోకెన్లు=అబద్ధం, verbose=అబద్ధం, విభజించు_special_టోకెన్లు=నిజం)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
+    లేకపోతే:
+        లేపు విలువ_Error(f"unknown model descriptor {model_desc}")
 
-    with open(shard_filename, "r") as f:
-        data = json.load(f)
-    rng = random.Random(1337 + shard_index)
-    rng.shuffle(data)
-    all_tokens = []
-    for example in data:
-        text = example["story"]
-        text = text.strip()  # get rid of leading/trailing whitespace
-        tokens = encode(text)
-        all_tokens.append(eot)
-        all_tokens.extend(tokens)
-    return all_tokens
+    తోడుగా open(shard_filename, "r") ఇవ f:
+        దత్తాంశం = json.ఎక్కించు(f)
+    rng = random.Random(1337 + shard_సూచీ)
+    rng.shuffle(దత్తాంశం)
+    all_టోకెన్లు = []
+    కొరకు example లో దత్తాంశం:
+        పాఠ్యం = example["story"]
+        పాఠ్యం = పాఠ్యం.strip()  # get rid of leading/trailing whitespace
+        టోకెన్లు = encode(పాఠ్యం)
+        all_టోకెన్లు.append(eot)
+        all_టోకెన్లు.extend(టోకెన్లు)
+    తిరిగి all_టోకెన్లు
 
-def tokenize(model_desc):
+నిర్వచనం tokenize(model_desc):
     # shard 0 will be the val split, rest is train
-    data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
-    shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
+    దత్తాంశం_dir = os.మార్గం.join(దత్తాంశం_CACHE_DIR, "TinyStories_all_data")
+    shard_filenames = sorted(glob.glob(os.మార్గం.join(దత్తాంశం_dir, "*.json")))
     val_shards = [shard_filenames[0]]
     train_shards = shard_filenames[1:]
-    for split_name, split_shards in [("val", val_shards), ("train", train_shards)]:
+    కొరకు విభజించు_name, విభజించు_shards లో [("val", val_shards), ("train", train_shards)]:
 
-        print(f"Tokenizing {split_name} split...")
-        all_tokens = []
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(process_shard, shard_index, shard_filename, model_desc)
-                       for shard_index, shard_filename in enumerate(split_shards)]
-            for future in as_completed(futures):
-                all_tokens.extend(future.result())
+        ముద్రించు(f"Tokenizing {split_name} split...")
+        all_టోకెన్లు = []
+        తోడుగా ProcessPoolExecutor() ఇవ executor:
+            futures = [executor.submit(process_shard, shard_సూచీ, shard_filename, model_desc)
+                       కొరకు shard_సూచీ, shard_filename లో enumerate(విభజించు_shards)]
+            కొరకు future లో as_completed(futures):
+                all_టోకెన్లు.extend(future.ఫలితం())
 
-        split_filename = os.path.join(DATA_CACHE_DIR, f"TinyStories_{split_name}.bin")
-        write_datafile(split_filename, all_tokens, model_desc)
+        విభజించు_filename = os.మార్గం.join(దత్తాంశం_CACHE_DIR, f"TinyStories_{split_name}.bin")
+        write_datafile(విభజించు_filename, all_టోకెన్లు, model_desc)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Tiny Stories dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+ఒకవేళ __name__ == "__main__":
+    parser = argparse.వాదం_Parser(description="Tiny Stories dataset preprocessing")
+    parser.కూడు_వాదం("-m", "--model_desc", type=str, అప్రమేయ="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    వాదనలు = parser.parse_వాదనలు()
     download()
-    tokenize(args.model_desc)
+    tokenize(వాదనలు.model_desc)

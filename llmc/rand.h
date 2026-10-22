@@ -80,161 +80,161 @@ Both output:
     2756748748
 */
 
-#ifndef RAND_H
-#define RAND_H
+#నిర్వచితం_కాకపోతే RAND_H
+#నిర్వచించు RAND_H
 
-#include <math.h>
+#అన్తర్భావ <math.h>
 
-#define MERSENNE_STATE_M 397u
-#define MERSENNE_STATE_N 624u
+#నిర్వచించు MERSENNE_STATE_M 397u
+#నిర్వచించు MERSENNE_STATE_N 624u
 
-#define LMASK 0x7ffffffful
-#define UMASK 0x80000000ul
+#నిర్వచించు LMASK 0x7ffffffful
+#నిర్వచించు UMASK 0x80000000ul
 
 // Copyright(c) Makoto Matsumoto and Takuji Nishimura
 
 // This implementation follows PyTorch so that we are numerically identical when running verification tests.
 
-typedef struct {
-    unsigned long long seed_;
-    int left_;
-    unsigned int next_;
-    unsigned int state_[MERSENNE_STATE_N];
-    unsigned int MATRIX_A[2];
+రకనిర్వచనం నిర్మాణం {
+    గుర్తులేని దీర్ఘ దీర్ఘ విత్తనం;
+    పూర్ణాంకం ఎడమ_2;
+    గుర్తులేని పూర్ణాంకం తదుపరి;
+    గుర్తులేని పూర్ణాంకం state_[MERSENNE_STATE_N];
+    గుర్తులేని పూర్ణాంకం మాతృక_A[2];
 } mt19937_state;
 
-void manual_seed(mt19937_state* state, unsigned int seed) {
-    state->MATRIX_A[0] = 0x0u;
-    state->MATRIX_A[1] = 0x9908b0df;
-    state->state_[0] = seed & 0xffffffff;
-    for (unsigned int j = 1; j < MERSENNE_STATE_N; j++) {
+శూన్య manual_విత్తనం(mt19937_state* state, గుర్తులేని పూర్ణాంకం విత్తనం_2) {
+    state->మాతృక_A[0] = 0x0u;
+    state->మాతృక_A[1] = 0x9908b0df;
+    state->state_[0] = విత్తనం_2 & 0xffffffff;
+    కొరకు (గుర్తులేని పూర్ణాంకం j = 1; j < MERSENNE_STATE_N; j++) {
         state->state_[j] = 1812433253 * (state->state_[j - 1] ^ (state->state_[j - 1] >> 30)) + j;
         state->state_[j] &= 0xffffffff;
     }
-    state->left_ = 1;
-    state->next_ = 0;
+    state->ఎడమ_2 = 1;
+    state->తదుపరి = 0;
 }
 
-void next_state(mt19937_state* state) {
-    state->left_ = MERSENNE_STATE_N;
-    state->next_ = 0;
-    unsigned int y, j;
-    for (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
+శూన్య తదుపరి_state(mt19937_state* state) {
+    state->ఎడమ_2 = MERSENNE_STATE_N;
+    state->తదుపరి = 0;
+    గుర్తులేని పూర్ణాంకం y, j;
+    కొరకు (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->మాతృక_A[y & 0x1];
     }
-    for (; j < MERSENNE_STATE_N - 1; j++) {
+    కొరకు (; j < MERSENNE_STATE_N - 1; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->మాతృక_A[y & 0x1];
     }
     y = (state->state_[MERSENNE_STATE_N - 1] & UMASK) | (state->state_[0] & LMASK);
-    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->మాతృక_A[y & 0x1];
 }
 
-unsigned int randint32(mt19937_state* state) {
-    if (!state) return 0;
-    if (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
-    if (--state->left_ <= 0) {
-        next_state(state);
+గుర్తులేని పూర్ణాంకం randint32(mt19937_state* state) {
+    ఒకవేళ (!state) తిరిగి 0;
+    ఒకవేళ (state->మాతృక_A[0] != 0 || state->మాతృక_A[1] != 0x9908b0df) manual_విత్తనం(state, 5489); // auto-initialize
+    ఒకవేళ (--state->ఎడమ_2 <= 0) {
+        తదుపరి_state(state);
     }
-    unsigned int y = state->state_[state->next_++];
+    గుర్తులేని పూర్ణాంకం y = state->state_[state->తదుపరి++];
     y ^= y >> 11;
     y ^= (y << 7) & 0x9d2c5680;
     y ^= (y << 15) & 0xefc60000;
     y ^= y >> 18;
-    return y;
+    తిరిగి y;
 }
 
-inline unsigned long long randint64(mt19937_state* state) {
-    return (((unsigned long long)(randint32(state)) << 32) | randint32(state));
+అంతఃవరుస గుర్తులేని దీర్ఘ దీర్ఘ randint64(mt19937_state* state) {
+    తిరిగి (((గుర్తులేని దీర్ఘ దీర్ఘ)(randint32(state)) << 32) | randint32(state));
 }
 
-inline float randfloat32(mt19937_state* state) {
-    return (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
+అంతఃవరుస దశాంశం randfloat32(mt19937_state* state) {
+    తిరిగి (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
 }
 
-inline double randfloat64(mt19937_state* state) {
-    return (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
+అంతఃవరుస ద్విగుణ randfloat64(mt19937_state* state) {
+    తిరిగి (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
 }
 
-void uniform_(float* data, unsigned int numel, float from, float to, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state) * (to - from) + from;
+శూన్య ఏకరీతి(దశాంశం* దత్తాంశం, గుర్తులేని పూర్ణాంకం numel, దశాంశం from, దశాంశం గమ్యం, mt19937_state* state) {
+    కొరకు (గుర్తులేని పూర్ణాంకం t = 0; t < numel; t++) {
+        దత్తాంశం[t] = randfloat32(state) * (గమ్యం - from) + from;
     }
 }
 
 // Box-Muller transform: maps uniform random numbers to Gaussian distributed numbers
 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-void normal_fill_16(float* data, float mean, float std) {
-    #define EPSILONE 1e-12f
-    for (unsigned int t = 0; t < 8; t++) {
-        float u1 = 1 - data[t];
-        float u2 = data[t + 8];
-        float radius = sqrtf(-2 * logf(u1 + EPSILONE));
-        float theta = (float) (2.0 * M_PI * u2);
-        data[t] = (radius * cosf(theta) * std + mean);
-        data[t + 8] = (radius * sinf(theta) * std + mean);
+శూన్య సాధారణ_fill_16(దశాంశం* దత్తాంశం, దశాంశం సగటు, దశాంశం std) {
+    #నిర్వచించు EPSILONE 1e-12f
+    కొరకు (గుర్తులేని పూర్ణాంకం t = 0; t < 8; t++) {
+        దశాంశం u1 = 1 - దత్తాంశం[t];
+        దశాంశం u2 = దత్తాంశం[t + 8];
+        దశాంశం radius = sqrtf(-2 * logf(u1 + EPSILONE));
+        దశాంశం theta = (దశాంశం) (2.0 * M_PI * u2);
+        దత్తాంశం[t] = (radius * cosf(theta) * std + సగటు);
+        దత్తాంశం[t + 8] = (radius * sinf(theta) * std + సగటు);
     }
 }
 
-void normal_fill(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state);
+శూన్య సాధారణ_fill(దశాంశం* దత్తాంశం, గుర్తులేని పూర్ణాంకం numel, దశాంశం సగటు, దశాంశం std, mt19937_state* state) {
+    కొరకు (గుర్తులేని పూర్ణాంకం t = 0; t < numel; t++) {
+        దత్తాంశం[t] = randfloat32(state);
     }
-    for (unsigned int i = 0; i < numel - 15; i += 16) {
-        normal_fill_16(data + i, mean, std);
+    కొరకు (గుర్తులేని పూర్ణాంకం i = 0; i < numel - 15; i += 16) {
+        సాధారణ_fill_16(దత్తాంశం + i, సగటు, std);
     }
-    if (numel % 16 != 0) {
+    ఒకవేళ (numel % 16 != 0) {
         // recompute the last 16 values
-        data = data + numel - 16;
-        for (unsigned int i = 0; i < 16; i++) {
-            data[i] = randfloat32(state);
+        దత్తాంశం = దత్తాంశం + numel - 16;
+        కొరకు (గుర్తులేని పూర్ణాంకం i = 0; i < 16; i++) {
+            దత్తాంశం[i] = randfloat32(state);
         }
-        normal_fill_16(data, mean, std);
+        సాధారణ_fill_16(దత్తాంశం, సగటు, std);
     }
 }
 
-void normal_(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    #define EPSILONE 1e-12f
-    if (numel >= 16) {
-        normal_fill(data, numel, mean, std, state);
+శూన్య సాధారణ(దశాంశం* దత్తాంశం, గుర్తులేని పూర్ణాంకం numel, దశాంశం సగటు, దశాంశం std, mt19937_state* state) {
+    #నిర్వచించు EPSILONE 1e-12f
+    ఒకవేళ (numel >= 16) {
+        సాధారణ_fill(దత్తాంశం, numel, సగటు, std, state);
     }
-    else {
-        double next_double_normal_sample = 0.0; // make compiler warning happy, won't be used
-        int has_next_double_normal_sample = 0;
-        for (unsigned int  t = 0; t < numel; t++) {
-            if (has_next_double_normal_sample) {
-                data[t] = (float)(next_double_normal_sample * std + mean);
-                has_next_double_normal_sample = 0;
-                continue;
+    లేకపోతే {
+        ద్విగుణ తదుపరి_double_సాధారణ_sample = 0.0; // make compiler warning happy, won't be used
+        పూర్ణాంకం has_తదుపరి_double_సాధారణ_sample = 0;
+        కొరకు (గుర్తులేని పూర్ణాంకం  t = 0; t < numel; t++) {
+            ఒకవేళ (has_తదుపరి_double_సాధారణ_sample) {
+                దత్తాంశం[t] = (దశాంశం)(తదుపరి_double_సాధారణ_sample * std + సగటు);
+                has_తదుపరి_double_సాధారణ_sample = 0;
+                కొనసాగు;
             }
             // for numel < 16 we draw a double (float64)
-            float u1 = (float) randfloat64(state);
-            float u2 = (float) randfloat64(state);
-            float radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
-            float theta = (float) (2.0 * M_PI * u1);
-            next_double_normal_sample = radius * sinf(theta);
-            has_next_double_normal_sample = 1;
-            data[t] = (radius * cosf(theta) * std + mean);
+            దశాంశం u1 = (దశాంశం) randfloat64(state);
+            దశాంశం u2 = (దశాంశం) randfloat64(state);
+            దశాంశం radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
+            దశాంశం theta = (దశాంశం) (2.0 * M_PI * u1);
+            తదుపరి_double_సాధారణ_sample = radius * sinf(theta);
+            has_తదుపరి_double_సాధారణ_sample = 1;
+            దత్తాంశం[t] = (radius * cosf(theta) * std + సగటు);
         }
     }
 }
 
-void init_identity_permutation(int *data, int numel) {
-    for (int i = 0; i < numel; i++) {
-        data[i] = i;
+శూన్య init_తటస్థం_permutation(పూర్ణాంకం *దత్తాంశం, పూర్ణాంకం numel) {
+    కొరకు (పూర్ణాంకం i = 0; i < numel; i++) {
+        దత్తాంశం[i] = i;
     }
 }
 
-void random_permutation(int* data, int numel, mt19937_state* state) {
-    for (int i = numel - 1; i > 0; i--) {
+శూన్య random_permutation(పూర్ణాంకం* దత్తాంశం, పూర్ణాంకం numel, mt19937_state* state) {
+    కొరకు (పూర్ణాంకం i = numel - 1; i > 0; i--) {
         // pick an index j in [0, i] with equal probability
-        int j = randint32(state) % (i + 1);
+        పూర్ణాంకం j = randint32(state) % (i + 1);
         // swap i <-> j
-        int tmp = data[i];
-        data[i] = data[j];
-        data[j] = tmp;
+        పూర్ణాంకం tmp = దత్తాంశం[i];
+        దత్తాంశం[i] = దత్తాంశం[j];
+        దత్తాంశం[j] = tmp;
     }
 }
 
-#endif
+#అయితే_ముగింపు

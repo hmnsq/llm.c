@@ -1,21 +1,21 @@
 /*
 cuDNN (flash) attention
 */
-#ifndef CUDNN_ATT_H
-#define CUDNN_ATT_H
+#నిర్వచితం_కాకపోతే CUDNN_ATT_H
+#నిర్వచించు CUDNN_ATT_H
 
-#include "cuda_common.h"
+#అన్తర్భావ "cuda_common.h"
 
 // forward declarations of functions defined in cudnn_att.cpp
-void create_cudnn();
-void destroy_cudnn();
-void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
-                             float* stats, // output for backward pass: (B, NH, T)
+శూన్య create_cudnn();
+శూన్య destroy_cudnn();
+శూన్య attention_forward_cudnn(floatX* బహిర్గతం,  // output: (B, T, NH, HS)
+                             దశాంశం* stats, // output for backward pass: (B, NH, T)
                              floatX* inp,  // input: (B, T, 3, NH, HS) QKV
-                             int B, int T, int NH, int C, cudaStream_t stream);
+                             పూర్ణాంకం B, పూర్ణాంకం T, పూర్ణాంకం NH, పూర్ణాంకం C, cuda_ప్రవాహం_t ప్రవాహం);
 
-void attention_backward_cudnn(floatX* dqkvr,                                       // output
-                              floatX* dout, floatX* qkvr, floatX* o, float* stats, // inputs
-                              int B, int T, int NH, int C, cudaStream_t stream);
+శూన్య attention_backward_cudnn(floatX* dqkvr,                                       // output
+                              floatX* dout, floatX* qkvr, floatX* o, దశాంశం* stats, // inputs
+                              పూర్ణాంకం B, పూర్ణాంకం T, పూర్ణాంకం NH, పూర్ణాంకం C, cuda_ప్రవాహం_t ప్రవాహం);
 
-#endif // CUDNN_ATT_H
+#అయితే_ముగింపు // CUDNN_ATT_H

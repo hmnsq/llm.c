@@ -7,48 +7,48 @@ gcc -O3 -I../../llmc -o test_dataloader test_dataloader.c -lm && ./test_dataload
 TODOs:
 - test load/save state of DataLoader
 */
-#include <unistd.h>
-#include "../../llmc/dataloader.h"
+#అన్తర్భావ <unistd.h>
+#అన్తర్భావ "../../llmc/dataloader.h"
 
-#define SHARD_NAME_LEN 64
-char shard_name[SHARD_NAME_LEN];
-const int num_tokens = 140;
-int num_shards = 4;
+#నిర్వచించు SHARD_NAME_LEN 64
+అక్షరం shard_name[SHARD_NAME_LEN];
+స్థిరరాశి పూర్ణాంకం అంకె_టోకెన్లు = 140;
+పూర్ణాంకం అంకె_shards = 4;
 
-void check_range(const int *tokens, const int start, const int end, const char *file, int line) {
+శూన్య check_range(స్థిరరాశి పూర్ణాంకం *టోకెన్లు, స్థిరరాశి పూర్ణాంకం ప్రారంభం, స్థిరరాశి పూర్ణాంకం చివర, స్థిరరాశి అక్షరం *file, పూర్ణాంకం పంక్తి) {
     // checks that the tokens[0, ... end-start] are the range [start, end)
-    int n = end - start;
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != start + i) {
-            fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, start + i);
+    పూర్ణాంకం n = చివర - ప్రారంభం;
+    కొరకు (పూర్ణాంకం i = 0; i < n; i++) {
+        పూర్ణాంకం token = టోకెన్లు[i];
+        ఒకవేళ (token != ప్రారంభం + i) {
+            fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, ప్రారంభం + i);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "  Line: %d\n", పంక్తి);
+            నిష్క్రమించు(EXIT_FAILURE);
         }
     }
     // printf("tokens in range [%d, %d) OK\n", start, end);
 }
-#define checkRange(tokens, start, end) check_range(tokens, start, end, __FILE__, __LINE__)
+#నిర్వచించు checkRange(టోకెన్లు, ప్రారంభం, చివర) check_range(టోకెన్లు, ప్రారంభం, చివర, __FILE__, __LINE__)
 
-void check_equals(const int *tokens, const int n, const int expected, const char *file, int line) {
+శూన్య check_equals(స్థిరరాశి పూర్ణాంకం *టోకెన్లు, స్థిరరాశి పూర్ణాంకం n, స్థిరరాశి పూర్ణాంకం expected, స్థిరరాశి అక్షరం *file, పూర్ణాంకం పంక్తి) {
     // checks that the tokens[0, ... n] are all equal to expected
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != expected) {
+    కొరకు (పూర్ణాంకం i = 0; i < n; i++) {
+        పూర్ణాంకం token = టోకెన్లు[i];
+        ఒకవేళ (token != expected) {
             fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, expected);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "  Line: %d\n", పంక్తి);
+            నిష్క్రమించు(EXIT_FAILURE);
         }
     }
     // printf("tokens all equal to %d OK\n", expected);
 }
-#define checkEquals(tokens, n, expected) check_equals(tokens, n, expected, __FILE__, __LINE__)
+#నిర్వచించు checkEquals(టోకెన్లు, n, expected) check_equals(టోకెన్లు, n, expected, __FILE__, __LINE__)
 
-void test_simple(void) {
+శూన్య test_simple(శూన్య) {
     /*
     Tests the simplest DataLoader functionality:
     - multi-shard
@@ -56,75 +56,75 @@ void test_simple(void) {
     - not shuffled
     DataLoader should just return all the tokens in order
     */
-    printf("test_simple... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 0;
+    రాయి("test_simple... ");
+    పూర్ణాంకం B = 4;
+    పూర్ణాంకం T = 8;
+    పూర్ణాంకం process_rank = 0;
+    పూర్ణాంకం అంకె_processes = 1;
+    పూర్ణాంకం should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
-    DataLoader loader;
-    dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
+    దత్తాంశం_Loader loader;
+    dataloader_init(&loader, shard_name, B, T, process_rank, అంకె_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                dataloader_next_batch(&loader);
-                checkRange(loader.inputs, start, start + BT);
-                checkRange(loader.targets, start + 1, start + BT + 1);
-                start += BT;
+    పూర్ణాంకం batches_fit = అంకె_టోకెన్లు / (B * T); // number of batches that fit per shard
+    పూర్ణాంకం BT = B * T;
+    పూర్ణాంకం అంకె_epochs = 4;
+    కొరకు (పూర్ణాంకం e = 0; e < అంకె_epochs; e++) { // epoch
+        కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) { // shard
+            పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు;
+            కొరకు (పూర్ణాంకం b = 0; b < batches_fit; b++) { // batch
+                dataloader_తదుపరి_batch(&loader);
+                checkRange(loader.inputs, ప్రారంభం, ప్రారంభం + BT);
+                checkRange(loader.targets, ప్రారంభం + 1, ప్రారంభం + BT + 1);
+                ప్రారంభం += BT;
             }
         }
     }
     dataloader_free(&loader);
-    printf("OK\n");
+    రాయి("OK\n");
 }
 
-void test_multiprocess_simple(void) {
+శూన్య test_multiprocess_simple(శూన్య) {
     /*
     Same as simple above, but using 2 processes.
     (which we of course use in a serial, single process way here)
     The DataLoaders simply pull chunks of consecutive tokens, so
     we expect them to alternate in the "token space".
     */
-    printf("test_multiprocess_simple... ");
-    int B = 4;
-    int T = 8;
-    int num_processes = 2;
-    int should_shuffle = 0;
+    రాయి("test_multiprocess_simple... ");
+    పూర్ణాంకం B = 4;
+    పూర్ణాంకం T = 8;
+    పూర్ణాంకం అంకె_processes = 2;
+    పూర్ణాంకం should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
-    DataLoader loader0, loader1;
-    dataloader_init(&loader0, shard_name, B, T, 0, num_processes, should_shuffle);
-    dataloader_init(&loader1, shard_name, B, T, 1, num_processes, should_shuffle);
+    దత్తాంశం_Loader loader0, loader1;
+    dataloader_init(&loader0, shard_name, B, T, 0, అంకె_processes, should_shuffle);
+    dataloader_init(&loader1, shard_name, B, T, 1, అంకె_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                dataloader_next_batch(&loader0);
-                dataloader_next_batch(&loader1);
-                checkRange(loader0.inputs, start, start + BT);
-                checkRange(loader1.inputs, start + BT, start + 2*BT);
-                checkRange(loader0.targets, start + 1, start + BT + 1);
-                checkRange(loader1.targets, start + BT + 1, start + 2*BT + 1);
-                start += 2*BT;
+    పూర్ణాంకం batches_fit = అంకె_టోకెన్లు / (B * T * అంకె_processes); // number of batches that fit per shard
+    పూర్ణాంకం BT = B * T;
+    పూర్ణాంకం అంకె_epochs = 4;
+    కొరకు (పూర్ణాంకం e = 0; e < అంకె_epochs; e++) { // epoch
+        కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) { // shard
+            పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు;
+            కొరకు (పూర్ణాంకం b = 0; b < batches_fit; b++) { // batch
+                dataloader_తదుపరి_batch(&loader0);
+                dataloader_తదుపరి_batch(&loader1);
+                checkRange(loader0.inputs, ప్రారంభం, ప్రారంభం + BT);
+                checkRange(loader1.inputs, ప్రారంభం + BT, ప్రారంభం + 2*BT);
+                checkRange(loader0.targets, ప్రారంభం + 1, ప్రారంభం + BT + 1);
+                checkRange(loader1.targets, ప్రారంభం + BT + 1, ప్రారంభం + 2*BT + 1);
+                ప్రారంభం += 2*BT;
             }
         }
     }
 
     dataloader_free(&loader0);
     dataloader_free(&loader1);
-    printf("OK\n");
+    రాయి("OK\n");
 }
 
-void test_shuffled(void) {
+శూన్య test_shuffled(శూన్య) {
     /*
     Tests the DataLoader when using shuffled:
     - multi-shard
@@ -134,64 +134,64 @@ void test_shuffled(void) {
     So all we check is that we see all the tokens we expect to see,
     the correct number of times.
     */
-    printf("test_shuffled... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 1; // should shuffle bit turn on
+    రాయి("test_shuffled... ");
+    పూర్ణాంకం B = 4;
+    పూర్ణాంకం T = 8;
+    పూర్ణాంకం process_rank = 0;
+    పూర్ణాంకం అంకె_processes = 1;
+    పూర్ణాంకం should_shuffle = 1; // should shuffle bit turn on
     snprintf(shard_name, 64, "shard_????.bin");
-    DataLoader loader;
-    dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
+    దత్తాంశం_Loader loader;
+    dataloader_init(&loader, shard_name, B, T, process_rank, అంకె_processes, should_shuffle);
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                dataloader_next_batch(&loader);
+    పూర్ణాంకం మొత్తం_టోకెన్లు = అంకె_shards * అంకె_టోకెన్లు;
+    పూర్ణాంకం *అంకె_చూసిన_inputs = (పూర్ణాంకం *)సున్నా_జ్ఞాపకం_ఇవ్వు(మొత్తం_టోకెన్లు, పరిమాణం(పూర్ణాంకం));
+    పూర్ణాంకం *అంకె_చూసిన_targets = (పూర్ణాంకం *)సున్నా_జ్ఞాపకం_ఇవ్వు(మొత్తం_టోకెన్లు, పరిమాణం(పూర్ణాంకం));
+    పూర్ణాంకం batches_fit = అంకె_టోకెన్లు / (B * T); // number of batches that fit per shard
+    పూర్ణాంకం BT = B * T;
+    పూర్ణాంకం అంకె_epochs = 4;
+    కొరకు (పూర్ణాంకం e = 0; e < అంకె_epochs; e ++) { // epoch
+        కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) { // shard
+            పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు;
+            కొరకు (పూర్ణాంకం b = 0; b < batches_fit; b++) { // batch
+                dataloader_తదుపరి_batch(&loader);
                 // count up the tokens we see
-                for (int i = 0; i < BT; i++) {
-                    int input_token = loader.inputs[i];
-                    int target_token = loader.targets[i];
-                    assert(input_token >= 0 && input_token < total_tokens);
-                    assert(target_token >= 0 && target_token < total_tokens);
-                    num_seen_inputs[input_token]++;
-                    num_seen_targets[target_token]++;
+                కొరకు (పూర్ణాంకం i = 0; i < BT; i++) {
+                    పూర్ణాంకం ఆదానం_token = loader.inputs[i];
+                    పూర్ణాంకం లక్ష్యం_token = loader.targets[i];
+                    ప్రతిజ్ఞా(ఆదానం_token >= 0 && ఆదానం_token < మొత్తం_టోకెన్లు);
+                    ప్రతిజ్ఞా(లక్ష్యం_token >= 0 && లక్ష్యం_token < మొత్తం_టోకెన్లు);
+                    అంకె_చూసిన_inputs[ఆదానం_token]++;
+                    అంకె_చూసిన_targets[లక్ష్యం_token]++;
                 }
-                start += BT;
+                ప్రారంభం += BT;
             }
         }
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * BT; // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens;
+    పూర్ణాంకం టోకెన్లు_fit = batches_fit * BT; // number of tokens that fit per shard
+    కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) {
+        పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు;
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
-        checkEquals(num_seen_inputs + start, tokens_fit, num_epochs);
-        checkEquals(num_seen_inputs + start + tokens_fit, num_tokens - tokens_fit, 0);
+        checkEquals(అంకె_చూసిన_inputs + ప్రారంభం, టోకెన్లు_fit, అంకె_epochs);
+        checkEquals(అంకె_చూసిన_inputs + ప్రారంభం + టోకెన్లు_fit, అంకె_టోకెన్లు - టోకెన్లు_fit, 0);
         // verify the target counts. same thing but offset by 1
-        checkEquals(num_seen_targets + start + 1, tokens_fit, num_epochs);
-        checkEquals(num_seen_targets + start + 1 + tokens_fit,
-            (s == (num_shards - 1)) ? num_tokens - tokens_fit - 1 : num_tokens - tokens_fit,0);
+        checkEquals(అంకె_చూసిన_targets + ప్రారంభం + 1, టోకెన్లు_fit, అంకె_epochs);
+        checkEquals(అంకె_చూసిన_targets + ప్రారంభం + 1 + టోకెన్లు_fit,
+            (s == (అంకె_shards - 1)) ? అంకె_టోకెన్లు - టోకెన్లు_fit - 1 : అంకె_టోకెన్లు - టోకెన్లు_fit,0);
     }
 
     dataloader_free(&loader);
-    free(num_seen_inputs);
-    free(num_seen_targets);
-    printf("OK\n");
+    విడుదల(అంకె_చూసిన_inputs);
+    విడుదల(అంకె_చూసిన_targets);
+    రాయి("OK\n");
 }
 
-void test_multiprocess_shuffled(void) {
+శూన్య test_multiprocess_shuffled(శూన్య) {
     /*
     Tests the DataLoader when using both multiprocess and shuffled:
     - multi-shard
@@ -202,91 +202,91 @@ void test_multiprocess_shuffled(void) {
     the correct number of times, over multiple epochs.
     */
 
-    printf("test_multiprocess_shuffled... ");
-    int B = 4;
-    int T = 8;
-    const int num_processes = 2;
-    int should_shuffle = 0;
+    రాయి("test_multiprocess_shuffled... ");
+    పూర్ణాంకం B = 4;
+    పూర్ణాంకం T = 8;
+    స్థిరరాశి పూర్ణాంకం అంకె_processes = 2;
+    పూర్ణాంకం should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
-    DataLoader loaders[num_processes];
-    for (int i = 0; i < num_processes; i++) {
-        dataloader_init(&loaders[i], shard_name, B, T, i, num_processes, should_shuffle);
+    దత్తాంశం_Loader loaders[అంకె_processes];
+    కొరకు (పూర్ణాంకం i = 0; i < అంకె_processes; i++) {
+        dataloader_init(&loaders[i], shard_name, B, T, i, అంకె_processes, should_shuffle);
     }
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                for (int n = 0; n < num_processes; n++) { // dataloader
-                    DataLoader *loader = &loaders[n];
-                    dataloader_next_batch(loader);
+    పూర్ణాంకం మొత్తం_టోకెన్లు = అంకె_shards * అంకె_టోకెన్లు;
+    పూర్ణాంకం *అంకె_చూసిన_inputs = (పూర్ణాంకం *)సున్నా_జ్ఞాపకం_ఇవ్వు(మొత్తం_టోకెన్లు, పరిమాణం(పూర్ణాంకం));
+    పూర్ణాంకం *అంకె_చూసిన_targets = (పూర్ణాంకం *)సున్నా_జ్ఞాపకం_ఇవ్వు(మొత్తం_టోకెన్లు, పరిమాణం(పూర్ణాంకం));
+    పూర్ణాంకం batches_fit = అంకె_టోకెన్లు / (B * T * అంకె_processes); // number of batches that fit per shard
+    పూర్ణాంకం BT = B * T;
+    పూర్ణాంకం అంకె_epochs = 4;
+    కొరకు (పూర్ణాంకం e = 0; e < అంకె_epochs; e ++) { // epoch
+        కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) { // shard
+            పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు;
+            కొరకు (పూర్ణాంకం b = 0; b < batches_fit; b++) { // batch
+                కొరకు (పూర్ణాంకం n = 0; n < అంకె_processes; n++) { // dataloader
+                    దత్తాంశం_Loader *loader = &loaders[n];
+                    dataloader_తదుపరి_batch(loader);
                     // count up the tokens we see
-                    for (int i = 0; i < BT; i++) {
-                        int input_token = loader->inputs[i];
-                        int target_token = loader->targets[i];
-                        assert(input_token >= 0 && input_token < total_tokens);
-                        assert(target_token >= 0 && target_token < total_tokens);
-                        num_seen_inputs[input_token]++;
-                        num_seen_targets[target_token]++;
+                    కొరకు (పూర్ణాంకం i = 0; i < BT; i++) {
+                        పూర్ణాంకం ఆదానం_token = loader->inputs[i];
+                        పూర్ణాంకం లక్ష్యం_token = loader->targets[i];
+                        ప్రతిజ్ఞా(ఆదానం_token >= 0 && ఆదానం_token < మొత్తం_టోకెన్లు);
+                        ప్రతిజ్ఞా(లక్ష్యం_token >= 0 && లక్ష్యం_token < మొత్తం_టోకెన్లు);
+                        అంకె_చూసిన_inputs[ఆదానం_token]++;
+                        అంకె_చూసిన_targets[లక్ష్యం_token]++;
                     }
-                    start += BT;
+                    ప్రారంభం += BT;
                 }
             }
         }
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * (B * T * num_processes); // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens; // token id that starts this shard
+    పూర్ణాంకం టోకెన్లు_fit = batches_fit * (B * T * అంకె_processes); // number of tokens that fit per shard
+    కొరకు (పూర్ణాంకం s = 0; s < అంకె_shards; s++) {
+        పూర్ణాంకం ప్రారంభం = s * అంకె_టోకెన్లు; // token id that starts this shard
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
-        checkEquals(num_seen_inputs + start, tokens_fit, num_epochs);
-        checkEquals(num_seen_inputs + start + tokens_fit, num_tokens - tokens_fit, 0);
+        checkEquals(అంకె_చూసిన_inputs + ప్రారంభం, టోకెన్లు_fit, అంకె_epochs);
+        checkEquals(అంకె_చూసిన_inputs + ప్రారంభం + టోకెన్లు_fit, అంకె_టోకెన్లు - టోకెన్లు_fit, 0);
         // verify the target counts. same thing but offset by 1
-        checkEquals(num_seen_targets + start + 1, tokens_fit, num_epochs);
-        checkEquals(num_seen_targets + start + 1 + tokens_fit,
-            (s == (num_shards - 1)) ? num_tokens - tokens_fit - 1 : num_tokens - tokens_fit,0);
+        checkEquals(అంకె_చూసిన_targets + ప్రారంభం + 1, టోకెన్లు_fit, అంకె_epochs);
+        checkEquals(అంకె_చూసిన_targets + ప్రారంభం + 1 + టోకెన్లు_fit,
+            (s == (అంకె_shards - 1)) ? అంకె_టోకెన్లు - టోకెన్లు_fit - 1 : అంకె_టోకెన్లు - టోకెన్లు_fit,0);
     }
 
     // cleanup
-    for (int i = 0; i < num_processes; i++) {
+    కొరకు (పూర్ణాంకం i = 0; i < అంకె_processes; i++) {
         dataloader_free(&loaders[i]);
     }
-    free(num_seen_inputs);
-    free(num_seen_targets);
-    printf("OK\n");
+    విడుదల(అంకె_చూసిన_inputs);
+    విడుదల(అంకె_చూసిన_targets);
+    రాయి("OK\n");
 }
 
-int main(void) {
+పూర్ణాంకం ప్రధాన(శూన్య) {
 
     // generate a few dummy shards of data with incrementing tokens
-    int header[HEADER_SIZE];
-    uint16_t tokens[num_tokens];
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    పూర్ణాంకం శీర్షిక[శీర్షిక_కొలత];
+    uint16_t టోకెన్లు[అంకె_టోకెన్లు];
+    కొరకు (పూర్ణాంకం shard_id = 0; shard_id < అంకె_shards; shard_id++) {
         // ensure unique tokens across the shards for ez accounting below
-        int token_offset = shard_id * num_tokens;
-        for (int i = 0; i < num_tokens; i++) {
-            tokens[i] = token_offset + i;
+        పూర్ణాంకం token_స్థానభ్రంశం = shard_id * అంకె_టోకెన్లు;
+        కొరకు (పూర్ణాంకం i = 0; i < అంకె_టోకెన్లు; i++) {
+            టోకెన్లు[i] = token_స్థానభ్రంశం + i;
         }
         // write the shard
         snprintf(shard_name, SHARD_NAME_LEN, "shard_%04d.bin", shard_id);
-        header[0] = 20240520; // magic
-        header[1] = 1; // version
-        header[2] = num_tokens; // number of tokens within
+        శీర్షిక[0] = 20240520; // magic
+        శీర్షిక[1] = 1; //సంస్కరణ
+        శీర్షిక[2] = అంకె_టోకెన్లు; // number of tokens within
         FILE* shard_file = fopenCheck(shard_name, "wb");
-        fwrite(header, sizeof(int), HEADER_SIZE, shard_file);
-        fwrite(tokens, sizeof(uint16_t), num_tokens, shard_file);
+        fwrite(శీర్షిక, పరిమాణం(పూర్ణాంకం), శీర్షిక_కొలత, shard_file);
+        fwrite(టోకెన్లు, పరిమాణం(uint16_t), అంకె_టోకెన్లు, shard_file);
         fcloseCheck(shard_file);
-        printf("Wrote shard %s\n", shard_name);
+        రాయి("Wrote shard %s\n", shard_name);
     }
 
     test_simple();
@@ -295,10 +295,10 @@ int main(void) {
     test_multiprocess_shuffled();
 
     // clean up the shards
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    కొరకు (పూర్ణాంకం shard_id = 0; shard_id < అంకె_shards; shard_id++) {
         snprintf(shard_name, SHARD_NAME_LEN, "shard_%04d.bin", shard_id);
         remove(shard_name);
     }
 
-    return EXIT_SUCCESS;
+    తిరిగి EXIT_SUCCESS;
 }
