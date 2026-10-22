@@ -23,9 +23,9 @@
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
+extern anta_hstha FILE *fopen_check(const var_na *path, const var_na *mode, const var_na *file, puur_naa_nka line) {
     FILE *fp = fopen(path, mode);
-    if (fp == NULL) {
+    ᨀᨘ (fp == NULL) {
         fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -36,19 +36,19 @@ extern inline FILE *fopen_check(const char *path, const char *mode, const char *
         fprintf(stderr, "---> HINT 2: possibly try to re-run `python train_gpt2.py`\n");
         exit(EXIT_FAILURE);
     }
-    return fp;
+    ᨀᨘᨒ fp;
 }
 
 #define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+extern anta_hstha void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const var_na *file, puur_naa_nka line) {
     size_t result = fread(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
+    ᨀᨘ (result != nmemb) {
+        ᨀᨘ (feof(stream)) {
             fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
+        } ᨀᨘᨁ ᨀᨘ (ferror(stream)) {
             fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
-        } else {
+        } ᨀᨘᨁ {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
                     file, line, nmemb, result);
         }
@@ -63,8 +63,8 @@ extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *strea
 
 #define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
-    if (fclose(fp) != 0) {
+extern anta_hstha void fclose_check(FILE *fp, const var_na *file, puur_naa_nka line) {
+    ᨀᨘ (fclose(fp) != 0) {
         fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -75,8 +75,8 @@ extern inline void fclose_check(FILE *fp, const char *file, int line) {
 
 #define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
-    if (close(sockfd) != 0) {
+extern anta_hstha void sclose_check(puur_naa_nka sockfd, const var_na *file, puur_naa_nka line) {
+    ᨀᨘ (close(sockfd) != 0) {
         fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -88,8 +88,8 @@ extern inline void sclose_check(int sockfd, const char *file, int line) {
 #define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
 #ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
-    if (closesocket(sockfd) != 0) {
+extern anta_hstha void closesocket_check(puur_naa_nka sockfd, const var_na *file, puur_naa_nka line) {
+    ᨀᨘ (closesocket(sockfd) != 0) {
         fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -101,8 +101,8 @@ extern inline void closesocket_check(int sockfd, const char *file, int line) {
 #define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
 #endif
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
-    if (fseek(fp, off, whence) != 0) {
+extern anta_hstha void fseek_check(FILE *fp, long off, puur_naa_nka whence, const var_na *file, puur_naa_nka line) {
+    ᨀᨘ (fseek(fp, off, whence) != 0) {
         fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
@@ -115,14 +115,14 @@ extern inline void fseek_check(FILE *fp, long off, int whence, const char *file,
 
 #define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+extern anta_hstha void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const var_na *file, puur_naa_nka line) {
     size_t result = fwrite(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
+    ᨀᨘ (result != nmemb) {
+        ᨀᨘ (feof(stream)) {
             fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
+        } ᨀᨘᨁ ᨀᨘ (ferror(stream)) {
             fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
-        } else {
+        } ᨀᨘᨁ {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
                     file, line, nmemb, result);
         }
@@ -140,9 +140,9 @@ extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stre
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
+extern anta_hstha void *malloc_check(size_t size, const var_na *file, puur_naa_nka line) {
     void *ptr = malloc(size);
-    if (ptr == NULL) {
+    ᨀᨘ (ptr == NULL) {
         fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
@@ -150,7 +150,7 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
         fprintf(stderr, "  Size: %zu bytes\n", size);
         exit(EXIT_FAILURE);
     }
-    return ptr;
+    ᨀᨘᨒ ptr;
 }
 
 #define mallocCheck(size) malloc_check(size, __FILE__, __LINE__)
@@ -158,9 +158,9 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
-        if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
+extern anta_hstha void token_check(const puur_naa_nka* tokens, puur_naa_nka token_count, puur_naa_nka vocab_size, const var_na *file, puur_naa_nka line) {
+    for(puur_naa_nka i = 0; i < token_count; i++) {
+        ᨀᨘ(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
             fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
@@ -177,11 +177,11 @@ extern inline void token_check(const int* tokens, int token_count, int vocab_siz
 // ----------------------------------------------------------------------------
 // I/O ops
 
-extern inline void create_dir_if_not_exists(const char *dir) {
-    if (dir == NULL) { return; }
-    struct stat st = {0};
-    if (stat(dir, &st) == -1) {
-        if (mkdir(dir, 0700) == -1) {
+extern anta_hstha void create_dir_if_not_exists(const var_na *dir) {
+    ᨀᨘ (dir == NULL) { ᨀᨘᨒ; }
+    sa_nracanaa stat st = {0};
+    ᨀᨘ (stat(dir, &st) == -1) {
+        ᨀᨘ (mkdir(dir, 0700) == -1) {
             printf("ERROR: could not create directory: %s\n", dir);
             exit(EXIT_FAILURE);
         }
@@ -189,35 +189,35 @@ extern inline void create_dir_if_not_exists(const char *dir) {
     }
 }
 
-extern inline int find_max_step(const char* output_log_dir) {
+extern anta_hstha puur_naa_nka find_max_step(const var_na* output_log_dir) {
     // find the DONE file in the log dir with highest step count
-    if (output_log_dir == NULL) { return -1; }
+    ᨀᨘ (output_log_dir == NULL) { ᨀᨘᨒ -1; }
     DIR* dir;
-    struct dirent* entry;
-    int max_step = -1;
+    sa_nracanaa dirent* entry;
+    puur_naa_nka max_step = -1;
     dir = opendir(output_log_dir);
-    if (dir == NULL) { return -1; }
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "DONE_", 5) == 0) {
-            int step = atoi(entry->d_name + 5);
-            if (step > max_step) {
+    ᨀᨘ (dir == NULL) { ᨀᨘᨒ -1; }
+    ᨀᨛ ((entry = readdir(dir)) != NULL) {
+        ᨀᨘ (strncmp(entry->d_name, "DONE_", 5) == 0) {
+            puur_naa_nka step = atoi(entry->d_name + 5);
+            ᨀᨘ (step > max_step) {
                 max_step = step;
             }
         }
     }
     closedir(dir);
-    return max_step;
+    ᨀᨘᨒ max_step;
 }
 
-extern inline int ends_with_bin(const char* str) {
+extern anta_hstha puur_naa_nka ends_with_bin(const var_na* str) {
     // checks if str ends with ".bin". could be generalized in the future.
-    if (str == NULL) { return 0; }
+    ᨀᨘ (str == NULL) { ᨀᨘᨒ 0; }
     size_t len = strlen(str);
-    const char* suffix = ".bin";
+    const var_na* suffix = ".bin";
     size_t suffix_len = strlen(suffix);
-    if (len < suffix_len) { return 0; }
-    int suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
-    return suffix_matches;
+    ᨀᨘ (len < suffix_len) { ᨀᨘᨒ 0; }
+    puur_naa_nka suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
+    ᨀᨘᨒ suffix_matches;
 }
 
 #endif
