@@ -27,13 +27,13 @@ For more nsys profiling specifics and command options, take a look at: https://d
 NOTE: Currently there is a bug in the profiling using nsight system which produces a unrecognized GPU UUId error on the command line but it
 does not actually interfere with the model training and validation. The report (that you download) is still generated and can be viewed from Nsight Systems
 """
-import subprocess
-import os
-import sys
-import datetime
+استورد subprocess
+استورد os
+استورد sys
+استورد datetime
 
-import modal
-from modal import Image, Stub
+استورد modal
+من modal استورد Image, Stub
 GPU_NAME_TO_MODAL_CLASS_MAP = {
     "H100": modal.gpu.H100,
     "A100": modal.gpu.A100,
@@ -113,9 +113,9 @@ def run_benchmark(compile_command: str, run_command: str):
     execute_command("mv /root/report1.qdstrm /root/report1_" + timestamp + "/")
     execute_command("mv /root/report1_" + timestamp + "/" + " /cuda-env/")
 
-    return None
+    أرجع None
 
 @stub.local_entrypoint()
 def inference_main(compile_command: str, run_command: str):
     results = run_benchmark.remote(compile_command, run_command)
-    return results
+    أرجع results
