@@ -10,16 +10,16 @@ gpt2-xl (1558M)
 - this script: 14042 acc: 0.2927 acc_norm: 0.3035
 """
 
-import os
-import requests
-import tiktoken
-import pandas as pd
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from transformers import GPT2LMHeadModel
-from data_common import download_file
+استورد os
+استورد requests
+استورد tiktoken
+استورد pandas كـ pd
+من tqdm استورد tqdm
+استورد torch
+استورد torch.nn كـ nn
+من torch.nn استورد functional كـ F
+من transformers استورد GPT2LMHeadModel
+من data_common استورد download_file
 
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "mmlu")
@@ -29,14 +29,14 @@ data_url = "https://people.eecs.berkeley.edu/~hendrycks/data.tar"
 
 def download():
     """Downloads MMLU to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(DATA_CACHE_DIR, exist_ok=صحيح)
     data_filename = os.path.join(DATA_CACHE_DIR, f"data.tar")
-    if not os.path.exists(data_filename):
+    إذا ليس os.path.exists(data_filename):
         print(f"Downloading {data_url} to {data_filename}...")
         download_file(data_url, data_filename)
         os.system(f"tar -xf {data_filename} -C {DATA_CACHE_DIR}") # untar
         # creates a directory "data" inside it, with e.g. data/test/*csv
-    else:
+    وإلا:
         print(f"{data_filename} already exists, skipping download...")
 
 def iterate_examples():
@@ -44,19 +44,19 @@ def iterate_examples():
 
     download()
     test_dir = os.path.join(DATA_CACHE_DIR, "data", "test")
-    csv_files = [f for f in os.listdir(test_dir) if f.endswith(".csv")]
-    for csv_file in csv_files:
+    csv_files = [f لكل f في os.listdir(test_dir) إذا f.endswith(".csv")]
+    لكل csv_file في csv_files:
         csv_path = os.path.join(test_dir, csv_file)
         print(csv_path)
         df = pd.read_csv(csv_path, header=None)
         n = df.shape[0]
-        for idx in range(n):
+        لكل idx في range(n):
             example = {
                 "question": df.iloc[idx, 0],
                 "endings": [df.iloc[idx, 1], df.iloc[idx, 2], df.iloc[idx, 3], df.iloc[idx, 4]],
                 "label": df.iloc[idx, 5],
             }
-            yield example
+            أنتج example
 
 def render_example(example):
     """
@@ -70,21 +70,21 @@ def render_example(example):
 
     tok_rows = []
     mask_rows = []
-    for end in example["endings"]:
+    لكل end في example["endings"]:
         end_tokens = enc.encode(" " + str(end)) # note: prepending " " because GPT-2 tokenizer
         tok_rows.append(ctx_tokens + end_tokens)
         mask_rows.append([0]*len(ctx_tokens) + [1]*len(end_tokens))
 
     # have to be careful during the collation because the number of tokens in each row can differ
-    max_len = max(len(row) for row in tok_rows)
+    max_len = max(len(row) لكل row في tok_rows)
     tokens = torch.zeros((4, max_len), dtype=torch.long)
     mask = torch.zeros((4, max_len), dtype=torch.long)
-    for i, (tok_row, mask_row) in enumerate(zip(tok_rows, mask_rows)):
+    لكل i, (tok_row, mask_row) في enumerate(zip(tok_rows, mask_rows)):
         tokens[i, :len(tok_row)] = torch.tensor(tok_row)
         mask[i, :len(mask_row)] = torch.tensor(mask_row)
 
     label = "ABCD".index(example["label"])
-    return tokens, mask, label
+    أرجع tokens, mask, label
 
 @torch.no_grad()
 def evaluate(model_type, device):
@@ -95,10 +95,10 @@ def evaluate(model_type, device):
     model.to(device)
     # model = torch.compile(model)
 
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
-    for example in iterate_examples():
+    ژمارە_correct_norm = 0
+    ژمارە_correct = 0
+    ژمارە_total = 0
+    لكل example في iterate_examples():
         tokens, mask, label = render_example(example)
         tokens = tokens.to(device)
         mask = mask.to(device)
@@ -124,24 +124,24 @@ def evaluate(model_type, device):
         pred_norm = avg_loss.argmin().item()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
+        ژمارە_total += 1
+        ژمارە_correct += int(pred == label)
+        ژمارە_correct_norm += int(pred_norm == label)
         print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm/num_total:.4f}")
 
         # debug prints
-        if num_total < 10:
+        إذا ژمارە_total < 10:
             print("---")
             print(f"Context:\n {example['question']}")
             print(f"Endings:")
-            for i, end in enumerate(example["endings"]):
+            لكل i, end في enumerate(example["endings"]):
                 print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
             print(f"predicted: {pred}, actual: {label}")
 
-if __name__ == "__main__":
-    import argparse
+إذا __name__ == "__main__":
+    استورد argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
-    parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
+    parser.add_argument("-m", "--model_type", type=str, افتراضي="gpt2", help="the model type to use")
+    parser.add_argument("-d", "--device", type=str, افتراضي="cuda", help="the device to use")
     args = parser.parse_args()
     evaluate(args.model_type, args.device)
