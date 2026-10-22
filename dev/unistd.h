@@ -1,172 +1,172 @@
 // header file that is necessary to compile on Windows
-#ifndef UNISTD_H
-#define UNISTD_H
+#جيڪڏهن_وصف_نه_ٿيل UNISTD_H
+#وصف_ڪريو UNISTD_H
 
-#define _CRT_SECURE_NO_WARNINGS
-#define _USE_MATH_DEFINES
-#define WIN32_LEAN_AND_MEAN
+#وصف_ڪريو _CRT_SECURE_NO_WARNINGS
+#وصف_ڪريو USE_MATH_مقرر_ڪري
+#وصف_ڪريو WIN32_LEAN_AND_سراسري
 
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
-#include <stdlib.h> // for malloc and free
-#include <string.h>
-#include <direct.h> // for _mkdir and _stat
-#include <io.h> // needed for _access below and _findfirst, _findnext, _findclose
-#pragma comment(lib, "Ws2_32.lib")  // Link Ws2_32.lib for socket functions
-#include <winsock2.h>
+#ضمن <stdio.h>
+#ضمن <math.h>
+#ضمن <time.h>
+#ضمن <stdlib.h> // for malloc and free
+#ضمن <string.h>
+#ضمن <direct.h> // for _mkdir and _stat
+#ضمن <io.h> // needed for _access below and _findfirst, _findnext, _findclose
+#هدايت comment(lib, "Ws2_32.lib")  // Link Ws2_32.lib for socket functions
+#ضمن <winsock2.h>
 
-#define CLOCK_MONOTONIC 0
-static inline int clock_gettime(int ignore_variable, struct timespec* tv)
+#وصف_ڪريو CLOCK_MONOTONIC 0
+ساكن مضمن صحيح clock_gettime(صحيح ignore_variable, بنية timespec* tv)
 {
-    return timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
+    أرجع timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
 }
 
-#define OMP /* turn it on */
-#define F_OK 0
-#define access _access
+#وصف_ڪريو OMP /* turn it on */
+#وصف_ڪريو F_OK 0
+#وصف_ڪريو access _access
 
-#define TURN_OFF_FP_FAST __pragma(float_control( precise, on, push )) // Save current setting and turn on /fp:precise
-#define TURN_ON_FP_FAST  __pragma(float_control(pop)) // Restore file's default settings
+#وصف_ڪريو TURN_OFF_FP_FAST __pragma(float_control( precise, on, ڌڪو )) // Save current setting and turn on /fp:precise
+#وصف_ڪريو TURN_ON_FP_FAST  __pragma(float_control(ڪڍو)) // Restore file's default settings
 
-#define mkdir(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
-#define stat _stat
+#وصف_ڪريو mkdir(رستو, گهڻائي) _mkdir(رستو) /* sketchy way to get mkdir to work on windows */
+#وصف_ڪريو stat _stat
 
-typedef struct glob_t {
+تعريفنوع بنية glob_t {
     size_t gl_pathc;    // Count of matched pathnames
-    char **gl_pathv;    // List of matched pathnames
+    حرف **gl_pathv;    // List of matched pathnames
 } glob_t;
 
-static inline void replace_forward_slashes(char* str) {
-    while (*str) {
-        if (*str == '/') {
+ساكن مضمن فراغ replace_forward_slashes(حرف* str) {
+    طالما (*str) {
+        إذا (*str == '/') {
             *str = '\\';
         }
         str++;
     }
 }
 
-static inline void globfree(glob_t *pglob) {
-    for (size_t i = 0; i < pglob->gl_pathc; ++i) {
-        free(pglob->gl_pathv[i]); // Free the allocated memory for each filename
+ساكن مضمن فراغ globfree(glob_t *pglob) {
+    لكل (size_t i = 0; i < pglob->gl_pathc; ++i) {
+        حرر(pglob->gl_pathv[i]); // Free the allocated memory for each filename
     }
-    free(pglob->gl_pathv); // Free the allocated memory for the list of filenames
+    حرر(pglob->gl_pathv); // Free the allocated memory for the list of filenames
 }
 
-static inline int glob(const char* pattern, int ignored_flags, int (*ignored_errfunc)(const char* epath, int eerrno), glob_t* pglob){
-    struct _finddata_t find_file_data;
-    char full_path[576]; // stored in pglob->gl_pathv[n]
-    char directory_path[512] = {0}; // Store the directory path from the pattern
-    char pattern_copy[512]; // Copy of the pattern to modify
+ساكن مضمن صحيح glob(ثابت حرف* نمونو, صحيح ignored_flags, صحيح (*ignored_errfunc)(ثابت حرف* epath, صحيح eerrno), glob_t* pglob){
+    بنية _finddata_t ڳوليو_file_معلومات;
+    حرف ڀريل_رستو[576]; // stored in pglob->gl_pathv[n]
+    حرف directory_رستو[512] = {0}; // Store the directory path from the pattern
+    حرف نمونو_copy[512]; // Copy of the pattern to modify
 
-    strncpy_s(pattern_copy, sizeof(pattern_copy) - 1, pattern, sizeof(pattern_copy) - 1);
+    strncpy_s(نمونو_copy, حجم(نمونو_copy) - 1, نمونو, حجم(نمونو_copy) - 1);
 
-    replace_forward_slashes (pattern_copy); // Replace forward slashes with backslashes
+    replace_forward_slashes (نمونو_copy); // Replace forward slashes with backslashes
 
-    if (strchr(pattern_copy, '\\') != (void*) NULL) {
-        strncpy_s(directory_path, sizeof(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
-        directory_path[strrchr(pattern_copy, '\\') - pattern_copy + 1] = '\0';
+    إذا (strchr(نمونو_copy, '\\') != (فراغ*) عدم) {
+        strncpy_s(directory_رستو, حجم(directory_رستو) - 1, نمونو_copy, strrchr(نمونو_copy, '\\') - نمونو_copy + 1);
+        directory_رستو[strrchr(نمونو_copy, '\\') - نمونو_copy + 1] = '\0';
     }
 
     // find the first file matching the pattern in the directory
-    intptr_t find_handle = _findfirst(pattern_copy, &find_file_data);
+    intptr_t ڳوليو_handle = _findfirst(نمونو_copy, &ڳوليو_file_معلومات);
 
-    if (find_handle == -1) {
-        return 1; // No files found
+    إذا (ڳوليو_handle == -1) {
+        أرجع 1; // No files found
     }
 
-    size_t file_count = 0;
+    size_t file_ڳڻپ = 0;
     size_t max_files = 64000; // hard-coded limit for the number of files
 
-    pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
+    pglob->gl_pathv = (حرف **) يادگيري_ڏيو(max_files * حجم(حرف*)); // freed in globfree
 
-    if (pglob->gl_pathv == NULL) {
-        _findclose(find_handle);
-        return 2; // Memory allocation failed
+    إذا (pglob->gl_pathv == عدم) {
+        _findclose(ڳوليو_handle);
+        أرجع 2; // Memory allocation failed
     }
 
-    do {
-        if (file_count >= max_files) {
-            _findclose(find_handle);
-            return 2; // Too many files found
+    افعل {
+        إذا (file_ڳڻپ >= max_files) {
+            _findclose(ڳوليو_handle);
+            أرجع 2; // Too many files found
             }
 
-        snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
+        snprintf(ڀريل_رستو, حجم(ڀريل_رستو), "%s%s", directory_رستو, ڳوليو_file_معلومات.name);
 
-        pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
+        pglob->gl_pathv[file_ڳڻپ] = _strdup(ڀريل_رستو); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
-            _findclose(find_handle);
-            return 2; // Memory allocation for filename failed
+        إذا (pglob->gl_pathv[file_ڳڻپ] == عدم) {
+            _findclose(ڳوليو_handle);
+            أرجع 2; // Memory allocation for filename failed
         }
-        file_count++;
-    } while (_findnext(find_handle, &find_file_data) == 0);
+        file_ڳڻپ++;
+    } طالما (_findnext(ڳوليو_handle, &ڳوليو_file_معلومات) == 0);
 
-    _findclose(find_handle);
+    _findclose(ڳوليو_handle);
 
-    pglob->gl_pathc = file_count;
-    return 0;
+    pglob->gl_pathc = file_ڳڻپ;
+    أرجع 0;
 }
 
 // dirent.h support
 
-#define MAX_PATH_LENGTH 512
-typedef struct dirent {
-    char d_name[MAX_PATH_LENGTH];
+#وصف_ڪريو MAX_رستو_ڊيگهائي 512
+تعريفنوع بنية dirent {
+    حرف d_name[MAX_رستو_ڊيگهائي];
 } dirent;
 
-typedef struct DIR {
+تعريفنوع بنية DIR {
     intptr_t handle;
-    struct _finddata_t findFileData;
-    int firstRead;
+    بنية _finddata_t ڳوليو_File_معلومات;
+    صحيح پهريون_Read;
 } DIR;
 
-static inline DIR *opendir(const char *name) {
-    DIR *dir = (DIR *)malloc(sizeof(DIR));
-    if (dir == NULL) {
-        return NULL;
+ساكن مضمن DIR *opendir(ثابت حرف *name) {
+    DIR *dir = (DIR *)يادگيري_ڏيو(حجم(DIR));
+    إذا (dir == عدم) {
+        أرجع عدم;
     }
 
-    char searchPath[MAX_PATH_LENGTH];
+    حرف ڳولا_رستو[MAX_رستو_ڊيگهائي];
 
-    snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
+    snprintf(ڳولا_رستو, MAX_رستو_ڊيگهائي, "%s\\*.*", name);
 
-    dir->handle = _findfirst(searchPath, &dir->findFileData);
-    if (dir->handle == -1) {
-        free(dir);
-        return NULL;
+    dir->handle = _findfirst(ڳولا_رستو, &dir->ڳوليو_File_معلومات);
+    إذا (dir->handle == -1) {
+        حرر(dir);
+        أرجع عدم;
     }
 
-    dir->firstRead = 1;
-    return dir;
+    dir->پهريون_Read = 1;
+    أرجع dir;
 }
 
-static inline struct dirent *readdir(DIR *directory) {
-    static struct dirent result;
+ساكن مضمن بنية dirent *readdir(DIR *directory) {
+    ساكن بنية dirent نتيجو;
 
-    if (directory->firstRead) {
-        directory->firstRead = 0;
-    } else {
-        if (_findnext(directory->handle, &directory->findFileData) != 0) {
-            return NULL;
+    إذا (directory->پهريون_Read) {
+        directory->پهريون_Read = 0;
+    } وإلا {
+        إذا (_findnext(directory->handle, &directory->ڳوليو_File_معلومات) != 0) {
+            أرجع عدم;
         }
     }
 
-    strncpy(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
-    result.d_name[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    return &result;
+    strncpy(نتيجو.d_name, directory->ڳوليو_File_معلومات.name, MAX_رستو_ڊيگهائي);
+    نتيجو.d_name[MAX_رستو_ڊيگهائي - 1] = '\0'; // Ensure null termination
+    أرجع &نتيجو;
 }
 
-static inline int closedir(DIR *directory) {
-    if (directory == NULL) {
-        return -1;
+ساكن مضمن صحيح closedir(DIR *directory) {
+    إذا (directory == عدم) {
+        أرجع -1;
     }
 
-    if (_findclose(directory->handle) != 0) {
-        return -1;
+    إذا (_findclose(directory->handle) != 0) {
+        أرجع -1;
     }
 
-    free(directory);
-    return 0;
+    حرر(directory);
+    أرجع 0;
 }
-#endif // UNISTD_H
+#جيڪڏهن_پورو // UNISTD_H

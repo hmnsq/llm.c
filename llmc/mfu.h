@@ -1,79 +1,79 @@
-#ifndef MFU_H
-#define MFU_H
+#جيڪڏهن_وصف_نه_ٿيل MFU_H
+#وصف_ڪريو MFU_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#if __has_include(<nvml.h>)
-#define USE_NVML 1
-#include <nvml.h>
-#else
-#define USE_NVML 0
-#endif
+#ضمن <stdio.h>
+#ضمن <stdlib.h>
+#ضمن <string.h>
+#إذا __has_include(<nvml.h>)
+#وصف_ڪريو USE_NVML 1
+#ضمن <nvml.h>
+#وإلا
+#وصف_ڪريو USE_NVML 0
+#جيڪڏهن_پورو
 
 // tied to enum PrecisionMode, in a future refactor make them the same
-#define MFUH_PRECISION_FP32 0
-#define MFUH_PRECISION_FP16 1
-#define MFUH_PRECISION_BF16 2
+#وصف_ڪريو MFUH_PRECISION_FP32 0
+#وصف_ڪريو MFUH_PRECISION_FP16 1
+#وصف_ڪريو MFUH_PRECISION_BF16 2
 
-#if USE_NVML
-inline void nvml_check(nvmlReturn_t status, const char *file, int line) {
-    if (status != NVML_SUCCESS) {
-        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, line, nvmlErrorString(status));
-        exit(EXIT_FAILURE);
+#إذا USE_NVML
+مضمن فراغ nvml_check(nvmlReturn_t حالت, ثابت حرف *file, صحيح سٽ) {
+    إذا (حالت != NVML_SUCCESS) {
+        لکو("[NVML ERROR] at file %s:%d:\n%s\n", file, سٽ, nvmlErrorString(حالت));
+        ٻاهر_نڪرو(EXIT_FAILURE);
     }
 };
-#define nvmlCheck(err) (nvml_check(err, __FILE__, __LINE__))
-#endif
+#وصف_ڪريو nvmlCheck(err) (nvml_check(err, __FILE__, __LINE__))
+#جيڪڏهن_پورو
 
 
-typedef struct {
-    float TF_32;       // tensor-core performance 32 bit
-    float BF_16_32;    // bf16 with 32 bit accumulate
-    float FP_16_32;    // fp16 with 32 bit accumulate
-    float FP_16_16;    // fp16 with 16 bit accumulate
-    float FP_8_32;     // and so on
-    float FP_8_16;
-    float CLOCK;        // clock frequency from the spec sheet
-    float CORES;        // #TCs from the spec sheet
-} PerfData;
+تعريفنوع بنية {
+    عائم TF_32;       // tensor-core performance 32 bit
+    عائم BF_16_32;    // bf16 with 32 bit accumulate
+    عائم FP_16_32;    // fp16 with 32 bit accumulate
+    عائم FP_16_16;    // fp16 with 16 bit accumulate
+    عائم FP_8_32;     // and so on
+    عائم FP_8_16;
+    عائم CLOCK;        // clock frequency from the spec sheet
+    عائم CORES;        // #TCs from the spec sheet
+} Perf_معلومات;
 
 // basic default data from the nvidia whitepapers
-static const PerfData VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
-static const PerfData AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
-static const PerfData AMPERE_CONSUMER = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
-static const PerfData HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
-static const PerfData ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
+ساكن ثابت Perf_معلومات VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
+ساكن ثابت Perf_معلومات AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
+ساكن ثابت Perf_معلومات AMPERE_استعمال_ڪندڙ = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
+ساكن ثابت Perf_معلومات HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
+ساكن ثابت Perf_معلومات ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
 
-typedef struct {
-    const char* name;
-    const PerfData* perf_data;
-    float new_cores;
-    float new_mhz;
+تعريفنوع بنية {
+    ثابت حرف* name;
+    ثابت Perf_معلومات* perf_معلومات;
+    عائم new_cores;
+    عائم new_mhz;
 } GPUEntry;
 
 // the overrides for each specific GPU
-static GPUEntry gpu_db[] = {
+ساكن GPUEntry gpu_db[] = {
     {"Tesla V100-SXM2-16GB", &VOLTA, 640, 1530},
     {"Tesla V100-PCIE-32GB", &VOLTA, 640, 1530},
     {"NVIDIA A100-PCIE-40GB", &AMPERE_DATACENTER, 432, 1410},
     {"NVIDIA A100-PCIE-80GB", &AMPERE_DATACENTER, 432, 1410},
     {"NVIDIA A100-SXM4-40GB", &AMPERE_DATACENTER, 432, 1410},
     {"NVIDIA A100-SXM4-80GB", &AMPERE_DATACENTER, 432, 1410},
-    {"NVIDIA RTX A2000", &AMPERE_CONSUMER, 104, 1200},
-    {"NVIDIA RTX A4000", &AMPERE_CONSUMER, 192, 1560},
-    {"NVIDIA RTX A4500", &AMPERE_CONSUMER, 224, 1650},
-    {"NVIDIA RTX A5000", &AMPERE_CONSUMER, 256, 1695},
-    {"NVIDIA RTX A5500", &AMPERE_CONSUMER, 320, 1770},
-    {"NVIDIA RTX A6000", &AMPERE_CONSUMER, 336, 1800},
-    {"NVIDIA GeForce RTX 3090 Ti", &AMPERE_CONSUMER, 336, 1860},
-    {"NVIDIA GeForce RTX 3090", &AMPERE_CONSUMER, 328, 1695},
-    {"NVIDIA GeForce RTX 3080 Ti", &AMPERE_CONSUMER, 320, 1665},
-    {"NVIDIA GeForce RTX 3080", &AMPERE_CONSUMER, 272, 1710},
-    {"NVIDIA GeForce RTX 3070 Ti", &AMPERE_CONSUMER, 192, 1770},
-    {"NVIDIA GeForce RTX 3070", &AMPERE_CONSUMER, 184, 1725},
-    {"NVIDIA GeForce RTX 3060 Ti", &AMPERE_CONSUMER, 152, 1665},
-    {"NVIDIA GeForce RTX 3060", &AMPERE_CONSUMER, 112, 1777},
+    {"NVIDIA RTX A2000", &AMPERE_استعمال_ڪندڙ, 104, 1200},
+    {"NVIDIA RTX A4000", &AMPERE_استعمال_ڪندڙ, 192, 1560},
+    {"NVIDIA RTX A4500", &AMPERE_استعمال_ڪندڙ, 224, 1650},
+    {"NVIDIA RTX A5000", &AMPERE_استعمال_ڪندڙ, 256, 1695},
+    {"NVIDIA RTX A5500", &AMPERE_استعمال_ڪندڙ, 320, 1770},
+    {"NVIDIA RTX A6000", &AMPERE_استعمال_ڪندڙ, 336, 1800},
+    {"NVIDIA GeForce RTX 3090 Ti", &AMPERE_استعمال_ڪندڙ, 336, 1860},
+    {"NVIDIA GeForce RTX 3090", &AMPERE_استعمال_ڪندڙ, 328, 1695},
+    {"NVIDIA GeForce RTX 3080 Ti", &AMPERE_استعمال_ڪندڙ, 320, 1665},
+    {"NVIDIA GeForce RTX 3080", &AMPERE_استعمال_ڪندڙ, 272, 1710},
+    {"NVIDIA GeForce RTX 3070 Ti", &AMPERE_استعمال_ڪندڙ, 192, 1770},
+    {"NVIDIA GeForce RTX 3070", &AMPERE_استعمال_ڪندڙ, 184, 1725},
+    {"NVIDIA GeForce RTX 3060 Ti", &AMPERE_استعمال_ڪندڙ, 152, 1665},
+    {"NVIDIA GeForce RTX 3060", &AMPERE_استعمال_ڪندڙ, 112, 1777},
     {"NVIDIA RTX A2000 ADA", &ADA, 88, 2130},
     {"NVIDIA RTX A4000 ADA", &ADA, 192, 2175},
     {"NVIDIA RTX A4500 ADA", &ADA, 224, 2580},
@@ -94,7 +94,7 @@ static GPUEntry gpu_db[] = {
     {"NVIDIA H100 80GB HBM3", &HOPPER, 528, 1830}, // HBM3 = SXM5
 };
 
-float get_flops_promised(const char* device, int precision_mode) {
+عائم get_flops_promised(ثابت حرف* device, صحيح precision_گهڻائي) {
     /*
     This function is used to estimate the Model Flops Utilization (MFU)
     basically we have to figure out how many flops the GPU can do per second.
@@ -117,78 +117,78 @@ float get_flops_promised(const char* device, int precision_mode) {
     */
 
    // validate the precision mode as one of the three possible values
-    if (!(precision_mode == MFUH_PRECISION_FP32 || precision_mode == MFUH_PRECISION_FP16 || precision_mode == MFUH_PRECISION_BF16)) {
-        fprintf(stderr, "Invalid precision mode: %d\n", precision_mode);
-        return -1.0f;
+    إذا (!(precision_گهڻائي == MFUH_PRECISION_FP32 || precision_گهڻائي == MFUH_PRECISION_FP16 || precision_گهڻائي == MFUH_PRECISION_BF16)) {
+        fprintf(stderr, "Invalid precision mode: %d\n", precision_گهڻائي);
+        أرجع -1.0f;
     }
 
     // do a linear search until you find our GPU, then calculate the flops promised
-    int num_gpu_entries = sizeof(gpu_db) / sizeof(gpu_db[0]);
-    for (int i = 0; i < num_gpu_entries; i++) {
-        if (strcmp(gpu_db[i].name, device) == 0) {
-            const PerfData* perf_data = gpu_db[i].perf_data;
+    صحيح انگ_gpu_entries = حجم(gpu_db) / حجم(gpu_db[0]);
+    لكل (صحيح i = 0; i < انگ_gpu_entries; i++) {
+        إذا (strcmp(gpu_db[i].name, device) == 0) {
+            ثابت Perf_معلومات* perf_معلومات = gpu_db[i].perf_معلومات;
 
             // look up the default flops value for the given precision mode
-            float value = -1.0f;
-            if (precision_mode == MFUH_PRECISION_BF16) { value = perf_data->BF_16_32; }
-            if (precision_mode == MFUH_PRECISION_FP32) { value = perf_data->TF_32; }
-            if (precision_mode == MFUH_PRECISION_FP16) { value = perf_data->FP_16_32; }
+            عائم قدر = -1.0f;
+            إذا (precision_گهڻائي == MFUH_PRECISION_BF16) { قدر = perf_معلومات->BF_16_32; }
+            إذا (precision_گهڻائي == MFUH_PRECISION_FP32) { قدر = perf_معلومات->TF_32; }
+            إذا (precision_گهڻائي == MFUH_PRECISION_FP16) { قدر = perf_معلومات->FP_16_32; }
 
             // we'd get here if we're e.g. trying to use BF16 on Volta GPU or something...
-            if (value < 0.0f) {
-                fprintf(stderr, "No data for GPU %s and precision mode %d\n", device, precision_mode);
-                return -1.0f;
+            إذا (قدر < 0.0f) {
+                fprintf(stderr, "No data for GPU %s and precision mode %d\n", device, precision_گهڻائي);
+                أرجع -1.0f;
             }
 
             // adjust flops based on the specific core count and clock frequency of this GPU
-            float new_cores = gpu_db[i].new_cores;
-            float new_mhz = gpu_db[i].new_mhz;
-            float adjusted = value * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
-            return adjusted;
+            عائم new_cores = gpu_db[i].new_cores;
+            عائم new_mhz = gpu_db[i].new_mhz;
+            عائم adjusted = قدر * (new_cores / perf_معلومات->CORES) * (new_mhz / perf_معلومات->CLOCK);
+            أرجع adjusted;
         }
     }
 
-    return -1.0f; // ¯\_(ツ)_/¯
+    أرجع -1.0f; // ¯\_(ツ)_/¯
 }
 
-struct GPUUtilInfo {
-    unsigned int clock;
-    unsigned int max_clock;
-    unsigned int power;
-    unsigned int power_limit;
-    unsigned int fan;
-    unsigned int temperature;
-    unsigned int temp_slowdown;
+بنية GPUUtilInfo {
+    بنانشان صحيح clock;
+    بنانشان صحيح max_clock;
+    بنانشان صحيح power;
+    بنانشان صحيح power_حد_بندي;
+    بنانشان صحيح fan;
+    بنانشان صحيح temperature;
+    بنانشان صحيح عارضي_slowdown;
 
-    float gpu_utilization;
-    float mem_utilization;
-    const char* throttle_reason;
+    عائم gpu_utilization;
+    عائم mem_utilization;
+    ثابت حرف* throttle_reason;
 };
 
 // lazily initialize nvml and generate a handle to the GPU
-#if USE_NVML
+#إذا USE_NVML
 nvmlDevice_t nvml_get_device() {
-    static bool needs_init = true;
-    static nvmlDevice_t device;
-    if(needs_init) {
+    ساكن bool needs_init = true;
+    ساكن nvmlDevice_t device;
+    إذا(needs_init) {
         needs_init = false;
         nvmlCheck(nvmlInit());
-        nvmlCheck(nvmlDeviceGetHandleByIndex_v2(0, &device));
+        nvmlCheck(nvml_Device_Get_Handle_By_اشاريو_v2(0, &device));
     }
-    return device;
+    أرجع device;
 }
 
 // convert throttle reason bitfield into a text reason.
 // this is a lossy conversion; we just want to give some idea of what is happening
-const char* get_throttle_reason(unsigned long long bits) {
-    if(bits & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
-        return "power cap";
-    } else if (bits & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
-        return "thermal cap";
-    } else if (bits & (nvmlClocksThrottleReasonAll)) {
-        return "other cap";
-    } else {
-        return "no cap";
+ثابت حرف* get_throttle_reason(بنانشان ڊگهو ڊگهو بٽ) {
+    إذا(بٽ & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
+        أرجع "power cap";
+    } وإلا إذا (بٽ & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
+        أرجع "thermal cap";
+    } وإلا إذا (بٽ & (nvmlClocksThrottleReasonAll)) {
+        أرجع "other cap";
+    } وإلا {
+        أرجع "no cap";
     }
 }
 
@@ -199,46 +199,46 @@ GPUUtilInfo get_gpu_utilization_info() {
     // query different infos directly
     nvmlCheck(nvmlDeviceGetClockInfo(device, NVML_CLOCK_SM, &info.clock));
     nvmlCheck(nvmlDeviceGetMaxClockInfo(device, NVML_CLOCK_SM, &info.max_clock));
-    nvmlCheck(nvmlDeviceGetPowerManagementLimit(device, &info.power_limit));
+    nvmlCheck(nvml_Device_Get_Power_Management_حد_بندي(device, &info.power_حد_بندي));
     nvmlCheck(nvmlDeviceGetPowerUsage(device, &info.power));
     nvmlCheck(nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &info.temperature));
-    nvmlCheck(nvmlDeviceGetTemperatureThreshold(device, NVML_TEMPERATURE_THRESHOLD_SLOWDOWN, &info.temp_slowdown));
-    unsigned long long throttle;
+    nvmlCheck(nvml_Device_Get_Temperature_حد(device, NVML_TEMPERATURE_حد_SLOWDOWN, &info.عارضي_slowdown));
+    بنانشان ڊگهو ڊگهو throttle;
     nvmlCheck(nvmlDeviceGetCurrentClocksThrottleReasons(device, &throttle));
     info.throttle_reason = get_throttle_reason(throttle);
-    nvmlCheck(nvmlDeviceGetFanSpeed(device, &info.fan));
+    nvmlCheck(nvml_Device_Get_Fan_رفتار(device, &info.fan));
 
     // for "utilization", we look at recorded samples. In principle, we could query the driver for how many samples
     // to request, but then we'd need to dynamically allocate sufficient space. Let's just hard-code a limit of 128,
     // and have no memory management required
-    constexpr const int BUFFER_LIMIT = 128;
-    nvmlSample_t buffer[BUFFER_LIMIT];
-    nvmlValueType_t v_type;
-    unsigned int sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float gpu_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        gpu_utilization += (float)buffer[i].sampleValue.uiVal;
+    constexpr ثابت صحيح بفر_حد_بندي = 128;
+    nvmlSample_t بفر[بفر_حد_بندي];
+    nvml_قدر_Type_t v_type;
+    بنانشان صحيح sample_ڳڻپ = بفر_حد_بندي;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_ڳڻپ, بفر));
+    عائم gpu_utilization = 0.f;
+    لكل(بنانشان i = 0; i < sample_ڳڻپ; ++i) {
+        gpu_utilization += (عائم)بفر[i].sample_قدر.uiVal;
     }
-    gpu_utilization /= (float)sample_count;
+    gpu_utilization /= (عائم)sample_ڳڻپ;
 
     // sample count may have been modified by the query above; reset back to buffer size
-    sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float mem_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        mem_utilization += (float)buffer[i].sampleValue.uiVal;
+    sample_ڳڻپ = بفر_حد_بندي;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_يادگيري_UTILIZATION_SAMPLES, 0, &v_type, &sample_ڳڻپ, بفر));
+    عائم mem_utilization = 0.f;
+    لكل(بنانشان i = 0; i < sample_ڳڻپ; ++i) {
+        mem_utilization += (عائم)بفر[i].sample_قدر.uiVal;
     }
-    mem_utilization /= (float)sample_count;
+    mem_utilization /= (عائم)sample_ڳڻپ;
 
     info.gpu_utilization = gpu_utilization;
     info.mem_utilization = mem_utilization;
-    return info;
+    أرجع info;
 }
-#else
+#وإلا
 GPUUtilInfo get_gpu_utilization_info() {
     fprintf(stderr, "Error: Compiled without nvml support. Cannot perform additional GPU state tracking.");
-    exit(EXIT_FAILURE);
+    ٻاهر_نڪرو(EXIT_FAILURE);
 }
-#endif
-#endif // MFU_H
+#جيڪڏهن_پورو
+#جيڪڏهن_پورو // MFU_H

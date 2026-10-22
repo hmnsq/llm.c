@@ -80,161 +80,161 @@ Both output:
     2756748748
 */
 
-#ifndef RAND_H
-#define RAND_H
+#جيڪڏهن_وصف_نه_ٿيل RAND_H
+#وصف_ڪريو RAND_H
 
-#include <math.h>
+#ضمن <math.h>
 
-#define MERSENNE_STATE_M 397u
-#define MERSENNE_STATE_N 624u
+#وصف_ڪريو MERSENNE_STATE_M 397u
+#وصف_ڪريو MERSENNE_STATE_N 624u
 
-#define LMASK 0x7ffffffful
-#define UMASK 0x80000000ul
+#وصف_ڪريو LMASK 0x7ffffffful
+#وصف_ڪريو UMASK 0x80000000ul
 
 // Copyright(c) Makoto Matsumoto and Takuji Nishimura
 
 // This implementation follows PyTorch so that we are numerically identical when running verification tests.
 
-typedef struct {
-    unsigned long long seed_;
-    int left_;
-    unsigned int next_;
-    unsigned int state_[MERSENNE_STATE_N];
-    unsigned int MATRIX_A[2];
+تعريفنوع بنية {
+    بنانشان ڊگهو ڊگهو ٻج;
+    صحيح کاٻو;
+    بنانشان صحيح ايندڙ;
+    بنانشان صحيح state_[MERSENNE_STATE_N];
+    بنانشان صحيح ميٽرڪس_A[2];
 } mt19937_state;
 
-void manual_seed(mt19937_state* state, unsigned int seed) {
-    state->MATRIX_A[0] = 0x0u;
-    state->MATRIX_A[1] = 0x9908b0df;
-    state->state_[0] = seed & 0xffffffff;
-    for (unsigned int j = 1; j < MERSENNE_STATE_N; j++) {
+فراغ manual_ٻج(mt19937_state* state, بنانشان صحيح ٻج_2) {
+    state->ميٽرڪس_A[0] = 0x0u;
+    state->ميٽرڪس_A[1] = 0x9908b0df;
+    state->state_[0] = ٻج_2 & 0xffffffff;
+    لكل (بنانشان صحيح j = 1; j < MERSENNE_STATE_N; j++) {
         state->state_[j] = 1812433253 * (state->state_[j - 1] ^ (state->state_[j - 1] >> 30)) + j;
         state->state_[j] &= 0xffffffff;
     }
-    state->left_ = 1;
-    state->next_ = 0;
+    state->کاٻو = 1;
+    state->ايندڙ = 0;
 }
 
-void next_state(mt19937_state* state) {
-    state->left_ = MERSENNE_STATE_N;
-    state->next_ = 0;
-    unsigned int y, j;
-    for (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
+فراغ ايندڙ_state(mt19937_state* state) {
+    state->کاٻو = MERSENNE_STATE_N;
+    state->ايندڙ = 0;
+    بنانشان صحيح y, j;
+    لكل (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->ميٽرڪس_A[y & 0x1];
     }
-    for (; j < MERSENNE_STATE_N - 1; j++) {
+    لكل (; j < MERSENNE_STATE_N - 1; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->ميٽرڪس_A[y & 0x1];
     }
     y = (state->state_[MERSENNE_STATE_N - 1] & UMASK) | (state->state_[0] & LMASK);
-    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->ميٽرڪس_A[y & 0x1];
 }
 
-unsigned int randint32(mt19937_state* state) {
-    if (!state) return 0;
-    if (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
-    if (--state->left_ <= 0) {
-        next_state(state);
+بنانشان صحيح randint32(mt19937_state* state) {
+    إذا (!state) أرجع 0;
+    إذا (state->ميٽرڪس_A[0] != 0 || state->ميٽرڪس_A[1] != 0x9908b0df) manual_ٻج(state, 5489); // auto-initialize
+    إذا (--state->کاٻو <= 0) {
+        ايندڙ_state(state);
     }
-    unsigned int y = state->state_[state->next_++];
+    بنانشان صحيح y = state->state_[state->ايندڙ++];
     y ^= y >> 11;
     y ^= (y << 7) & 0x9d2c5680;
     y ^= (y << 15) & 0xefc60000;
     y ^= y >> 18;
-    return y;
+    أرجع y;
 }
 
-inline unsigned long long randint64(mt19937_state* state) {
-    return (((unsigned long long)(randint32(state)) << 32) | randint32(state));
+مضمن بنانشان ڊگهو ڊگهو randint64(mt19937_state* state) {
+    أرجع (((بنانشان ڊگهو ڊگهو)(randint32(state)) << 32) | randint32(state));
 }
 
-inline float randfloat32(mt19937_state* state) {
-    return (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
+مضمن عائم randfloat32(mt19937_state* state) {
+    أرجع (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
 }
 
-inline double randfloat64(mt19937_state* state) {
-    return (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
+مضمن مزدوج randfloat64(mt19937_state* state) {
+    أرجع (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
 }
 
-void uniform_(float* data, unsigned int numel, float from, float to, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state) * (to - from) + from;
+فراغ هڪجهڙو(عائم* معلومات, بنانشان صحيح numel, عائم from, عائم منزل, mt19937_state* state) {
+    لكل (بنانشان صحيح t = 0; t < numel; t++) {
+        معلومات[t] = randfloat32(state) * (منزل - from) + from;
     }
 }
 
 // Box-Muller transform: maps uniform random numbers to Gaussian distributed numbers
 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-void normal_fill_16(float* data, float mean, float std) {
-    #define EPSILONE 1e-12f
-    for (unsigned int t = 0; t < 8; t++) {
-        float u1 = 1 - data[t];
-        float u2 = data[t + 8];
-        float radius = sqrtf(-2 * logf(u1 + EPSILONE));
-        float theta = (float) (2.0 * M_PI * u2);
-        data[t] = (radius * cosf(theta) * std + mean);
-        data[t + 8] = (radius * sinf(theta) * std + mean);
+فراغ عام_fill_16(عائم* معلومات, عائم سراسري, عائم std) {
+    #وصف_ڪريو EPSILONE 1e-12f
+    لكل (بنانشان صحيح t = 0; t < 8; t++) {
+        عائم u1 = 1 - معلومات[t];
+        عائم u2 = معلومات[t + 8];
+        عائم radius = sqrtf(-2 * logf(u1 + EPSILONE));
+        عائم theta = (عائم) (2.0 * M_PI * u2);
+        معلومات[t] = (radius * cosf(theta) * std + سراسري);
+        معلومات[t + 8] = (radius * sinf(theta) * std + سراسري);
     }
 }
 
-void normal_fill(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state);
+فراغ عام_fill(عائم* معلومات, بنانشان صحيح numel, عائم سراسري, عائم std, mt19937_state* state) {
+    لكل (بنانشان صحيح t = 0; t < numel; t++) {
+        معلومات[t] = randfloat32(state);
     }
-    for (unsigned int i = 0; i < numel - 15; i += 16) {
-        normal_fill_16(data + i, mean, std);
+    لكل (بنانشان صحيح i = 0; i < numel - 15; i += 16) {
+        عام_fill_16(معلومات + i, سراسري, std);
     }
-    if (numel % 16 != 0) {
+    إذا (numel % 16 != 0) {
         // recompute the last 16 values
-        data = data + numel - 16;
-        for (unsigned int i = 0; i < 16; i++) {
-            data[i] = randfloat32(state);
+        معلومات = معلومات + numel - 16;
+        لكل (بنانشان صحيح i = 0; i < 16; i++) {
+            معلومات[i] = randfloat32(state);
         }
-        normal_fill_16(data, mean, std);
+        عام_fill_16(معلومات, سراسري, std);
     }
 }
 
-void normal_(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    #define EPSILONE 1e-12f
-    if (numel >= 16) {
-        normal_fill(data, numel, mean, std, state);
+فراغ عام_2(عائم* معلومات, بنانشان صحيح numel, عائم سراسري, عائم std, mt19937_state* state) {
+    #وصف_ڪريو EPSILONE 1e-12f
+    إذا (numel >= 16) {
+        عام_fill(معلومات, numel, سراسري, std, state);
     }
-    else {
-        double next_double_normal_sample = 0.0; // make compiler warning happy, won't be used
-        int has_next_double_normal_sample = 0;
-        for (unsigned int  t = 0; t < numel; t++) {
-            if (has_next_double_normal_sample) {
-                data[t] = (float)(next_double_normal_sample * std + mean);
-                has_next_double_normal_sample = 0;
-                continue;
+    وإلا {
+        مزدوج ايندڙ_double_عام_sample = 0.0; // make compiler warning happy, won't be used
+        صحيح has_ايندڙ_double_عام_sample = 0;
+        لكل (بنانشان صحيح  t = 0; t < numel; t++) {
+            إذا (has_ايندڙ_double_عام_sample) {
+                معلومات[t] = (عائم)(ايندڙ_double_عام_sample * std + سراسري);
+                has_ايندڙ_double_عام_sample = 0;
+                استمر;
             }
             // for numel < 16 we draw a double (float64)
-            float u1 = (float) randfloat64(state);
-            float u2 = (float) randfloat64(state);
-            float radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
-            float theta = (float) (2.0 * M_PI * u1);
-            next_double_normal_sample = radius * sinf(theta);
-            has_next_double_normal_sample = 1;
-            data[t] = (radius * cosf(theta) * std + mean);
+            عائم u1 = (عائم) randfloat64(state);
+            عائم u2 = (عائم) randfloat64(state);
+            عائم radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
+            عائم theta = (عائم) (2.0 * M_PI * u1);
+            ايندڙ_double_عام_sample = radius * sinf(theta);
+            has_ايندڙ_double_عام_sample = 1;
+            معلومات[t] = (radius * cosf(theta) * std + سراسري);
         }
     }
 }
 
-void init_identity_permutation(int *data, int numel) {
-    for (int i = 0; i < numel; i++) {
-        data[i] = i;
+فراغ init_سڃاڻپ_عنصر_permutation(صحيح *معلومات, صحيح numel) {
+    لكل (صحيح i = 0; i < numel; i++) {
+        معلومات[i] = i;
     }
 }
 
-void random_permutation(int* data, int numel, mt19937_state* state) {
-    for (int i = numel - 1; i > 0; i--) {
+فراغ random_permutation(صحيح* معلومات, صحيح numel, mt19937_state* state) {
+    لكل (صحيح i = numel - 1; i > 0; i--) {
         // pick an index j in [0, i] with equal probability
-        int j = randint32(state) % (i + 1);
+        صحيح j = randint32(state) % (i + 1);
         // swap i <-> j
-        int tmp = data[i];
-        data[i] = data[j];
-        data[j] = tmp;
+        صحيح tmp = معلومات[i];
+        معلومات[i] = معلومات[j];
+        معلومات[j] = tmp;
     }
 }
 
-#endif
+#جيڪڏهن_پورو

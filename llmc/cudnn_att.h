@@ -1,21 +1,21 @@
 /*
 cuDNN (flash) attention
 */
-#ifndef CUDNN_ATT_H
-#define CUDNN_ATT_H
+#جيڪڏهن_وصف_نه_ٿيل CUDNN_ATT_H
+#وصف_ڪريو CUDNN_ATT_H
 
-#include "cuda_common.h"
+#ضمن "cuda_common.h"
 
 // forward declarations of functions defined in cudnn_att.cpp
-void create_cudnn();
-void destroy_cudnn();
-void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
-                             float* stats, // output for backward pass: (B, NH, T)
+فراغ create_cudnn();
+فراغ destroy_cudnn();
+فراغ attention_forward_cudnn(floatX* ٻاهريون,  // output: (B, T, NH, HS)
+                             عائم* stats, // output for backward pass: (B, NH, T)
                              floatX* inp,  // input: (B, T, 3, NH, HS) QKV
-                             int B, int T, int NH, int C, cudaStream_t stream);
+                             صحيح B, صحيح T, صحيح NH, صحيح C, cuda_وهڪرو_t وهڪرو);
 
-void attention_backward_cudnn(floatX* dqkvr,                                       // output
-                              floatX* dout, floatX* qkvr, floatX* o, float* stats, // inputs
-                              int B, int T, int NH, int C, cudaStream_t stream);
+فراغ attention_backward_cudnn(floatX* dqkvr,                                       // output
+                              floatX* dout, floatX* qkvr, floatX* o, عائم* stats, // inputs
+                              صحيح B, صحيح T, صحيح NH, صحيح C, cuda_وهڪرو_t وهڪرو);
 
-#endif // CUDNN_ATT_H
+#جيڪڏهن_پورو // CUDNN_ATT_H

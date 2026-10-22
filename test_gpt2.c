@@ -1,92 +1,92 @@
-#define TESTING
-#include "train_gpt2.c"
+#وصف_ڪريو TESTING
+#ضمن "train_gpt2.c"
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, const char* label) {
-    int print_upto = 5;
-    int ok = 1;
-    float maxdiff = 0.0f;
-    float tol = 2e-2f;
-    printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
+صحيح check_tensor(عائم *a, عائم *b, صحيح n, ثابت حرف* label) {
+    صحيح print_upto = 5;
+    صحيح ok = 1;
+    عائم maxdiff = 0.0f;
+    عائم tol = 2e-2f;
+    لکو("%s\n", label);
+    لكل (صحيح i = 0; i < n; i++) {
         // look at the diffence at position i of these two tensors
-        float diff = fabsf(a[i] - b[i]);
+        عائم diff = fabsf(a[i] - b[i]);
 
         // keep track of the overall error
         ok = ok && (diff <= tol);
-        if (diff > maxdiff) { maxdiff = diff; }
+        إذا (diff > maxdiff) { maxdiff = diff; }
 
         // for the first few elements of each tensor, pretty print
         // the actual numbers, so we can do a visual, qualitative proof/assessment
-        if (i < print_upto) {
-            if (diff <= tol) {
-                if (i < print_upto) { printf("OK "); }
-            } else {
-                if (i < print_upto) { printf("NOT OK "); }
+        إذا (i < print_upto) {
+            إذا (diff <= tol) {
+                إذا (i < print_upto) { لکو("OK "); }
+            } وإلا {
+                إذا (i < print_upto) { لکو("NOT OK "); }
             }
-            printf("%f %f\n", a[i], b[i]);
+            لکو("%f %f\n", a[i], b[i]);
         }
     }
     // print the final result for this tensor
-    if (ok) {
-        printf("TENSOR OK, maxdiff = %e\n", maxdiff);
-    } else {
-        printf("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
+    إذا (ok) {
+        لکو("TENSOR OK, maxdiff = %e\n", maxdiff);
+    } وإلا {
+        لکو("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
     }
-    return ok;
+    أرجع ok;
 }
 
-int main(int argc, char *argv[]) {
+صحيح مکيه(صحيح argc, حرف *argv[]) {
 
     // build the GPT-2 model from a checkpoint
     GPT2 model;
     gpt2_build_from_checkpoint(&model, "gpt2_124M.bin");
 
-    int C = model.config.channels;
-    int V = model.config.vocab_size;
-    int Vp = model.config.padded_vocab_size;
-    int maxT = model.config.max_seq_len;
-    int L = model.config.num_layers;
+    صحيح C = model.config.channels;
+    صحيح V = model.config.vocab_سائيز;
+    صحيح Vp = model.config.padded_vocab_سائيز;
+    صحيح maxT = model.config.max_seq_len;
+    صحيح L = model.config.انگ_layers;
 
     // load additional information that we will use for debugging and error checking
     FILE *state_file = fopen("gpt2_124M_debug_state.bin", "rb");
-    if (state_file == NULL) { printf("Error opening state file\n"); return 1; }
-    int state_header[256];
-    freadCheck(state_header, sizeof(int), 256, state_file);
-    if (state_header[0] != 20240327) { printf("Bad magic state file\n"); return 1; }
-    if (state_header[1] != 2) {
-        printf("Bad version in state file\n");
-        printf("---> HINT: try to re-run `python train_gpt2.py`\n");
-        return 1;
+    إذا (state_file == عدم) { لکو("Error opening state file\n"); أرجع 1; }
+    صحيح state_سرو[256];
+    freadCheck(state_سرو, حجم(صحيح), 256, state_file);
+    إذا (state_سرو[0] != 20240327) { لکو("Bad magic state file\n"); أرجع 1; }
+    إذا (state_سرو[1] != 2) {
+        لکو("Bad version in state file\n");
+        لکو("---> HINT: try to re-run `python train_gpt2.py`\n");
+        أرجع 1;
     }
-    int B = state_header[2]; // batch size, e.g. 4
-    int T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
-    printf("[State]\n");
-    printf("batch_size: %d\n", B);
-    printf("seq_len: %d\n", T);
+    صحيح B = state_سرو[2]; // batch size, e.g. 4
+    صحيح T = state_سرو[3]; // time / sequence length (e.g. 64, up to maxT)
+    لکو("[State]\n");
+    لکو("batch_size: %d\n", B);
+    لکو("seq_len: %d\n", T);
 
     ParameterTensors expected_grads;
-    float* expected_grads_memory = malloc_and_point_parameters(&expected_grads, model.param_sizes);
+    عائم* expected_grads_يادگيري = malloc_and_نقطو_parameters(&expected_grads, model.param_sizes);
 
     // inputs and expected outputs, only used for error checking
-    int* x = (int*) malloc(B * T * sizeof(int));
-    int* y = (int*) malloc(B * T * sizeof(int));
-    float* expected_logits = (float*) malloc(B * T * V * sizeof(float));
-    float* expected_loss = (float*) malloc(1 * sizeof(float));
+    صحيح* x = (صحيح*) يادگيري_ڏيو(B * T * حجم(صحيح));
+    صحيح* y = (صحيح*) يادگيري_ڏيو(B * T * حجم(صحيح));
+    عائم* expected_logits = (عائم*) يادگيري_ڏيو(B * T * V * حجم(عائم));
+    عائم* expected_loss = (عائم*) يادگيري_ڏيو(1 * حجم(عائم));
 
     // read reference information from Python
-    freadCheck(x, sizeof(int), B*T, state_file);
-    freadCheck(y, sizeof(int), B*T, state_file);
-    freadCheck(expected_logits, sizeof(float), B*T*V, state_file);
-    freadCheck(expected_loss, sizeof(float), 1, state_file);
-    freadCheck(expected_grads_memory, sizeof(float), model.num_parameters, state_file);
+    freadCheck(x, حجم(صحيح), B*T, state_file);
+    freadCheck(y, حجم(صحيح), B*T, state_file);
+    freadCheck(expected_logits, حجم(عائم), B*T*V, state_file);
+    freadCheck(expected_loss, حجم(عائم), 1, state_file);
+    freadCheck(expected_grads_يادگيري, حجم(عائم), model.انگ_parameters, state_file);
     fcloseCheck(state_file);
 
     // overall OK signal for the test
-    int allok = 1;
+    صحيح allok = 1;
 
     // let's do 10 training iterations, following the pytorch code
-    float expected_losses[10] = {
+    عائم expected_losses[10] = {
         5.270007133483887f,
         4.059706687927246f,
         3.3751230239868164f,
@@ -98,55 +98,55 @@ int main(int argc, char *argv[]) {
         0.6240804195404053f,
         0.37651097774505615f
     };
-    for (int step = 0; step < 10; step++) {
+    لكل (صحيح قدم = 0; قدم < 10; قدم++) {
 
-        struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
+        بنية timespec شروعات, پڇاڙي;
+        clock_gettime(CLOCK_MONOTONIC, &شروعات);
 
         gpt2_forward(&model, x, y, B, T);
         gpt2_zero_grad(&model);
         gpt2_backward(&model);
 
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        clock_gettime(CLOCK_MONOTONIC, &پڇاڙي);
+        مزدوج وقت_elapsed_s = (پڇاڙي.tv_sec - شروعات.tv_sec) + (پڇاڙي.tv_nsec - شروعات.tv_nsec) / 1e9;
 
-        if (step == 0) {
+        إذا (قدم == 0) {
             // error checking at step 0 for reference activations/gradients
             // at this point, target should be equal to expected_logits, let's compare
-            int logits_ok = 1;
-            float* calculated_logits = model.acts.logits;
-            float max_diff = 0.0f;
-            for (int bt = 0; bt < B*T; bt++) {
-                for (int v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
-                    int i = bt * Vp + v; // linearized index, using Vp
-                    if (i < 10) {
-                        printf("%f, %f\n", expected_logits[i], calculated_logits[i]);
+            صحيح logits_ok = 1;
+            عائم* calculated_logits = model.acts.logits;
+            عائم max_diff = 0.0f;
+            لكل (صحيح bt = 0; bt < B*T; bt++) {
+                لكل (صحيح v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
+                    صحيح i = bt * Vp + v; // linearized index, using Vp
+                    إذا (i < 10) {
+                        لکو("%f, %f\n", expected_logits[i], calculated_logits[i]);
                     }
-                    float diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
+                    عائم diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
                     max_diff = fmaxf(max_diff, diff);
-                    if (diff >= 1e-2f) {
-                        printf("MISMATCH AT INDEX %d,%d: ", bt, v);
-                        printf("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
+                    إذا (diff >= 1e-2f) {
+                        لکو("MISMATCH AT INDEX %d,%d: ", bt, v);
+                        لکو("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
                         logits_ok = 0;
                         bt = B*T; // to break out of both loops
-                        break;
+                        اكسر;
                     }
                 }
             }
-            if(!logits_ok) { printf("NOT "); }
-            printf("OK (LOGITS), max_diff = %e\n", max_diff);
+            إذا(!logits_ok) { لکو("NOT "); }
+            لکو("OK (LOGITS), max_diff = %e\n", max_diff);
             allok = allok && logits_ok;
 
             // compare the achieved loss
-            if (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
-                printf("LOSS MISMATCH: %f %f\n", model.mean_loss, *expected_loss);
+            إذا (fabsf(model.سراسري_loss - *expected_loss) >= 1e-2) {
+                لکو("LOSS MISMATCH: %f %f\n", model.سراسري_loss, *expected_loss);
                 allok = 0;
-            } else {
-                printf("LOSS OK: %f %f\n", model.mean_loss, *expected_loss);
+            } وإلا {
+                لکو("LOSS OK: %f %f\n", model.سراسري_loss, *expected_loss);
             }
 
             // finally check all the gradients
-            int gradoks[16];
+            صحيح gradoks[16];
             ParameterTensors grads = model.grads;
             gradoks[0] = check_tensor(grads.wte, expected_grads.wte, V*C, "dwte");
             gradoks[1] = check_tensor(grads.wpe, expected_grads.wpe, maxT*C, "dwpe");
@@ -164,32 +164,32 @@ int main(int argc, char *argv[]) {
             gradoks[13] = check_tensor(grads.fcprojb, expected_grads.fcprojb, L*C, "dfcprojb");
             gradoks[14] = check_tensor(grads.lnfw, expected_grads.lnfw, C, "dlnfw");
             gradoks[15] = check_tensor(grads.lnfb, expected_grads.lnfb, C, "dlnfb");
-            for (int i = 0; i < 16; i++) {
+            لكل (صحيح i = 0; i < 16; i++) {
                 allok = allok && gradoks[i];
             }
         }
 
-        gpt2_update(&model, 1e-4f, 0.9f, 0.999f, 1e-8f, 0.01f, step+1);
+        gpt2_update(&model, 1e-4f, 0.9f, 0.999f, 1e-8f, 0.01f, قدم+1);
 
         // compare the losses
-        float expected_loss = expected_losses[step];
-        float actual_loss = model.mean_loss;
-        int step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
-        allok = allok && step_loss_ok;
+        عائم expected_loss = expected_losses[قدم];
+        عائم actual_loss = model.سراسري_loss;
+        صحيح قدم_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
+        allok = allok && قدم_loss_ok;
 
         // print the timing information at the end
-        printf("step %d: loss %f (took %f ms) OK = %d\n", step, model.mean_loss, time_elapsed_s * 1000, step_loss_ok);
+        لکو("step %d: loss %f (took %f ms) OK = %d\n", قدم, model.سراسري_loss, وقت_elapsed_s * 1000, قدم_loss_ok);
     }
 
     // final judgement
-    printf("overall okay: %d\n", allok);
+    لکو("overall okay: %d\n", allok);
 
     // free everything
-    free(x);
-    free(y);
-    free(expected_logits);
-    free(expected_loss);
-    free(expected_grads_memory);
+    حرر(x);
+    حرر(y);
+    حرر(expected_logits);
+    حرر(expected_loss);
+    حرر(expected_grads_يادگيري);
     gpt2_free(&model);
-    return 0;
+    أرجع 0;
 }

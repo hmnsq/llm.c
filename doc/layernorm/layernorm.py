@@ -1,70 +1,70 @@
-import torch
+استورد torch
 
 eps = 1e-5
 
-class LayerNorm:
+صنف LayerNorm:
 
     @staticmethod
-    def forward(x, w, b):
-        B, T, C = x.size()
-        mean = x.sum(-1, keepdim=True) / C # B,T,1
-        xshift = x - mean # B,T,C
-        var = (xshift**2).sum(-1, keepdim=True) / C # B,T,1
+    وصف forward(x, w, b):
+        B, T, C = x.سائيز()
+        سراسري = x.جوڙ(-1, keepdim=سچ) / C # B,T,1
+        xshift = x - سراسري # B,T,C
+        var = (xshift**2).جوڙ(-1, keepdim=سچ) / C # B,T,1
         rstd = (var + eps) ** -0.5 # B,T,1
         norm = xshift * rstd # B,T,C
-        out = norm * w + b # B,T,C
+        ٻاهريون = norm * w + b # B,T,C
 
-        cache = (x, w, mean, rstd)
-        return out, cache
+        cache = (x, w, سراسري, rstd)
+        أرجع ٻاهريون, cache
 
     @staticmethod
-    def backward(dout, cache):
-        x, w, mean, rstd = cache
+    وصف backward(dout, cache):
+        x, w, سراسري, rstd = cache
         # recompute the norm (save memory at the cost of compute)
-        norm = (x - mean) * rstd
+        norm = (x - سراسري) * rstd
         # gradients for weights, bias
-        db = dout.sum((0, 1))
-        dw = (dout * norm).sum((0, 1))
+        db = dout.جوڙ((0, 1))
+        dw = (dout * norm).جوڙ((0, 1))
         # gradients for input
         dnorm = dout * w
-        dx = dnorm - dnorm.mean(-1, keepdim=True) - norm * (dnorm * norm).mean(-1, keepdim=True)
+        dx = dnorm - dnorm.سراسري(-1, keepdim=سچ) - norm * (dnorm * norm).سراسري(-1, keepdim=سچ)
         dx *= rstd
-        return dx, dw, db
+        أرجع dx, dw, db
 
 # create a small dummy example and check w.r.t PyTorch backward
 B = 2
 T = 3
 C = 4
-x = torch.randn(B, T, C, requires_grad=True)
-w = torch.randn(C, requires_grad=True)
-b = torch.randn(C, requires_grad=True)
-out, cache = LayerNorm.forward(x, w, b)
+x = torch.randn(B, T, C, requires_grad=سچ)
+w = torch.randn(C, requires_grad=سچ)
+b = torch.randn(C, requires_grad=سچ)
+ٻاهريون, cache = LayerNorm.forward(x, w, b)
 
 dout = torch.randn(B, T, C)
 dx, dw, db = LayerNorm.backward(dout, cache)
 
 # compare to PyTorch autograd
-fakeloss = (out * dout).sum()
+fakeloss = (ٻاهريون * dout).جوڙ()
 fakeloss.backward()
-print("dx error:", (x.grad - dx).abs().max().item())
-print("dw error:", (w.grad - dw).abs().max().item())
-print("db error:", (b.grad - db).abs().max().item())
+ڇاپيو("dx error:", (x.grad - dx).abs().max().شي())
+ڇاپيو("dw error:", (w.grad - dw).abs().max().شي())
+ڇاپيو("db error:", (b.grad - db).abs().max().شي())
 
 # for reference checking in C also
-x, w, mean, rstd = cache
+x, w, سراسري, rstd = cache
 
-def write(tensor, handle):
-    handle.write(tensor.detach().numpy().astype("float32").tobytes())
+وصف اكتب(tensor, handle):
+    handle.اكتب(tensor.detach().numpy().astype("float32").tobytes())
 
 # Write to file
-with open('ln.bin', 'wb') as file:
-    write(x, file) # (B, T, C)
-    write(w, file) # (C, )
-    write(b, file) # (C, )
-    write(out, file) # (B, T, C)
-    write(mean, file) # (B, T)
-    write(rstd, file) # (B, T)
-    write(dout, file) # (B, T, C)
-    write(dx, file) # (B, T, C)
-    write(dw, file) # (C, )
-    write(db, file) # (C, )
+سان open('ln.bin', 'wb') كـ file:
+    اكتب(x, file) # (B, T, C)
+    اكتب(w, file) # (C, )
+    اكتب(b, file) # (C, )
+    اكتب(ٻاهريون, file) # (B, T, C)
+    اكتب(سراسري, file) # (B, T)
+    اكتب(rstd, file) # (B, T)
+    اكتب(dout, file) # (B, T, C)
+    اكتب(dx, file) # (B, T, C)
+    اكتب(dw, file) # (C, )
+    اكتب(db, file) # (C, )

@@ -21,64 +21,64 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
+استورد argparse
+استورد os
 
-import tiktoken
-from transformers import AutoTokenizer
+استورد tiktoken
+من transformers استورد AutoTokenizer
 
-from data_common import download_file, write_datafile
+من معلومات_common استورد download_file, write_datafile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
+معلومات_CACHE_DIR = os.رستو.join(os.رستو.dirname(__file__), "tinyshakespeare")
 
-def download():
+وصف download():
     """Downloads the TinyShakespeare dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(معلومات_CACHE_DIR, exist_ok=سچ)
     # download the TinyShakespeare dataset, unless it's already downloaded
-    data_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    معلومات_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+    معلومات_filename = os.رستو.join(معلومات_CACHE_DIR, "tiny_shakespeare.txt")
+    إذا ليس os.رستو.exists(معلومات_filename):
+        ڇاپيو(f"Downloading {data_url} to {data_filename}...")
+        download_file(معلومات_url, معلومات_filename)
+    وإلا:
+        ڇاپيو(f"{data_filename} already exists, skipping download...")
 
-def tokenize(model_desc):
-    if model_desc == "gpt-2":
+وصف tokenize(model_desc):
+    إذا model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
-        encode = lambda s: enc.encode_ordinary(s)
-        eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    elif model_desc == "llama-3":
+        encode = مجهول s: enc.encode_ordinary(s)
+        eot = enc.special_ٽوڪن['<|endoftext|>'] # end of text token
+    وإلاإذا model_desc == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-        encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+        encode = مجهول s: tokenizer.encode(s, جوڙيو_special_ٽوڪن=خطأ, verbose=خطأ, ورهايو_special_ٽوڪن=سچ)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    text = open(data_filename, 'r').read()
+    وإلا:
+        ارفع قدر_Error(f"unknown model descriptor {model_desc}")
+    معلومات_filename = os.رستو.join(معلومات_CACHE_DIR, "tiny_shakespeare.txt")
+    متن = open(معلومات_filename, 'r').اقرأ()
     # let's treat every individual chunk of text as a separate "document"
-    sections = text.split("\n\n")
-    tokens = []
-    for i, s in enumerate(sections):
-        tokens.append(eot)
+    sections = متن.ورهايو("\n\n")
+    ٽوڪن = []
+    لكل i, s في enumerate(sections):
+        ٽوڪن.append(eot)
         # there was a mild bug where I originally intended to remove \n\n, but instead just added
         # the EOT right after each \n\n, so I'm keeping that behavior for backwards compatibility
         # therefore we have to here add an extra \n\n at the end of each section, except the last
-        spad = s + "\n\n" if i != len(sections) - 1 else s
-        tokens.extend(encode(spad))
+        spad = s + "\n\n" إذا i != ڊيگهه(sections) - 1 وإلا s
+        ٽوڪن.extend(encode(spad))
     # let's take the first 32,768 tokens as the validation split (~10%)
-    val_tokens = tokens[:32768]
-    train_tokens = tokens[32768:]
+    val_ٽوڪن = ٽوڪن[:32768]
+    train_ٽوڪن = ٽوڪن[32768:]
     # save to file
-    val_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_val.bin")
-    train_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_train.bin")
-    write_datafile(val_filename, val_tokens, model_desc)
-    write_datafile(train_filename, train_tokens, model_desc)
+    val_filename = os.رستو.join(معلومات_CACHE_DIR, "tiny_shakespeare_val.bin")
+    train_filename = os.رستو.join(معلومات_CACHE_DIR, "tiny_shakespeare_train.bin")
+    write_datafile(val_filename, val_ٽوڪن, model_desc)
+    write_datafile(train_filename, train_ٽوڪن, model_desc)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Tiny Shakespeare dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+إذا __name__ == "__main__":
+    parser = argparse.دليل_Parser(description="Tiny Shakespeare dataset preprocessing")
+    parser.جوڙيو_دليل("-m", "--model_desc", type=str, افتراضي="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    دليلون = parser.parse_دليلون()
     download()
-    tokenize(args.model_desc)
+    tokenize(دليلون.model_desc)
