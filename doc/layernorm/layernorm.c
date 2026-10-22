@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#समावेश <stdio.h>
+#समावेश <stdlib.h>
+#समावेश <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+व्योम layernorm_forward(भग्न* out, भग्न* mean, भग्न* rstd,
+                       भग्न* inp, भग्न* weight, भग्न* bias,
+                       पूर्णांक B, पूर्णांक T, पूर्णांक C) {
+    भग्न eps = 1e-5f;
+    क्रम (पूर्णांक b = 0; b < B; b++) {
+        क्रम (पूर्णांक t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            भग्न* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            भग्न m = 0.0f;
+            क्रम (पूर्णांक i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            भग्न v = 0.0f;
+            क्रम (पूर्णांक i = 0; i < C; i++) {
+                भग्न xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            भग्न s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            भग्न* out_bt = out + b * T * C + t * C;
+            क्रम (पूर्णांक i = 0; i < C; i++) {
+                भग्न n = (s * (x[i] - m)); // normalized output
+                भग्न o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+व्योम layernorm_backward(भग्न* dinp, भग्न* dweight, भग्न* dbias,
+                        भग्न* dout, भग्न* inp, भग्न* weight, भग्न* mean, भग्न* rstd,
+                        पूर्णांक B, पूर्णांक T, पूर्णांक C) {
+    क्रम (पूर्णांक b = 0; b < B; b++) {
+        क्रम (पूर्णांक t = 0; t < T; t++) {
+            भग्न* dout_bt = dout + b * T * C + t * C;
+            भग्न* inp_bt = inp + b * T * C + t * C;
+            भग्न* dinp_bt = dinp + b * T * C + t * C;
+            भग्न mean_bt = mean[b * T + t];
+            भग्न rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            भग्न dnorm_mean = 0.0f;
+            भग्न dnorm_norm_mean = 0.0f;
+            क्रम (पूर्णांक i = 0; i < C; i++) {
+                भग्न norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                भग्न dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            क्रम (पूर्णांक i = 0; i < C; i++) {
+                भग्न norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                भग्न dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                भग्न dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
-    printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
-            printf("OK ");
-        } else {
-            printf("NOT OK ");
+पूर्णांक check_tensor(भग्न *a, भग्न *b, पूर्णांक n, अक्षर* label) {
+    पूर्णांक ok = 1;
+    म_लिखो("%s\n", label);
+    क्रम (पूर्णांक i = 0; i < n; i++) {
+        अगर (भ_असल(a[i] - b[i]) <= 1e-5) {
+            म_लिखो("OK ");
+        } अन्यथा {
+            म_लिखो("NOT OK ");
             ok = 0;
         }
-        printf("%f %f\n", a[i], b[i]);
+        म_लिखो("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    वापस ok;
 }
 
-int main() {
+पूर्णांक मुख्य() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    पूर्णांक B = 2; // batch
+    पूर्णांक T = 3; // time / sequence length
+    पूर्णांक C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    भग्न* x = (भग्न*) दो_स्मृति(B * T * C * माप(भग्न));
+    भग्न* w = (भग्न*) दो_स्मृति(C * माप(भग्न));
+    भग्न* b = (भग्न*) दो_स्मृति(C * माप(भग्न));
+    भग्न* out = (भग्न*) दो_स्मृति(B * T * C * माप(भग्न));
+    भग्न* mean = (भग्न*) दो_स्मृति(B * T * माप(भग्न));
+    भग्न* rstd = (भग्न*) दो_स्मृति(B * T * माप(भग्न));
+    भग्न* dout = (भग्न*) दो_स्मृति(B * T * C * माप(भग्न));
+    भग्न* dx = (भग्न*) दो_स्मृति(B * T * C * माप(भग्न));
+    भग्न* dw = (भग्न*) दो_स्मृति(C * माप(भग्न));
+    भग्न* db = (भग्न*) दो_स्मृति(C * माप(भग्न));
 
     // read reference information from Python
-    FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
-        printf("Error opening file\n");
-        return 1;
+    खाता *file = ख_खोलो("ln.bin", "rb");
+    अगर (file == शून्य) {
+        म_लिखो("Error opening file\n");
+        वापस 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
-    fclose(file);
+    ख_पढ़ो(x, माप(भग्न), B * T * C, file);
+    ख_पढ़ो(w, माप(भग्न), C, file);
+    ख_पढ़ो(b, माप(भग्न), C, file);
+    ख_पढ़ो(out, माप(भग्न), B * T * C, file);
+    ख_पढ़ो(mean, माप(भग्न), B * T, file);
+    ख_पढ़ो(rstd, माप(भग्न), B * T, file);
+    ख_पढ़ो(dout, माप(भग्न), B * T * C, file);
+    ख_पढ़ो(dx, माप(भग्न), B * T * C, file);
+    ख_पढ़ो(dw, माप(भग्न), C, file);
+    ख_पढ़ो(db, माप(भग्न), C, file);
+    ख_बंद(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    भग्न* c_out = (भग्न*) दो_स्मृति(B * T * C * माप(भग्न));
+    भग्न* c_mean = (भग्न*) दो_स्मृति(B * T * माप(भग्न));
+    भग्न* c_rstd = (भग्न*) दो_स्मृति(B * T * माप(भग्न));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    भग्न* c_dx = (भग्न*) सुस्मृति(B * T * C, माप(भग्न));
+    भग्न* c_dw = (भग्न*) सुस्मृति(B * T, माप(भग्न));
+    भग्न* c_db = (भग्न*) सुस्मृति(B * T, माप(भग्न));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    मुक्त(x);
+    मुक्त(w);
+    मुक्त(b);
+    मुक्त(out);
+    मुक्त(mean);
+    मुक्त(rstd);
+    मुक्त(dout);
+    मुक्त(dx);
+    मुक्त(dw);
+    मुक्त(db);
+    वापस 0;
 }

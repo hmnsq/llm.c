@@ -27,27 +27,27 @@ For more nsys profiling specifics and command options, take a look at: https://d
 NOTE: Currently there is a bug in the profiling using nsight system which produces a unrecognized GPU UUId error on the command line but it
 does not actually interfere with the model training and validation. The report (that you download) is still generated and can be viewed from Nsight Systems
 """
-import subprocess
-import os
-import sys
-import datetime
+आयात subprocess
+आयात os
+आयात sys
+आयात datetime
 
-import modal
-from modal import Image, Stub
+आयात modal
+from modal आयात छवि, Stub
 GPU_NAME_TO_MODAL_CLASS_MAP = {
     "H100": modal.gpu.H100,
     "A100": modal.gpu.A100,
     "A10G": modal.gpu.A10G,
 }
-N_GPUS = int(os.environ.get("N_GPUS", 1))
-GPU_MEM = int(os.environ.get("GPU_MEM", 40))
+N_GPUS = पूर्णांक(os.environ.get("N_GPUS", 1))
+GPU_MEM = पूर्णांक(os.environ.get("GPU_MEM", 40))
 GPU_NAME = os.environ.get("GPU_NAME", "A100")
-GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](count=N_GPUS, size=str(GPU_MEM) + 'GB')
+GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](गिनती=N_GPUS, आकार=str(GPU_MEM) + 'GB')
 
 APP_NAME = "llm.c benchmark run"
 
 image = (
-    Image.from_registry("totallyvyom/cuda-env:latest-2")
+    छवि.from_registry("totallyvyom/cuda-env:latest-2")
     .pip_install("huggingface_hub==0.20.3", "hf-transfer==0.1.5")
     .env(
         dict(
@@ -70,9 +70,9 @@ image = (
     .run_commands(
         "wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin && \
         mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
+        apt-कुंजी adv --fetch-कुंजियाँ https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
         add-apt-repository \"deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /\" && \
-        apt-get update"
+        apt-get नया_हाल"
     ).run_commands(
         "apt-get install -y nsight-systems-2023.3.3"
     )
@@ -83,7 +83,7 @@ stub = modal.App(APP_NAME)
 def execute_command(command: str):
     command_args = command.split(" ")
     print(f"{command_args = }")
-    subprocess.run(command_args, stdout=sys.stdout, stderr=subprocess.STDOUT)
+    subprocess.आरम्भ(command_args, stdout=sys.stdout, stderr=subprocess.STDOUT)
 
 @stub.function(
     gpu=GPU_CONFIG,
@@ -113,9 +113,9 @@ def run_benchmark(compile_command: str, run_command: str):
     execute_command("mv /root/report1.qdstrm /root/report1_" + timestamp + "/")
     execute_command("mv /root/report1_" + timestamp + "/" + " /cuda-env/")
 
-    return None
+    वापस None
 
 @stub.local_entrypoint()
 def inference_main(compile_command: str, run_command: str):
     results = run_benchmark.remote(compile_command, run_command)
-    return results
+    वापस results

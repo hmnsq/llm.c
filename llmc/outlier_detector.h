@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#समावेश <stdio.h>
+#समावेश <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
-#define OUTLIER_DETECTOR_WINDOW_SIZE 128
+#घोषणा OUTLIER_DETECTOR_WINDOW_आकार 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+प्रकार काष्ठा {
+    द्विगुन बफर[OUTLIER_DETECTOR_WINDOW_आकार];
+    पूर्णांक गिनती;
+    पूर्णांक सूचकांक_2;
+    द्विगुन योग_2;
+    द्विगुन योग_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
-        detector->buffer[i] = 0.0;
+व्योम init_detector(OutlierDetector *detector) {
+    क्रम (पूर्णांक i = 0; i < OUTLIER_DETECTOR_WINDOW_आकार; i++) {
+        detector->बफर[i] = 0.0;
     }
-    detector->count = 0;
-    detector->index = 0;
-    detector->sum = 0.0;
-    detector->sum_sq = 0.0;
+    detector->गिनती = 0;
+    detector->सूचकांक_2 = 0;
+    detector->योग_2 = 0.0;
+    detector->योग_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+द्विगुन update_detector(OutlierDetector *detector, द्विगुन new_मूल्य) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    अगर (detector->गिनती < OUTLIER_DETECTOR_WINDOW_आकार) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->बफर[detector->गिनती] = new_मूल्य;
+        detector->योग_2 += new_मूल्य;
+        detector->योग_sq += new_मूल्य * new_मूल्य;
+        detector->गिनती++;
+        वापस nan(""); // not enough data yet
 
-    } else {
+    } अन्यथा {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        द्विगुन old_मूल्य = detector->बफर[detector->सूचकांक_2];
+        detector->योग_2 -= old_मूल्य;
+        detector->योग_sq -= old_मूल्य * old_मूल्य;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->बफर[detector->सूचकांक_2] = new_मूल्य;
+        detector->योग_2 += new_मूल्य;
+        detector->योग_sq += new_मूल्य * new_मूल्य;
         // move the index to the next position
-        detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
+        detector->सूचकांक_2 = (detector->सूचकांक_2 + 1) % OUTLIER_DETECTOR_WINDOW_आकार;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        द्विगुन mean = detector->योग_2 / OUTLIER_DETECTOR_WINDOW_आकार;
+        द्विगुन variance = (detector->योग_sq / OUTLIER_DETECTOR_WINDOW_आकार) - (mean * mean);
+        द्विगुन std_dev = वर्ग_मूल(variance);
+        अगर (std_dev == 0.0) {
+            वापस 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        द्विगुन z = (new_मूल्य - mean) / std_dev;
 
-        return z;
+        वापस z;
     }
 }

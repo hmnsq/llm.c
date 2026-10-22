@@ -1,92 +1,92 @@
-#define TESTING
-#include "train_gpt2.c"
+#घोषणा TESTING
+#समावेश "train_gpt2.c"
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, const char* label) {
-    int print_upto = 5;
-    int ok = 1;
-    float maxdiff = 0.0f;
-    float tol = 2e-2f;
-    printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
+पूर्णांक check_tensor(भग्न *a, भग्न *b, पूर्णांक n, स्थिर अक्षर* label) {
+    पूर्णांक print_upto = 5;
+    पूर्णांक ok = 1;
+    भग्न maxdiff = 0.0f;
+    भग्न tol = 2e-2f;
+    म_लिखो("%s\n", label);
+    क्रम (पूर्णांक i = 0; i < n; i++) {
         // look at the diffence at position i of these two tensors
-        float diff = fabsf(a[i] - b[i]);
+        भग्न diff = fabsf(a[i] - b[i]);
 
         // keep track of the overall error
         ok = ok && (diff <= tol);
-        if (diff > maxdiff) { maxdiff = diff; }
+        अगर (diff > maxdiff) { maxdiff = diff; }
 
         // for the first few elements of each tensor, pretty print
         // the actual numbers, so we can do a visual, qualitative proof/assessment
-        if (i < print_upto) {
-            if (diff <= tol) {
-                if (i < print_upto) { printf("OK "); }
-            } else {
-                if (i < print_upto) { printf("NOT OK "); }
+        अगर (i < print_upto) {
+            अगर (diff <= tol) {
+                अगर (i < print_upto) { म_लिखो("OK "); }
+            } अन्यथा {
+                अगर (i < print_upto) { म_लिखो("NOT OK "); }
             }
-            printf("%f %f\n", a[i], b[i]);
+            म_लिखो("%f %f\n", a[i], b[i]);
         }
     }
     // print the final result for this tensor
-    if (ok) {
-        printf("TENSOR OK, maxdiff = %e\n", maxdiff);
-    } else {
-        printf("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
+    अगर (ok) {
+        म_लिखो("TENSOR OK, maxdiff = %e\n", maxdiff);
+    } अन्यथा {
+        म_लिखो("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
     }
-    return ok;
+    वापस ok;
 }
 
-int main(int argc, char *argv[]) {
+पूर्णांक मुख्य(पूर्णांक argc, अक्षर *argv[]) {
 
     // build the GPT-2 model from a checkpoint
     GPT2 model;
     gpt2_build_from_checkpoint(&model, "gpt2_124M.bin");
 
-    int C = model.config.channels;
-    int V = model.config.vocab_size;
-    int Vp = model.config.padded_vocab_size;
-    int maxT = model.config.max_seq_len;
-    int L = model.config.num_layers;
+    पूर्णांक C = model.config.channels;
+    पूर्णांक V = model.config.vocab_आकार;
+    पूर्णांक Vp = model.config.padded_vocab_आकार;
+    पूर्णांक maxT = model.config.max_seq_len;
+    पूर्णांक L = model.config.अंक_layers;
 
     // load additional information that we will use for debugging and error checking
-    FILE *state_file = fopen("gpt2_124M_debug_state.bin", "rb");
-    if (state_file == NULL) { printf("Error opening state file\n"); return 1; }
-    int state_header[256];
-    freadCheck(state_header, sizeof(int), 256, state_file);
-    if (state_header[0] != 20240327) { printf("Bad magic state file\n"); return 1; }
-    if (state_header[1] != 2) {
-        printf("Bad version in state file\n");
-        printf("---> HINT: try to re-run `python train_gpt2.py`\n");
-        return 1;
+    खाता *state_file = ख_खोलो("gpt2_124M_debug_state.bin", "rb");
+    अगर (state_file == शून्य) { म_लिखो("Error opening state file\n"); वापस 1; }
+    पूर्णांक state_header[256];
+    freadCheck(state_header, माप(पूर्णांक), 256, state_file);
+    अगर (state_header[0] != 20240327) { म_लिखो("Bad magic state file\n"); वापस 1; }
+    अगर (state_header[1] != 2) {
+        म_लिखो("Bad version in state file\n");
+        म_लिखो("---> HINT: try to re-run `python train_gpt2.py`\n");
+        वापस 1;
     }
-    int B = state_header[2]; // batch size, e.g. 4
-    int T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
-    printf("[State]\n");
-    printf("batch_size: %d\n", B);
-    printf("seq_len: %d\n", T);
+    पूर्णांक B = state_header[2]; // batch size, e.g. 4
+    पूर्णांक T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
+    म_लिखो("[State]\n");
+    म_लिखो("batch_size: %d\n", B);
+    म_लिखो("seq_len: %d\n", T);
 
     ParameterTensors expected_grads;
-    float* expected_grads_memory = malloc_and_point_parameters(&expected_grads, model.param_sizes);
+    भग्न* expected_grads_memory = malloc_and_point_parameters(&expected_grads, model.param_sizes);
 
     // inputs and expected outputs, only used for error checking
-    int* x = (int*) malloc(B * T * sizeof(int));
-    int* y = (int*) malloc(B * T * sizeof(int));
-    float* expected_logits = (float*) malloc(B * T * V * sizeof(float));
-    float* expected_loss = (float*) malloc(1 * sizeof(float));
+    पूर्णांक* x = (पूर्णांक*) दो_स्मृति(B * T * माप(पूर्णांक));
+    पूर्णांक* y = (पूर्णांक*) दो_स्मृति(B * T * माप(पूर्णांक));
+    भग्न* expected_logits = (भग्न*) दो_स्मृति(B * T * V * माप(भग्न));
+    भग्न* expected_loss = (भग्न*) दो_स्मृति(1 * माप(भग्न));
 
     // read reference information from Python
-    freadCheck(x, sizeof(int), B*T, state_file);
-    freadCheck(y, sizeof(int), B*T, state_file);
-    freadCheck(expected_logits, sizeof(float), B*T*V, state_file);
-    freadCheck(expected_loss, sizeof(float), 1, state_file);
-    freadCheck(expected_grads_memory, sizeof(float), model.num_parameters, state_file);
+    freadCheck(x, माप(पूर्णांक), B*T, state_file);
+    freadCheck(y, माप(पूर्णांक), B*T, state_file);
+    freadCheck(expected_logits, माप(भग्न), B*T*V, state_file);
+    freadCheck(expected_loss, माप(भग्न), 1, state_file);
+    freadCheck(expected_grads_memory, माप(भग्न), model.अंक_parameters, state_file);
     fcloseCheck(state_file);
 
     // overall OK signal for the test
-    int allok = 1;
+    पूर्णांक allok = 1;
 
     // let's do 10 training iterations, following the pytorch code
-    float expected_losses[10] = {
+    भग्न expected_losses[10] = {
         5.270007133483887f,
         4.059706687927246f,
         3.3751230239868164f,
@@ -98,9 +98,9 @@ int main(int argc, char *argv[]) {
         0.6240804195404053f,
         0.37651097774505615f
     };
-    for (int step = 0; step < 10; step++) {
+    क्रम (पूर्णांक step = 0; step < 10; step++) {
 
-        struct timespec start, end;
+        काष्ठा timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         gpt2_forward(&model, x, y, B, T);
@@ -108,45 +108,45 @@ int main(int argc, char *argv[]) {
         gpt2_backward(&model);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        द्विगुन time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
-        if (step == 0) {
+        अगर (step == 0) {
             // error checking at step 0 for reference activations/gradients
             // at this point, target should be equal to expected_logits, let's compare
-            int logits_ok = 1;
-            float* calculated_logits = model.acts.logits;
-            float max_diff = 0.0f;
-            for (int bt = 0; bt < B*T; bt++) {
-                for (int v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
-                    int i = bt * Vp + v; // linearized index, using Vp
-                    if (i < 10) {
-                        printf("%f, %f\n", expected_logits[i], calculated_logits[i]);
+            पूर्णांक logits_ok = 1;
+            भग्न* calculated_logits = model.acts.logits;
+            भग्न max_diff = 0.0f;
+            क्रम (पूर्णांक bt = 0; bt < B*T; bt++) {
+                क्रम (पूर्णांक v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
+                    पूर्णांक i = bt * Vp + v; // linearized index, using Vp
+                    अगर (i < 10) {
+                        म_लिखो("%f, %f\n", expected_logits[i], calculated_logits[i]);
                     }
-                    float diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
+                    भग्न diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
                     max_diff = fmaxf(max_diff, diff);
-                    if (diff >= 1e-2f) {
-                        printf("MISMATCH AT INDEX %d,%d: ", bt, v);
-                        printf("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
+                    अगर (diff >= 1e-2f) {
+                        म_लिखो("MISMATCH AT INDEX %d,%d: ", bt, v);
+                        म_लिखो("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
                         logits_ok = 0;
                         bt = B*T; // to break out of both loops
-                        break;
+                        अवरोध;
                     }
                 }
             }
-            if(!logits_ok) { printf("NOT "); }
-            printf("OK (LOGITS), max_diff = %e\n", max_diff);
+            अगर(!logits_ok) { म_लिखो("NOT "); }
+            म_लिखो("OK (LOGITS), max_diff = %e\n", max_diff);
             allok = allok && logits_ok;
 
             // compare the achieved loss
-            if (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
-                printf("LOSS MISMATCH: %f %f\n", model.mean_loss, *expected_loss);
+            अगर (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
+                म_लिखो("LOSS MISMATCH: %f %f\n", model.mean_loss, *expected_loss);
                 allok = 0;
-            } else {
-                printf("LOSS OK: %f %f\n", model.mean_loss, *expected_loss);
+            } अन्यथा {
+                म_लिखो("LOSS OK: %f %f\n", model.mean_loss, *expected_loss);
             }
 
             // finally check all the gradients
-            int gradoks[16];
+            पूर्णांक gradoks[16];
             ParameterTensors grads = model.grads;
             gradoks[0] = check_tensor(grads.wte, expected_grads.wte, V*C, "dwte");
             gradoks[1] = check_tensor(grads.wpe, expected_grads.wpe, maxT*C, "dwpe");
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
             gradoks[13] = check_tensor(grads.fcprojb, expected_grads.fcprojb, L*C, "dfcprojb");
             gradoks[14] = check_tensor(grads.lnfw, expected_grads.lnfw, C, "dlnfw");
             gradoks[15] = check_tensor(grads.lnfb, expected_grads.lnfb, C, "dlnfb");
-            for (int i = 0; i < 16; i++) {
+            क्रम (पूर्णांक i = 0; i < 16; i++) {
                 allok = allok && gradoks[i];
             }
         }
@@ -172,24 +172,24 @@ int main(int argc, char *argv[]) {
         gpt2_update(&model, 1e-4f, 0.9f, 0.999f, 1e-8f, 0.01f, step+1);
 
         // compare the losses
-        float expected_loss = expected_losses[step];
-        float actual_loss = model.mean_loss;
-        int step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
+        भग्न expected_loss = expected_losses[step];
+        भग्न actual_loss = model.mean_loss;
+        पूर्णांक step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
         allok = allok && step_loss_ok;
 
         // print the timing information at the end
-        printf("step %d: loss %f (took %f ms) OK = %d\n", step, model.mean_loss, time_elapsed_s * 1000, step_loss_ok);
+        म_लिखो("step %d: loss %f (took %f ms) OK = %d\n", step, model.mean_loss, time_elapsed_s * 1000, step_loss_ok);
     }
 
     // final judgement
-    printf("overall okay: %d\n", allok);
+    म_लिखो("overall okay: %d\n", allok);
 
     // free everything
-    free(x);
-    free(y);
-    free(expected_logits);
-    free(expected_loss);
-    free(expected_grads_memory);
+    मुक्त(x);
+    मुक्त(y);
+    मुक्त(expected_logits);
+    मुक्त(expected_loss);
+    मुक्त(expected_grads_memory);
     gpt2_free(&model);
-    return 0;
+    वापस 0;
 }

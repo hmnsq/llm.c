@@ -2,57 +2,57 @@
 Implements a simple logger that writes log files in the output directory.
 The Logger object is stateless and uses append mode to write to log files.
 */
-#ifndef LOGGER_H
-#define LOGGER_H
+#अगर_अघोषित LOGGER_H
+#घोषणा LOGGER_H
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#समावेश <assert.h>
+#समावेश <stdio.h>
+#समावेश <string.h>
 // defines: fopenCheck, freadCheck, fcloseCheck, fseekCheck, mallocCheck
-#include "utils.h"
+#समावेश "utils.h"
 
-typedef struct {
-    int active;
-    char output_log_file[512];
+प्रकार काष्ठा {
+    पूर्णांक active;
+    अक्षर output_log_file[512];
 } Logger;
 
-void logger_init(Logger *logger, const char *log_dir, int process_rank, int resume) {
+व्योम logger_init(Logger *logger, स्थिर अक्षर *log_dir, पूर्णांक process_rank, पूर्णांक resume) {
     // currently, only rank 0 writes logs
     logger->active = 0;
-    if (log_dir != NULL && process_rank == 0) {
+    अगर (log_dir != शून्य && process_rank == 0) {
         logger->active = 1;
-        assert(strlen(log_dir) < 500); // being a bit lazy, could relax later
+        निश्चित(म_माप(log_dir) < 500); // being a bit lazy, could relax later
         snprintf(logger->output_log_file, 512, "%s/main.log", log_dir);
-        if (resume == 0) {
+        अगर (resume == 0) {
             // wipe any existing logfile clean if we're starting fresh
-            FILE *logfile = fopenCheck(logger->output_log_file, "w");
-            fclose(logfile);
+            खाता *logfile = fopenCheck(logger->output_log_file, "w");
+            ख_बंद(logfile);
         }
     }
 }
 
-void logger_log_eval(Logger *logger, int step, float val) {
-    if (logger->active == 1) {
-        FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d eval:%.4f\n", step, val);
-        fclose(logfile);
+व्योम logger_log_eval(Logger *logger, पूर्णांक step, भग्न val) {
+    अगर (logger->active == 1) {
+        खाता *logfile = fopenCheck(logger->output_log_file, "a");
+        ख_लिखो(logfile, "s:%d eval:%.4f\n", step, val);
+        ख_बंद(logfile);
     }
 }
 
-void logger_log_val(Logger *logger, int step, float val_loss) {
-    if (logger->active == 1) {
-        FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d tel:%.4f\n", step, val_loss);
-        fclose(logfile);
+व्योम logger_log_val(Logger *logger, पूर्णांक step, भग्न val_loss) {
+    अगर (logger->active == 1) {
+        खाता *logfile = fopenCheck(logger->output_log_file, "a");
+        ख_लिखो(logfile, "s:%d tel:%.4f\n", step, val_loss);
+        ख_बंद(logfile);
     }
 }
 
-void logger_log_train(Logger *logger, int step, float train_loss, float learning_rate, float grad_norm) {
-    if (logger->active == 1) {
-        FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d trl:%.4f lr:%.6f norm:%.2f\n", step, train_loss, learning_rate, grad_norm);
-        fclose(logfile);
+व्योम logger_log_train(Logger *logger, पूर्णांक step, भग्न train_loss, भग्न learning_rate, भग्न grad_norm) {
+    अगर (logger->active == 1) {
+        खाता *logfile = fopenCheck(logger->output_log_file, "a");
+        ख_लिखो(logfile, "s:%d trl:%.4f lr:%.6f norm:%.2f\n", step, train_loss, learning_rate, grad_norm);
+        ख_बंद(logfile);
     }
 }
 
-#endif
+#पूर्ण_अगर

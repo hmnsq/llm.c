@@ -80,50 +80,50 @@ Both output:
     2756748748
 */
 
-#ifndef RAND_H
-#define RAND_H
+#अगर_अघोषित RAND_H
+#घोषणा RAND_H
 
-#include <math.h>
+#समावेश <math.h>
 
-#define MERSENNE_STATE_M 397u
-#define MERSENNE_STATE_N 624u
+#घोषणा MERSENNE_STATE_M 397u
+#घोषणा MERSENNE_STATE_N 624u
 
-#define LMASK 0x7ffffffful
-#define UMASK 0x80000000ul
+#घोषणा LMASK 0x7ffffffful
+#घोषणा UMASK 0x80000000ul
 
 // Copyright(c) Makoto Matsumoto and Takuji Nishimura
 
 // This implementation follows PyTorch so that we are numerically identical when running verification tests.
 
-typedef struct {
-    unsigned long long seed_;
-    int left_;
-    unsigned int next_;
-    unsigned int state_[MERSENNE_STATE_N];
-    unsigned int MATRIX_A[2];
+प्रकार काष्ठा {
+    अचिन्हित दीर्घ दीर्घ seed_;
+    पूर्णांक बायाँ;
+    अचिन्हित पूर्णांक अग्र;
+    अचिन्हित पूर्णांक state_[MERSENNE_STATE_N];
+    अचिन्हित पूर्णांक MATRIX_A[2];
 } mt19937_state;
 
-void manual_seed(mt19937_state* state, unsigned int seed) {
+व्योम manual_seed(mt19937_state* state, अचिन्हित पूर्णांक seed) {
     state->MATRIX_A[0] = 0x0u;
     state->MATRIX_A[1] = 0x9908b0df;
     state->state_[0] = seed & 0xffffffff;
-    for (unsigned int j = 1; j < MERSENNE_STATE_N; j++) {
+    क्रम (अचिन्हित पूर्णांक j = 1; j < MERSENNE_STATE_N; j++) {
         state->state_[j] = 1812433253 * (state->state_[j - 1] ^ (state->state_[j - 1] >> 30)) + j;
         state->state_[j] &= 0xffffffff;
     }
-    state->left_ = 1;
-    state->next_ = 0;
+    state->बायाँ = 1;
+    state->अग्र = 0;
 }
 
-void next_state(mt19937_state* state) {
-    state->left_ = MERSENNE_STATE_N;
-    state->next_ = 0;
-    unsigned int y, j;
-    for (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
+व्योम अग्र_state(mt19937_state* state) {
+    state->बायाँ = MERSENNE_STATE_N;
+    state->अग्र = 0;
+    अचिन्हित पूर्णांक y, j;
+    क्रम (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
         state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
     }
-    for (; j < MERSENNE_STATE_N - 1; j++) {
+    क्रम (; j < MERSENNE_STATE_N - 1; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
         state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
     }
@@ -131,110 +131,110 @@ void next_state(mt19937_state* state) {
     state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
 }
 
-unsigned int randint32(mt19937_state* state) {
-    if (!state) return 0;
-    if (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
-    if (--state->left_ <= 0) {
-        next_state(state);
+अचिन्हित पूर्णांक randint32(mt19937_state* state) {
+    अगर (!state) वापस 0;
+    अगर (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
+    अगर (--state->बायाँ <= 0) {
+        अग्र_state(state);
     }
-    unsigned int y = state->state_[state->next_++];
+    अचिन्हित पूर्णांक y = state->state_[state->अग्र++];
     y ^= y >> 11;
     y ^= (y << 7) & 0x9d2c5680;
     y ^= (y << 15) & 0xefc60000;
     y ^= y >> 18;
-    return y;
+    वापस y;
 }
 
-inline unsigned long long randint64(mt19937_state* state) {
-    return (((unsigned long long)(randint32(state)) << 32) | randint32(state));
+अंतरभूत अचिन्हित दीर्घ दीर्घ randint64(mt19937_state* state) {
+    वापस (((अचिन्हित दीर्घ दीर्घ)(randint32(state)) << 32) | randint32(state));
 }
 
-inline float randfloat32(mt19937_state* state) {
-    return (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
+अंतरभूत भग्न randfloat32(mt19937_state* state) {
+    वापस (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
 }
 
-inline double randfloat64(mt19937_state* state) {
-    return (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
+अंतरभूत द्विगुन randfloat64(mt19937_state* state) {
+    वापस (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
 }
 
-void uniform_(float* data, unsigned int numel, float from, float to, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state) * (to - from) + from;
+व्योम uniform_(भग्न* तथ्य, अचिन्हित पूर्णांक numel, भग्न from, भग्न to, mt19937_state* state) {
+    क्रम (अचिन्हित पूर्णांक t = 0; t < numel; t++) {
+        तथ्य[t] = randfloat32(state) * (to - from) + from;
     }
 }
 
 // Box-Muller transform: maps uniform random numbers to Gaussian distributed numbers
 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-void normal_fill_16(float* data, float mean, float std) {
-    #define EPSILONE 1e-12f
-    for (unsigned int t = 0; t < 8; t++) {
-        float u1 = 1 - data[t];
-        float u2 = data[t + 8];
-        float radius = sqrtf(-2 * logf(u1 + EPSILONE));
-        float theta = (float) (2.0 * M_PI * u2);
-        data[t] = (radius * cosf(theta) * std + mean);
-        data[t + 8] = (radius * sinf(theta) * std + mean);
+व्योम normal_fill_16(भग्न* तथ्य, भग्न mean, भग्न std) {
+    #घोषणा EPSILONE 1e-12f
+    क्रम (अचिन्हित पूर्णांक t = 0; t < 8; t++) {
+        भग्न u1 = 1 - तथ्य[t];
+        भग्न u2 = तथ्य[t + 8];
+        भग्न radius = sqrtf(-2 * logf(u1 + EPSILONE));
+        भग्न theta = (भग्न) (2.0 * M_PI * u2);
+        तथ्य[t] = (radius * cosf(theta) * std + mean);
+        तथ्य[t + 8] = (radius * sinf(theta) * std + mean);
     }
 }
 
-void normal_fill(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state);
+व्योम normal_fill(भग्न* तथ्य, अचिन्हित पूर्णांक numel, भग्न mean, भग्न std, mt19937_state* state) {
+    क्रम (अचिन्हित पूर्णांक t = 0; t < numel; t++) {
+        तथ्य[t] = randfloat32(state);
     }
-    for (unsigned int i = 0; i < numel - 15; i += 16) {
-        normal_fill_16(data + i, mean, std);
+    क्रम (अचिन्हित पूर्णांक i = 0; i < numel - 15; i += 16) {
+        normal_fill_16(तथ्य + i, mean, std);
     }
-    if (numel % 16 != 0) {
+    अगर (numel % 16 != 0) {
         // recompute the last 16 values
-        data = data + numel - 16;
-        for (unsigned int i = 0; i < 16; i++) {
-            data[i] = randfloat32(state);
+        तथ्य = तथ्य + numel - 16;
+        क्रम (अचिन्हित पूर्णांक i = 0; i < 16; i++) {
+            तथ्य[i] = randfloat32(state);
         }
-        normal_fill_16(data, mean, std);
+        normal_fill_16(तथ्य, mean, std);
     }
 }
 
-void normal_(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    #define EPSILONE 1e-12f
-    if (numel >= 16) {
-        normal_fill(data, numel, mean, std, state);
+व्योम normal_(भग्न* तथ्य, अचिन्हित पूर्णांक numel, भग्न mean, भग्न std, mt19937_state* state) {
+    #घोषणा EPSILONE 1e-12f
+    अगर (numel >= 16) {
+        normal_fill(तथ्य, numel, mean, std, state);
     }
-    else {
-        double next_double_normal_sample = 0.0; // make compiler warning happy, won't be used
-        int has_next_double_normal_sample = 0;
-        for (unsigned int  t = 0; t < numel; t++) {
-            if (has_next_double_normal_sample) {
-                data[t] = (float)(next_double_normal_sample * std + mean);
-                has_next_double_normal_sample = 0;
-                continue;
+    अन्यथा {
+        द्विगुन अग्र_double_normal_sample = 0.0; // make compiler warning happy, won't be used
+        पूर्णांक has_अग्र_double_normal_sample = 0;
+        क्रम (अचिन्हित पूर्णांक  t = 0; t < numel; t++) {
+            अगर (has_अग्र_double_normal_sample) {
+                तथ्य[t] = (भग्न)(अग्र_double_normal_sample * std + mean);
+                has_अग्र_double_normal_sample = 0;
+                जारी;
             }
             // for numel < 16 we draw a double (float64)
-            float u1 = (float) randfloat64(state);
-            float u2 = (float) randfloat64(state);
-            float radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
-            float theta = (float) (2.0 * M_PI * u1);
-            next_double_normal_sample = radius * sinf(theta);
-            has_next_double_normal_sample = 1;
-            data[t] = (radius * cosf(theta) * std + mean);
+            भग्न u1 = (भग्न) randfloat64(state);
+            भग्न u2 = (भग्न) randfloat64(state);
+            भग्न radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
+            भग्न theta = (भग्न) (2.0 * M_PI * u1);
+            अग्र_double_normal_sample = radius * sinf(theta);
+            has_अग्र_double_normal_sample = 1;
+            तथ्य[t] = (radius * cosf(theta) * std + mean);
         }
     }
 }
 
-void init_identity_permutation(int *data, int numel) {
-    for (int i = 0; i < numel; i++) {
-        data[i] = i;
+व्योम init_identity_permutation(पूर्णांक *तथ्य, पूर्णांक numel) {
+    क्रम (पूर्णांक i = 0; i < numel; i++) {
+        तथ्य[i] = i;
     }
 }
 
-void random_permutation(int* data, int numel, mt19937_state* state) {
-    for (int i = numel - 1; i > 0; i--) {
+व्योम random_permutation(पूर्णांक* तथ्य, पूर्णांक numel, mt19937_state* state) {
+    क्रम (पूर्णांक i = numel - 1; i > 0; i--) {
         // pick an index j in [0, i] with equal probability
-        int j = randint32(state) % (i + 1);
+        पूर्णांक j = randint32(state) % (i + 1);
         // swap i <-> j
-        int tmp = data[i];
-        data[i] = data[j];
-        data[j] = tmp;
+        पूर्णांक tmp = तथ्य[i];
+        तथ्य[i] = तथ्य[j];
+        तथ्य[j] = tmp;
     }
 }
 
-#endif
+#पूर्ण_अगर

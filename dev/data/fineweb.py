@@ -19,48 +19,48 @@ Example of downloading the 100B dataset of FineWebEDU, from root directory:
 python dev/data/fineweb.py -t edu -v 100B
 100B runs for small few hours, depending on your internet and computer.
 """
-import os
-import argparse
-import multiprocessing as mp
+आयात os
+आयात argparse
+आयात multiprocessing as mp
 
-import numpy as np
-import tiktoken
-from datasets import load_dataset
-from tqdm import tqdm
+आयात numpy as np
+आयात tiktoken
+from datasets आयात load_dataset
+from tqdm आयात tqdm
 
-from transformers import AutoTokenizer
+from transformers आयात AutoTokenizer
 
 
-from data_common import write_datafile
+from तथ्य_common आयात write_datafile
 # ------------------------------------------
 
 parser = argparse.ArgumentParser(description="FineWeb and Edu-FineWeb dataset preprocessing")
-parser.add_argument("-t", "--type", type=str, default="classic", help="Fineweb type, edu|classic")
-parser.add_argument("-v", "--version", type=str, default="10B", help="Fineweb data sample size, 10B|100B")
-parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", help="Model descriptor, gpt-2|llama-3")
-parser.add_argument("-s", "--shard_size", type=int, default=10**8, help="Size of each data shard in the output .bin files, in tokens")
-args = parser.parse_args()
+parser.add_argument("-t", "--type", type=str, शेष="classic", help="Fineweb type, edu|classic")
+parser.add_argument("-v", "--version", type=str, शेष="10B", help="Fineweb data sample size, 10B|100B")
+parser.add_argument("-m", "--model_desc", type=str, शेष="gpt-2", help="Model descriptor, gpt-2|llama-3")
+parser.add_argument("-s", "--shard_size", type=पूर्णांक, शेष=10**8, help="Size of each data shard in the output .bin files, in tokens")
+तर्क = parser.parse_args()
 
 # FineWeb has a few possible subsamples available
-assert args.version in {"10B", "100B"}, "version must be one of: 10B, 100B"
-assert args.type in {"edu", "classic"}, "type must be one of: edu, classic"
+assert तर्क.version in {"10B", "100B"}, "version must be one of: 10B, 100B"
+assert तर्क.type in {"edu", "classic"}, "type must be one of: edu, classic"
 directories = {
     ("classic", "10B"): ("fineweb10B", "sample-10BT"),
     ("classic", "100B"): ("fineweb100B", "sample-100BT"),
     ("edu", "10B"): ("edu_fineweb10B", "sample-10BT"),
     ("edu", "100B"): ("edu_fineweb100B", "sample-100BT")
 }
-local_dir, remote_name = directories[(args.type, args.version)]
+local_dir, remote_name = directories[(तर्क.type, तर्क.version)]
 
 # create the cache the local directory if it doesn't exist yet
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), local_dir)
-os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+तथ्य_CACHE_DIR = os.path.मेल(os.path.dirname(__file__), local_dir)
+os.makedirs(तथ्य_CACHE_DIR, exist_ok=True)
 
 # download the dataset
-if args.type == "classic":
+अगर तर्क.type == "classic":
     fw = load_dataset("HuggingFaceFW/fineweb", name=remote_name, split="train")
     name = "fineweb"
-elif args.type =="edu":
+elif तर्क.type =="edu":
     fw = load_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, split="train")
     name = "edu_fineweb"
 
@@ -74,7 +74,7 @@ def tokenize_llama(doc):
     tokens_np = np.array(tokens)
     assert (0 <= tokens_np).all() and (tokens_np < 2**32).all(), "token dictionary too large for uint32"
     tokens_np_uint = tokens_np.astype(np.uint32)
-    return tokens_np_uint
+    वापस tokens_np_uint
 
 def tokenize_gpt2(doc):
     # tokenizes a single document and returns a numpy array of uint16 tokens
@@ -86,58 +86,58 @@ def tokenize_gpt2(doc):
     tokens_np = np.array(tokens)
     assert (0 <= tokens_np).all() and (tokens_np < 2**16).all(), "token dictionary too large for uint16"
     tokens_np_uint = tokens_np.astype(np.uint16)
-    return tokens_np_uint
+    वापस tokens_np_uint
 
 token_dtype = {
     "gpt-2": np.uint16,
     "llama-3": np.uint32
-}[args.model_desc]
+}[तर्क.model_desc]
 
 # tokenize all documents and write output shards, each of shard_size tokens (last shard has remainder)
-nprocs = max(1, os.cpu_count() - 2) # don't hog the entire system
+nprocs = max(1, os.cpu_गिनती() - 2) # don't hog the entire system
 with mp.Pool(nprocs) as pool:
-    shard_index = 0
+    shard_सूचकांक = 0
     # preallocate buffer to hold current shard
-    all_tokens_np = np.empty((args.shard_size,), dtype=token_dtype)
-    token_count = 0
+    all_tokens_np = np.empty((तर्क.shard_आकार,), dtype=token_dtype)
+    token_गिनती = 0
     progress_bar = None
 
     tokenize = lambda x: None
-    if args.model_desc == "gpt-2":
+    अगर तर्क.model_desc == "gpt-2":
         tokenize = tokenize_gpt2
-    elif args.model_desc == "llama-3":
+    elif तर्क.model_desc == "llama-3":
         tokenize = tokenize_llama
-    else:
-        raise ValueError(f"unknown model {args.model_desc}")
+    अन्यथा:
+        raise मूल्य_Error(f"unknown model {args.model_desc}")
 
-    for tokens in pool.imap(tokenize, fw, chunksize=16):
+    क्रम tokens in pool.imap(tokenize, fw, chunksize=16):
 
         # is there enough space in the current shard for the new tokens?
-        if token_count + len(tokens) < args.shard_size:
+        अगर token_गिनती + len(tokens) < तर्क.shard_आकार:
             # simply append tokens to current shard
-            all_tokens_np[token_count:token_count+len(tokens)] = tokens
-            token_count += len(tokens)
+            all_tokens_np[token_गिनती:token_गिनती+len(tokens)] = tokens
+            token_गिनती += len(tokens)
             # update progress bar
-            if progress_bar is None:
-                progress_bar = tqdm(total=args.shard_size, unit="tokens", desc=f"Shard {shard_index}")
-            progress_bar.update(len(tokens))
-        else:
+            अगर progress_bar is None:
+                progress_bar = tqdm(योग=तर्क.shard_आकार, unit="tokens", desc=f"Shard {shard_index}")
+            progress_bar.नया_हाल(len(tokens))
+        अन्यथा:
             # write the current shard and start a new one
-            split = "val" if shard_index == 0 else "train"
-            filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+            split = "val" अगर shard_सूचकांक == 0 अन्यथा "train"
+            filename = os.path.मेल(तथ्य_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
             # split the document into whatever fits in this shard; the remainder goes to next one
-            remainder = args.shard_size - token_count
-            progress_bar.update(remainder)
-            all_tokens_np[token_count:token_count+remainder] = tokens[:remainder]
-            write_datafile(filename, all_tokens_np.tolist(), args.model_desc)
-            shard_index += 1
+            remainder = तर्क.shard_आकार - token_गिनती
+            progress_bar.नया_हाल(remainder)
+            all_tokens_np[token_गिनती:token_गिनती+remainder] = tokens[:remainder]
+            write_datafile(filename, all_tokens_np.tolist(), तर्क.model_desc)
+            shard_सूचकांक += 1
             progress_bar = None
             # populate the next shard with the leftovers of the current doc
             all_tokens_np[0:len(tokens)-remainder] = tokens[remainder:]
-            token_count = len(tokens)-remainder
+            token_गिनती = len(tokens)-remainder
 
     # write any remaining tokens as the last shard
-    if token_count != 0:
-        split = "val" if shard_index == 0 else "train"
-        filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
-        write_datafile(filename, (all_tokens_np[:token_count]).tolist(), args.model_desc)
+    अगर token_गिनती != 0:
+        split = "val" अगर shard_सूचकांक == 0 अन्यथा "train"
+        filename = os.path.मेल(तथ्य_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+        write_datafile(filename, (all_tokens_np[:token_गिनती]).tolist(), तर्क.model_desc)

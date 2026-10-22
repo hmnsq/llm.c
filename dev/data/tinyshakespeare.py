@@ -21,31 +21,31 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
+आयात argparse
+आयात os
 
-import tiktoken
-from transformers import AutoTokenizer
+आयात tiktoken
+from transformers आयात AutoTokenizer
 
-from data_common import download_file, write_datafile
+from तथ्य_common आयात download_file, write_datafile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
+तथ्य_CACHE_DIR = os.path.मेल(os.path.dirname(__file__), "tinyshakespeare")
 
 def download():
     """Downloads the TinyShakespeare dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(तथ्य_CACHE_DIR, exist_ok=True)
     # download the TinyShakespeare dataset, unless it's already downloaded
-    data_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    if not os.path.exists(data_filename):
+    तथ्य_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+    तथ्य_filename = os.path.मेल(तथ्य_CACHE_DIR, "tiny_shakespeare.txt")
+    अगर not os.path.exists(तथ्य_filename):
         print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
+        download_file(तथ्य_url, तथ्य_filename)
+    अन्यथा:
         print(f"{data_filename} already exists, skipping download...")
 
 def tokenize(model_desc):
-    if model_desc == "gpt-2":
+    अगर model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
         encode = lambda s: enc.encode_ordinary(s)
         eot = enc._special_tokens['<|endoftext|>'] # end of text token
@@ -53,32 +53,32 @@ def tokenize(model_desc):
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
         encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
-    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    text = open(data_filename, 'r').read()
+    अन्यथा:
+        raise मूल्य_Error(f"unknown model descriptor {model_desc}")
+    तथ्य_filename = os.path.मेल(तथ्य_CACHE_DIR, "tiny_shakespeare.txt")
+    text = open(तथ्य_filename, 'r').म_पढ़ो()
     # let's treat every individual chunk of text as a separate "document"
     sections = text.split("\n\n")
     tokens = []
-    for i, s in enumerate(sections):
+    क्रम i, s in enumerate(sections):
         tokens.append(eot)
         # there was a mild bug where I originally intended to remove \n\n, but instead just added
         # the EOT right after each \n\n, so I'm keeping that behavior for backwards compatibility
         # therefore we have to here add an extra \n\n at the end of each section, except the last
-        spad = s + "\n\n" if i != len(sections) - 1 else s
+        spad = s + "\n\n" अगर i != len(sections) - 1 अन्यथा s
         tokens.extend(encode(spad))
     # let's take the first 32,768 tokens as the validation split (~10%)
     val_tokens = tokens[:32768]
     train_tokens = tokens[32768:]
     # save to file
-    val_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_val.bin")
-    train_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_train.bin")
+    val_filename = os.path.मेल(तथ्य_CACHE_DIR, "tiny_shakespeare_val.bin")
+    train_filename = os.path.मेल(तथ्य_CACHE_DIR, "tiny_shakespeare_train.bin")
     write_datafile(val_filename, val_tokens, model_desc)
     write_datafile(train_filename, train_tokens, model_desc)
 
-if __name__ == "__main__":
+अगर __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tiny Shakespeare dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+    parser.add_argument("-m", "--model_desc", type=str, शेष="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    तर्क = parser.parse_args()
     download()
-    tokenize(args.model_desc)
+    tokenize(तर्क.model_desc)
