@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#அந்தர்பாவ <stdio.h>
+#அந்தர்பாவ <stdlib.h>
+#அந்தர்பாவ <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+வெறுமை layernorm_forward(தசம* out, தசம* mean, தசம* rstd,
+                       தசம* inp, தசம* weight, தசம* bias,
+                       முழு B, முழு T, முழு C) {
+    தசம eps = 1e-5f;
+    க்கு (முழு b = 0; b < B; b++) {
+        க்கு (முழு t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            தசம* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            தசம m = 0.0f;
+            க்கு (முழு i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            தசம v = 0.0f;
+            க்கு (முழு i = 0; i < C; i++) {
+                தசம xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            தசம s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            தசம* out_bt = out + b * T * C + t * C;
+            க்கு (முழு i = 0; i < C; i++) {
+                தசம n = (s * (x[i] - m)); // normalized output
+                தசம o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+வெறுமை layernorm_backward(தசம* dinp, தசம* dweight, தசம* dbias,
+                        தசம* dout, தசம* inp, தசம* weight, தசம* mean, தசம* rstd,
+                        முழு B, முழு T, முழு C) {
+    க்கு (முழு b = 0; b < B; b++) {
+        க்கு (முழு t = 0; t < T; t++) {
+            தசம* dout_bt = dout + b * T * C + t * C;
+            தசம* inp_bt = inp + b * T * C + t * C;
+            தசம* dinp_bt = dinp + b * T * C + t * C;
+            தசம mean_bt = mean[b * T + t];
+            தசம rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            தசம dnorm_mean = 0.0f;
+            தசம dnorm_norm_mean = 0.0f;
+            க்கு (முழு i = 0; i < C; i++) {
+                தசம norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                தசம dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            க்கு (முழு i = 0; i < C; i++) {
+                தசம norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                தசம dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                தசம dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+முழு check_tensor(தசம *a, தசம *b, முழு n, எழுத்து* label) {
+    முழு ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    க்கு (முழு i = 0; i < n; i++) {
+        எனில் (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } இல்லையெனில் {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    திரும்பு ok;
 }
 
-int main() {
+முழு முதன்மை() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    முழு B = 2; // batch
+    முழு T = 3; // time / sequence length
+    முழு C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    தசம* x = (தசம*) malloc(B * T * C * அளவு(தசம));
+    தசம* w = (தசம*) malloc(C * அளவு(தசம));
+    தசம* b = (தசம*) malloc(C * அளவு(தசம));
+    தசம* out = (தசம*) malloc(B * T * C * அளவு(தசம));
+    தசம* mean = (தசம*) malloc(B * T * அளவு(தசம));
+    தசம* rstd = (தசம*) malloc(B * T * அளவு(தசம));
+    தசம* dout = (தசம*) malloc(B * T * C * அளவு(தசம));
+    தசம* dx = (தசம*) malloc(B * T * C * அளவு(தசம));
+    தசம* dw = (தசம*) malloc(C * அளவு(தசம));
+    தசம* db = (தசம*) malloc(C * அளவு(தசம));
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    எனில் (file == வெற்று) {
         printf("Error opening file\n");
-        return 1;
+        திரும்பு 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
+    fread(x, அளவு(தசம), B * T * C, file);
+    fread(w, அளவு(தசம), C, file);
+    fread(b, அளவு(தசம), C, file);
+    fread(out, அளவு(தசம), B * T * C, file);
+    fread(mean, அளவு(தசம), B * T, file);
+    fread(rstd, அளவு(தசம), B * T, file);
+    fread(dout, அளவு(தசம), B * T * C, file);
+    fread(dx, அளவு(தசம), B * T * C, file);
+    fread(dw, அளவு(தசம), C, file);
+    fread(db, அளவு(தசம), C, file);
     fclose(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    தசம* c_out = (தசம*) malloc(B * T * C * அளவு(தசம));
+    தசம* c_mean = (தசம*) malloc(B * T * அளவு(தசம));
+    தசம* c_rstd = (தசம*) malloc(B * T * அளவு(தசம));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    தசம* c_dx = (தசம*) calloc(B * T * C, அளவு(தசம));
+    தசம* c_dw = (தசம*) calloc(B * T, அளவு(தசம));
+    தசம* c_db = (தசம*) calloc(B * T, அளவு(தசம));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    விடுவி(x);
+    விடுவி(w);
+    விடுவி(b);
+    விடுவி(out);
+    விடுவி(mean);
+    விடுவி(rstd);
+    விடுவி(dout);
+    விடுவி(dx);
+    விடுவி(dw);
+    விடுவி(db);
+    திரும்பு 0;
 }

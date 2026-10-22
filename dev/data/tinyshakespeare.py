@@ -21,51 +21,51 @@ connection and computer. The .bin files are raw byte
 streams of uint16 (gpt-2) or uint32 (llama) numbers indicating the token ids.
 """
 
-import argparse
-import os
+இறக்குமதி argparse
+இறக்குமதி os
 
-import tiktoken
-from transformers import AutoTokenizer
+இறக்குமதி tiktoken
+தஃ transformers இறக்குமதி AutoTokenizer
 
-from data_common import download_file, write_datafile
+தஃ data_common இறக்குமதி download_file, write_datafile
 
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
 
 def download():
     """Downloads the TinyShakespeare dataset to DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+    os.makedirs(DATA_CACHE_DIR, exist_ok=உண்மை)
     # download the TinyShakespeare dataset, unless it's already downloaded
     data_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
     data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    if not os.path.exists(data_filename):
+    எனில் இல்லை os.path.exists(data_filename):
         print(f"Downloading {data_url} to {data_filename}...")
         download_file(data_url, data_filename)
-    else:
+    இல்லையெனில்:
         print(f"{data_filename} already exists, skipping download...")
 
 def tokenize(model_desc):
-    if model_desc == "gpt-2":
+    எனில் model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
-        encode = lambda s: enc.encode_ordinary(s)
+        encode = பெயரிலி s: enc.encode_ordinary(s)
         eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    elif model_desc == "llama-3":
+    அல்லதெனில் model_desc == "llama-3":
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-        encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+        encode = பெயரிலி s: tokenizer.encode(s, add_special_tokens=பொய், verbose=பொய், split_special_tokens=உண்மை)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
+    இல்லையெனில்:
+        எழுப்பு மதிப்பு_Error(f"unknown model descriptor {model_desc}")
     data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    text = open(data_filename, 'r').read()
+    text = open(data_filename, 'r').பட()
     # let's treat every individual chunk of text as a separate "document"
     sections = text.split("\n\n")
     tokens = []
-    for i, s in enumerate(sections):
+    க்கு i, s உள் enumerate(sections):
         tokens.append(eot)
         # there was a mild bug where I originally intended to remove \n\n, but instead just added
         # the EOT right after each \n\n, so I'm keeping that behavior for backwards compatibility
         # therefore we have to here add an extra \n\n at the end of each section, except the last
-        spad = s + "\n\n" if i != len(sections) - 1 else s
+        spad = s + "\n\n" எனில் i != len(sections) - 1 இல்லையெனில் s
         tokens.extend(encode(spad))
     # let's take the first 32,768 tokens as the validation split (~10%)
     val_tokens = tokens[:32768]
@@ -76,9 +76,9 @@ def tokenize(model_desc):
     write_datafile(val_filename, val_tokens, model_desc)
     write_datafile(train_filename, train_tokens, model_desc)
 
-if __name__ == "__main__":
+எனில் __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tiny Shakespeare dataset preprocessing")
-    parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
+    parser.add_argument("-m", "--model_desc", type=str, இயல்பு="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
     args = parser.parse_args()
     download()
     tokenize(args.model_desc)
