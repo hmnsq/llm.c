@@ -7,15 +7,15 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+#અન્તર્ભાવ <unistd.h>
+#અન્તર્ભાવ <string.h>
+#અન્તર્ભાવ <stdio.h>
+#અન્તર્ભાવ <stdlib.h>
+#અન્તર્ભાવ <sys/stat.h>
 // implementation of dirent for Windows is in dev/unistd.h
 #ifndef _WIN32
-#include <dirent.h>
-#include <arpa/inet.h>
+#અન્તર્ભાવ <dirent.h>
+#અન્તર્ભાવ <arpa/inet.h>
 #endif
 
 // ----------------------------------------------------------------------------
@@ -23,38 +23,38 @@
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
+બાહ્ય અંતઃરેખ FILE *fopen_check(અચલ અક્ષર *path, અચલ અક્ષર *mode, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
     FILE *fp = fopen(path, mode);
-    if (fp == NULL) {
-        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
+    જો (fp == ખાલી) {
+        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         fprintf(stderr, "  Path: %s\n", path);
         fprintf(stderr, "  Mode: %s\n", mode);
         fprintf(stderr, "---> HINT 1: dataset files/code have moved to dev/data recently (May 20, 2024). You may have to mv them from the legacy data/ dir to dev/data/(dataset), or re-run the data preprocessing script. Refer back to the main README\n");
         fprintf(stderr, "---> HINT 2: possibly try to re-run `python train_gpt2.py`\n");
         exit(EXIT_FAILURE);
     }
-    return fp;
+    પાછા fp;
 }
 
 #define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+બાહ્ય અંતઃરેખ શૂન્ય fread_check(શૂન્ય *ptr, size_t size, size_t nmemb, FILE *stream, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
     size_t result = fread(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
-        } else {
+    જો (result != nmemb) {
+        જો (feof(stream)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, લીટી);
+        } નહીંતર જો (ferror(stream)) {
+            fprintf(stderr, "Error: File read error at %s:%d\n", file, લીટી);
+        } નહીંતર {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
-                    file, line, nmemb, result);
+                    file, લીટી, nmemb, result);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
         fprintf(stderr, "  Read elements: %zu\n", result);
         exit(EXIT_FAILURE);
@@ -63,24 +63,24 @@ extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *strea
 
 #define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
-    if (fclose(fp) != 0) {
-        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય fclose_check(FILE *fp, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    જો (fclose(fp) != 0) {
+        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
-    if (close(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય sclose_check(પૂર્ણાંક sockfd, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    જો (close(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         exit(EXIT_FAILURE);
     }
 }
@@ -88,12 +88,12 @@ extern inline void sclose_check(int sockfd, const char *file, int line) {
 #define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
 #ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
-    if (closesocket(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય closesocket_check(પૂર્ણાંક sockfd, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    જો (closesocket(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         exit(EXIT_FAILURE);
     }
 }
@@ -101,34 +101,34 @@ extern inline void closesocket_check(int sockfd, const char *file, int line) {
 #define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
 #endif
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
-    if (fseek(fp, off, whence) != 0) {
-        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય fseek_check(FILE *fp, long off, પૂર્ણાંક whence, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    જો (fseek(fp, off, whence) != 0) {
+        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
         fprintf(stderr, "  Whence: %d\n", whence);
         fprintf(stderr, "  File:   %s\n", file);
-        fprintf(stderr, "  Line:   %d\n", line);
+        fprintf(stderr, "  Line:   %d\n", લીટી);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+બાહ્ય અંતઃરેખ શૂન્ય fwrite_check(શૂન્ય *ptr, size_t size, size_t nmemb, FILE *stream, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
     size_t result = fwrite(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
-        } else {
+    જો (result != nmemb) {
+        જો (feof(stream)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, લીટી);
+        } નહીંતર જો (ferror(stream)) {
+            fprintf(stderr, "Error: File write error at %s:%d\n", file, લીટી);
+        } નહીંતર {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
-                    file, line, nmemb, result);
+                    file, લીટી, nmemb, result);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
         fprintf(stderr, "  Written elements: %zu\n", result);
         exit(EXIT_FAILURE);
@@ -140,17 +140,17 @@ extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stre
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય *malloc_check(size_t size, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    શૂન્ય *ptr = malloc(size);
+    જો (ptr == ખાલી) {
+        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, લીટી);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", લીટી);
         fprintf(stderr, "  Size: %zu bytes\n", size);
         exit(EXIT_FAILURE);
     }
-    return ptr;
+    પાછા ptr;
 }
 
 #define mallocCheck(size) malloc_check(size, __FILE__, __LINE__)
@@ -158,13 +158,13 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
-        if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
-            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
+બાહ્ય અંતઃરેખ શૂન્ય token_check(અચલ પૂર્ણાંક* tokens, પૂર્ણાંક token_ગણતરી, પૂર્ણાંક vocab_size, અચલ અક્ષર *file, પૂર્ણાંક લીટી) {
+    માટે(પૂર્ણાંક i = 0; i < token_ગણતરી; i++) {
+        જો(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
+            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, લીટી);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
+            fprintf(stderr, "  Line: %d\n", લીટી);
             fprintf(stderr, "  Token: %d\n", tokens[i]);
             fprintf(stderr, "  Position: %d\n", i);
             fprintf(stderr, "  Vocab: %d\n", vocab_size);
@@ -172,16 +172,16 @@ extern inline void token_check(const int* tokens, int token_count, int vocab_siz
         }
     }
 }
-#define tokenCheck(tokens, count, vocab) token_check(tokens, count, vocab, __FILE__, __LINE__)
+#define tokenCheck(tokens, ગણતરી, vocab) token_check(tokens, ગણતરી, vocab, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // I/O ops
 
-extern inline void create_dir_if_not_exists(const char *dir) {
-    if (dir == NULL) { return; }
-    struct stat st = {0};
-    if (stat(dir, &st) == -1) {
-        if (mkdir(dir, 0700) == -1) {
+બાહ્ય અંતઃરેખ શૂન્ય create_dir_if_not_exists(અચલ અક્ષર *dir) {
+    જો (dir == ખાલી) { પાછા; }
+    સંરચના stat st = {0};
+    જો (stat(dir, &st) == -1) {
+        જો (mkdir(dir, 0700) == -1) {
             printf("ERROR: could not create directory: %s\n", dir);
             exit(EXIT_FAILURE);
         }
@@ -189,35 +189,35 @@ extern inline void create_dir_if_not_exists(const char *dir) {
     }
 }
 
-extern inline int find_max_step(const char* output_log_dir) {
+બાહ્ય અંતઃરેખ પૂર્ણાંક find_max_step(અચલ અક્ષર* output_log_dir) {
     // find the DONE file in the log dir with highest step count
-    if (output_log_dir == NULL) { return -1; }
+    જો (output_log_dir == ખાલી) { પાછા -1; }
     DIR* dir;
-    struct dirent* entry;
-    int max_step = -1;
+    સંરચના dirent* entry;
+    પૂર્ણાંક max_step = -1;
     dir = opendir(output_log_dir);
-    if (dir == NULL) { return -1; }
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "DONE_", 5) == 0) {
-            int step = atoi(entry->d_name + 5);
-            if (step > max_step) {
+    જો (dir == ખાલી) { પાછા -1; }
+    જ્યારે ((entry = readdir(dir)) != ખાલી) {
+        જો (strncmp(entry->d_name, "DONE_", 5) == 0) {
+            પૂર્ણાંક step = atoi(entry->d_name + 5);
+            જો (step > max_step) {
                 max_step = step;
             }
         }
     }
     closedir(dir);
-    return max_step;
+    પાછા max_step;
 }
 
-extern inline int ends_with_bin(const char* str) {
+બાહ્ય અંતઃરેખ પૂર્ણાંક ends_with_bin(અચલ અક્ષર* str) {
     // checks if str ends with ".bin". could be generalized in the future.
-    if (str == NULL) { return 0; }
+    જો (str == ખાલી) { પાછા 0; }
     size_t len = strlen(str);
-    const char* suffix = ".bin";
+    અચલ અક્ષર* suffix = ".bin";
     size_t suffix_len = strlen(suffix);
-    if (len < suffix_len) { return 0; }
-    int suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
-    return suffix_matches;
+    જો (len < suffix_len) { પાછા 0; }
+    પૂર્ણાંક suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
+    પાછા suffix_matches;
 }
 
 #endif

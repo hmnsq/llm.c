@@ -1,21 +1,21 @@
-import torch
+આયાત torch
 
 eps = 1e-5
 
-class LayerNorm:
+વર્ગ LayerNorm:
 
     @staticmethod
     def forward(x, w, b):
         B, T, C = x.size()
-        mean = x.sum(-1, keepdim=True) / C # B,T,1
+        mean = x.sum(-1, keepdim=સાચું) / C # B,T,1
         xshift = x - mean # B,T,C
-        var = (xshift**2).sum(-1, keepdim=True) / C # B,T,1
+        var = (xshift**2).sum(-1, keepdim=સાચું) / C # B,T,1
         rstd = (var + eps) ** -0.5 # B,T,1
         norm = xshift * rstd # B,T,C
         out = norm * w + b # B,T,C
 
         cache = (x, w, mean, rstd)
-        return out, cache
+        પાછા out, cache
 
     @staticmethod
     def backward(dout, cache):
@@ -27,17 +27,17 @@ class LayerNorm:
         dw = (dout * norm).sum((0, 1))
         # gradients for input
         dnorm = dout * w
-        dx = dnorm - dnorm.mean(-1, keepdim=True) - norm * (dnorm * norm).mean(-1, keepdim=True)
+        dx = dnorm - dnorm.mean(-1, keepdim=સાચું) - norm * (dnorm * norm).mean(-1, keepdim=સાચું)
         dx *= rstd
-        return dx, dw, db
+        પાછા dx, dw, db
 
 # create a small dummy example and check w.r.t PyTorch backward
 B = 2
 T = 3
 C = 4
-x = torch.randn(B, T, C, requires_grad=True)
-w = torch.randn(C, requires_grad=True)
-b = torch.randn(C, requires_grad=True)
+x = torch.randn(B, T, C, requires_grad=સાચું)
+w = torch.randn(C, requires_grad=સાચું)
+b = torch.randn(C, requires_grad=સાચું)
 out, cache = LayerNorm.forward(x, w, b)
 
 dout = torch.randn(B, T, C)
@@ -53,18 +53,18 @@ print("db error:", (b.grad - db).abs().max().item())
 # for reference checking in C also
 x, w, mean, rstd = cache
 
-def write(tensor, handle):
-    handle.write(tensor.detach().numpy().astype("float32").tobytes())
+def લિખ(tensor, handle):
+    handle.લિખ(tensor.detach().numpy().astype("float32").tobytes())
 
 # Write to file
-with open('ln.bin', 'wb') as file:
-    write(x, file) # (B, T, C)
-    write(w, file) # (C, )
-    write(b, file) # (C, )
-    write(out, file) # (B, T, C)
-    write(mean, file) # (B, T)
-    write(rstd, file) # (B, T)
-    write(dout, file) # (B, T, C)
-    write(dx, file) # (B, T, C)
-    write(dw, file) # (C, )
-    write(db, file) # (C, )
+with open('ln.bin', 'wb') ઇવ file:
+    લિખ(x, file) # (B, T, C)
+    લિખ(w, file) # (C, )
+    લિખ(b, file) # (C, )
+    લિખ(out, file) # (B, T, C)
+    લિખ(mean, file) # (B, T)
+    લિખ(rstd, file) # (B, T)
+    લિખ(dout, file) # (B, T, C)
+    લિખ(dx, file) # (B, T, C)
+    લિખ(dw, file) # (C, )
+    લિખ(db, file) # (C, )
