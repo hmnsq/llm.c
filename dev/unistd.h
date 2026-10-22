@@ -6,167 +6,167 @@
 #define _USE_MATH_DEFINES
 #define WIN32_LEAN_AND_MEAN
 
-#include <stdio.h>
-#include <math.h>
-#include <time.h>
-#include <stdlib.h> // for malloc and free
-#include <string.h>
-#include <direct.h> // for _mkdir and _stat
-#include <io.h> // needed for _access below and _findfirst, _findnext, _findclose
+#अन्तर्भाव <stdio.h>
+#अन्तर्भाव <math.h>
+#अन्तर्भाव <time.h>
+#अन्तर्भाव <stdlib.h> // for malloc and free
+#अन्तर्भाव <string.h>
+#अन्तर्भाव <direct.h> // for _mkdir and _stat
+#अन्तर्भाव <io.h> // needed for _access below and _findfirst, _findnext, _findclose
 #pragma comment(lib, "Ws2_32.lib")  // Link Ws2_32.lib for socket functions
-#include <winsock2.h>
+#अन्तर्भाव <winsock2.h>
 
 #define CLOCK_MONOTONIC 0
-static inline int clock_gettime(int ignore_variable, struct timespec* tv)
+स्थिर ओळीत पूर्णांक clock_gettime(पूर्णांक ignore_variable, संरचना timespec* tv)
 {
-    return timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
+    परत timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
 }
 
 #define OMP /* turn it on */
 #define F_OK 0
 #define access _access
 
-#define TURN_OFF_FP_FAST __pragma(float_control( precise, on, push )) // Save current setting and turn on /fp:precise
-#define TURN_ON_FP_FAST  __pragma(float_control(pop)) // Restore file's default settings
+#define TURN_OFF_FP_FAST __pragma(float_control( precise, on, ढकला )) // Save current setting and turn on /fp:precise
+#define TURN_ON_FP_FAST  __pragma(float_control(काढा)) // Restore file's default settings
 
-#define mkdir(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
+#define सूची_गढ़ो(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
 #define stat _stat
 
-typedef struct glob_t {
-    size_t gl_pathc;    // Count of matched pathnames
-    char **gl_pathv;    // List of matched pathnames
+प्रकारव्याख्या संरचना glob_t {
+    माप_प्रकार gl_pathc;    // Count of matched pathnames
+    अक्षर **gl_pathv;    // List of matched pathnames
 } glob_t;
 
-static inline void replace_forward_slashes(char* str) {
-    while (*str) {
-        if (*str == '/') {
+स्थिर ओळीत शून्य replace_forward_slashes(अक्षर* str) {
+    पर्यंत (*str) {
+        जर (*str == '/') {
             *str = '\\';
         }
         str++;
     }
 }
 
-static inline void globfree(glob_t *pglob) {
-    for (size_t i = 0; i < pglob->gl_pathc; ++i) {
-        free(pglob->gl_pathv[i]); // Free the allocated memory for each filename
+स्थिर ओळीत शून्य globfree(glob_t *pglob) {
+    साठी (माप_प्रकार i = 0; i < pglob->gl_pathc; ++i) {
+        मुक्त(pglob->gl_pathv[i]); // Free the allocated memory for each filename
     }
-    free(pglob->gl_pathv); // Free the allocated memory for the list of filenames
+    मुक्त(pglob->gl_pathv); // Free the allocated memory for the list of filenames
 }
 
-static inline int glob(const char* pattern, int ignored_flags, int (*ignored_errfunc)(const char* epath, int eerrno), glob_t* pglob){
-    struct _finddata_t find_file_data;
-    char full_path[576]; // stored in pglob->gl_pathv[n]
-    char directory_path[512] = {0}; // Store the directory path from the pattern
-    char pattern_copy[512]; // Copy of the pattern to modify
+स्थिर ओळीत पूर्णांक glob(स्थिरांक अक्षर* pattern, पूर्णांक ignored_flags, पूर्णांक (*ignored_errfunc)(स्थिरांक अक्षर* epath, पूर्णांक eerrno), glob_t* pglob){
+    संरचना _finddata_t find_file_data;
+    अक्षर full_path[576]; // stored in pglob->gl_pathv[n]
+    अक्षर directory_path[512] = {0}; // Store the directory path from the pattern
+    अक्षर pattern_copy[512]; // Copy of the pattern to modify
 
-    strncpy_s(pattern_copy, sizeof(pattern_copy) - 1, pattern, sizeof(pattern_copy) - 1);
+    strncpy_s(pattern_copy, आकार(pattern_copy) - 1, pattern, आकार(pattern_copy) - 1);
 
     replace_forward_slashes (pattern_copy); // Replace forward slashes with backslashes
 
-    if (strchr(pattern_copy, '\\') != (void*) NULL) {
-        strncpy_s(directory_path, sizeof(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
-        directory_path[strrchr(pattern_copy, '\\') - pattern_copy + 1] = '\0';
+    जर (म_अक्षर(pattern_copy, '\\') != (शून्य*) रिक्त) {
+        strncpy_s(directory_path, आकार(directory_path) - 1, pattern_copy, म_खोजप(pattern_copy, '\\') - pattern_copy + 1);
+        directory_path[म_खोजप(pattern_copy, '\\') - pattern_copy + 1] = '\0';
     }
 
     // find the first file matching the pattern in the directory
     intptr_t find_handle = _findfirst(pattern_copy, &find_file_data);
 
-    if (find_handle == -1) {
-        return 1; // No files found
+    जर (find_handle == -1) {
+        परत 1; // No files found
     }
 
-    size_t file_count = 0;
-    size_t max_files = 64000; // hard-coded limit for the number of files
+    माप_प्रकार file_मोजणी = 0;
+    माप_प्रकार max_files = 64000; // hard-coded limit for the number of files
 
-    pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
+    pglob->gl_pathv = (अक्षर **) दो_स्मृति(max_files * आकार(अक्षर*)); // freed in globfree
 
-    if (pglob->gl_pathv == NULL) {
+    जर (pglob->gl_pathv == रिक्त) {
         _findclose(find_handle);
-        return 2; // Memory allocation failed
+        परत 2; // Memory allocation failed
     }
 
-    do {
-        if (file_count >= max_files) {
+    करा {
+        जर (file_मोजणी >= max_files) {
             _findclose(find_handle);
-            return 2; // Too many files found
+            परत 2; // Too many files found
             }
 
-        snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
+        snprintf(full_path, आकार(full_path), "%s%s", directory_path, find_file_data.name);
 
-        pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
+        pglob->gl_pathv[file_मोजणी] = _strdup(full_path); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
+        जर (pglob->gl_pathv[file_मोजणी] == रिक्त) {
             _findclose(find_handle);
-            return 2; // Memory allocation for filename failed
+            परत 2; // Memory allocation for filename failed
         }
-        file_count++;
-    } while (_findnext(find_handle, &find_file_data) == 0);
+        file_मोजणी++;
+    } पर्यंत (_findnext(find_handle, &find_file_data) == 0);
 
     _findclose(find_handle);
 
-    pglob->gl_pathc = file_count;
-    return 0;
+    pglob->gl_pathc = file_मोजणी;
+    परत 0;
 }
 
 // dirent.h support
 
 #define MAX_PATH_LENGTH 512
-typedef struct dirent {
-    char d_name[MAX_PATH_LENGTH];
+प्रकारव्याख्या संरचना dirent {
+    अक्षर d_name[MAX_PATH_LENGTH];
 } dirent;
 
-typedef struct DIR {
+प्रकारव्याख्या संरचना सूची {
     intptr_t handle;
-    struct _finddata_t findFileData;
-    int firstRead;
-} DIR;
+    संरचना _finddata_t findFileData;
+    पूर्णांक firstRead;
+} सूची;
 
-static inline DIR *opendir(const char *name) {
-    DIR *dir = (DIR *)malloc(sizeof(DIR));
-    if (dir == NULL) {
-        return NULL;
+स्थिर ओळीत सूची *सूची_खोलो(स्थिरांक अक्षर *name) {
+    सूची *dir = (सूची *)दो_स्मृति(आकार(सूची));
+    जर (dir == रिक्त) {
+        परत रिक्त;
     }
 
-    char searchPath[MAX_PATH_LENGTH];
+    अक्षर शोध_Path[MAX_PATH_LENGTH];
 
-    snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
+    snprintf(शोध_Path, MAX_PATH_LENGTH, "%s\\*.*", name);
 
-    dir->handle = _findfirst(searchPath, &dir->findFileData);
-    if (dir->handle == -1) {
-        free(dir);
-        return NULL;
+    dir->handle = _findfirst(शोध_Path, &dir->findFileData);
+    जर (dir->handle == -1) {
+        मुक्त(dir);
+        परत रिक्त;
     }
 
     dir->firstRead = 1;
-    return dir;
+    परत dir;
 }
 
-static inline struct dirent *readdir(DIR *directory) {
-    static struct dirent result;
+स्थिर ओळीत संरचना dirent *सूची_पढ़ो(सूची *directory) {
+    स्थिर संरचना dirent result;
 
-    if (directory->firstRead) {
+    जर (directory->firstRead) {
         directory->firstRead = 0;
-    } else {
-        if (_findnext(directory->handle, &directory->findFileData) != 0) {
-            return NULL;
+    } अन्यथा {
+        जर (_findnext(directory->handle, &directory->findFileData) != 0) {
+            परत रिक्त;
         }
     }
 
-    strncpy(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
+    म_नकलन(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
     result.d_name[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    return &result;
+    परत &result;
 }
 
-static inline int closedir(DIR *directory) {
-    if (directory == NULL) {
-        return -1;
+स्थिर ओळीत पूर्णांक बंद_सूची(सूची *directory) {
+    जर (directory == रिक्त) {
+        परत -1;
     }
 
-    if (_findclose(directory->handle) != 0) {
-        return -1;
+    जर (_findclose(directory->handle) != 0) {
+        परत -1;
     }
 
-    free(directory);
-    return 0;
+    मुक्त(directory);
+    परत 0;
 }
 #endif // UNISTD_H
