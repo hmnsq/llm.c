@@ -2,44 +2,44 @@
 // we change some unrelated piece of the code.
 // TODO this currently duplicates some of the utilities from the main file
 
-#define NOMINMAX
-#include <unistd.h>
-#include "cudnn_att.h"
-#include <cudnn_frontend.h>
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ NOMINMAX
+#ਅਨ੍ਤਰ੍ਭਾਵ <unistd.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ "cudnn_att.h"
+#ਅਨ੍ਤਰ੍ਭਾਵ <cudnn_frontend.h>
 
-namespace fe = cudnn_frontend;
+ਨਾਮਾਕਾਸ਼ fe = cudnn_frontend;
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
-static_assert(false, "cuDNN is not supported in FP32 mode.")
+#ਜੇ defined(ENABLE_FP32)
+static_assert(ਝੂਠ, "cuDNN is not supported in FP32 mode.")
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
-#elif defined(ENABLE_FP16)
-#define CUDNN_16BIT fe::DataType_t::HALF
-#else // Default to bfloat16
-#define CUDNN_16BIT fe::DataType_t::BFLOAT16
-#endif
+#ਜਾਂਜੇ defined(ENABLE_FP16)
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ CUDNN_16_ਦੋਆਧਾਰੀ_ਅੰਕ fe::ਅੰਕੜੇ_Type_t::HALF
+#ਨਹੀਂਤਾਂ // Default to bfloat16
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ CUDNN_16_ਦੋਆਧਾਰੀ_ਅੰਕ fe::ਅੰਕੜੇ_Type_t::BFLOAT16
+#ਜੇ_ਅੰਤ
 
-static cudnnHandle_t cudnn_handle;
-static size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256MiB!)
-static void* cudnn_workspace = NULL;
+ਸਥਿਰ cudnnHandle_t cudnn_handle;
+ਸਥਿਰ size_t cudnn_workspace_ਮਾਪ = 0; // dynamically allocated as needed (up to 256MiB!)
+ਸਥਿਰ ਖਾਲੀ* cudnn_workspace = ਨਿਰਾ;
 
-static void cuDNNCheck(cudnnStatus_t error, const char *file, int line) {
-    if (error != CUDNN_STATUS_SUCCESS) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, cudnnGetErrorString(error));
-        exit(EXIT_FAILURE);
+ਸਥਿਰ ਖਾਲੀ cuDNNCheck(cudnn_ਸਥਿਤੀ_t error, ਅਚਲ ਅੱਖਰ *file, ਪੂਰਨ ਸਤਰ) {
+    ਜੇ (error != CUDNN_ਸਥਿਤੀ_SUCCESS) {
+        ਲਿਖੋ("[CUDNN ERROR] at file %s:%d:\n%s\n", file, ਸਤਰ, cudnnGetErrorString(error));
+        ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
     }
 };
-#define cuDNNCheck(err) (cuDNNCheck(err, __FILE__, __LINE__))
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ cuDNNCheck(err) (cuDNNCheck(err, __FILE__, __LINE__))
 
-static void checkCudnnFE(const fe::error_object& e, const char *file, int line) {
-    if(!e.is_good()) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, e.err_msg.c_str());
-        exit(EXIT_FAILURE);
+ਸਥਿਰ ਖਾਲੀ checkCudnnFE(ਅਚਲ fe::error_object& e, ਅਚਲ ਅੱਖਰ *file, ਪੂਰਨ ਸਤਰ) {
+    ਜੇ(!e.is_good()) {
+        ਲਿਖੋ("[CUDNN ERROR] at file %s:%d:\n%s\n", file, ਸਤਰ, e.err_ਸੁਨੇਹਾ.c_str());
+        ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
     }
 }
-#define checkCudnnFE(err) checkCudnnFE(err, __FILE__, __LINE__)
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ checkCudnnFE(err) checkCudnnFE(err, __FILE__, __LINE__)
 
-enum UIDs {
+ਗਿਣਤੀ UIDs {
     Q_UID,
     K_UID,
     V_UID,
@@ -53,245 +53,245 @@ enum UIDs {
 };
 
 // Need a cache because graph->build_operation_graph() is slow but everything else seems fast
-using cache_type_fwd = std::map<std::tuple<int,int,int,int, int>, std::shared_ptr<fe::graph::Graph>>;
-using cache_type_bwd = std::map<std::tuple<int,int,int,int>, std::shared_ptr<fe::graph::Graph>>;
+ਵਰਤੋਂ cache_type_fwd = std::map<std::tuple<ਪੂਰਨ,ਪੂਰਨ,ਪੂਰਨ,ਪੂਰਨ, ਪੂਰਨ>, std::shared_ptr<fe::ਗ੍ਰਾਫ::ਗ੍ਰਾਫ_2>>;
+ਵਰਤੋਂ cache_type_bwd = std::map<std::tuple<ਪੂਰਨ,ਪੂਰਨ,ਪੂਰਨ,ਪੂਰਨ>, std::shared_ptr<fe::ਗ੍ਰਾਫ::ਗ੍ਰਾਫ_2>>;
 
 // Loosely based on cuDNN frontend samples functions and massively simplified
-auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_only) {
+ਸਵੈਚਾਲਿਤ lookup_cache_or_build_ਗ੍ਰਾਫ_fwd(ਪੂਰਨ B,ਪੂਰਨ H,ਪੂਰਨ T,ਪੂਰਨ HS, ਪੂਰਨ is_inference_only) {
 
-    static cache_type_fwd user_maintained_cache_fwd;
+    ਸਥਿਰ cache_type_fwd user_maintained_cache_fwd;
 
-    auto key = std::make_tuple(B, H, T, HS, is_inference_only);
+    ਸਵੈਚਾਲਿਤ ਕੁੰਜੀ = std::make_tuple(B, H, T, HS, is_inference_only);
 
-    auto it = user_maintained_cache_fwd.find(key);
-    if (it != user_maintained_cache_fwd.end()) {
-        return it->second;
+    ਸਵੈਚਾਲਿਤ it = user_maintained_cache_fwd.find(ਕੁੰਜੀ);
+    ਜੇ (it != user_maintained_cache_fwd.end()) {
+        ਵਾਪਸ it->second;
     }
 
-    auto graph = std::make_shared<fe::graph::Graph>();
-    graph->set_io_data_type(CUDNN_16BIT)
-          .set_intermediate_data_type(fe::DataType_t::FLOAT)
-          .set_compute_data_type(fe::DataType_t::FLOAT);
+    ਸਵੈਚਾਲਿਤ ਗ੍ਰਾਫ = std::make_shared<fe::ਗ੍ਰਾਫ::ਗ੍ਰਾਫ_2>();
+    ਗ੍ਰਾਫ->ਸੈੱਟ_io_ਅੰਕੜੇ_type(CUDNN_16_ਦੋਆਧਾਰੀ_ਅੰਕ)
+          .ਸੈੱਟ_intermediate_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT)
+          .ਸੈੱਟ_compute_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT);
 
     // QKV is (B, T, 3, NH, HS) which cuDNN can handle directly without an external permute
-    auto Q = graph->tensor(fe::graph::Tensor_attributes().set_name("Q")
-                               .set_dim({B, H, T, HS})
-                               .set_uid(Q_UID)
-                               .set_stride({3 * H * HS * T,  HS, 3 * H * HS, 1}));
-    auto K = graph->tensor(fe::graph::Tensor_attributes().set_name("K")
-                               .set_dim({B, H, T, HS})
-                               .set_uid(K_UID)
-                               .set_stride({3 * H * HS * T, HS, 3 * H * HS, 1}));
-    auto V = graph->tensor(fe::graph::Tensor_attributes().set_name("V")
-                               .set_dim({B, H, T, HS})
-                               .set_uid(V_UID)
-                               .set_stride({3 * H * HS * T, HS, 3 * H * HS, 1}));
-    auto attn_scale = graph->tensor(fe::graph::Tensor_attributes().set_name("attn_scale")
-                               .set_dim({1, 1, 1, 1})
-                               .set_stride({1, 1, 1, 1})
-                               .set_uid(Attn_scale_UID)
-                               .set_is_pass_by_value(true)
-                               .set_data_type(fe::DataType_t::FLOAT));
+    ਸਵੈਚਾਲਿਤ Q = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("Q")
+                               .ਸੈੱਟ_dim({B, H, T, HS})
+                               .ਸੈੱਟ_uid(Q_UID)
+                               .ਸੈੱਟ_stride({3 * H * HS * T,  HS, 3 * H * HS, 1}));
+    ਸਵੈਚਾਲਿਤ K = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("K")
+                               .ਸੈੱਟ_dim({B, H, T, HS})
+                               .ਸੈੱਟ_uid(K_UID)
+                               .ਸੈੱਟ_stride({3 * H * HS * T, HS, 3 * H * HS, 1}));
+    ਸਵੈਚਾਲਿਤ V = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("V")
+                               .ਸੈੱਟ_dim({B, H, T, HS})
+                               .ਸੈੱਟ_uid(V_UID)
+                               .ਸੈੱਟ_stride({3 * H * HS * T, HS, 3 * H * HS, 1}));
+    ਸਵੈਚਾਲਿਤ attn_scale = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("attn_scale")
+                               .ਸੈੱਟ_dim({1, 1, 1, 1})
+                               .ਸੈੱਟ_stride({1, 1, 1, 1})
+                               .ਸੈੱਟ_uid(Attn_scale_UID)
+                               .ਸੈੱਟ_is_pass_by_ਮੁੱਲ(ਸੱਚ)
+                               .ਸੈੱਟ_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT));
 
-    auto sdpa_options = fe::graph::SDPA_attributes().set_name("flash_attention");
-    sdpa_options.set_is_inference(is_inference_only);
-    sdpa_options.set_attn_scale(attn_scale);
-    sdpa_options.set_causal_mask(true);
+    ਸਵੈਚਾਲਿਤ sdpa_options = fe::ਗ੍ਰਾਫ::SDPA_ਗੁਣ().ਸੈੱਟ_name("flash_attention");
+    sdpa_options.ਸੈੱਟ_is_inference(is_inference_only);
+    sdpa_options.ਸੈੱਟ_attn_scale(attn_scale);
+    sdpa_options.ਸੈੱਟ_causal_ਨਕਾਬ(ਸੱਚ);
 
     // Create the graph operation and get the output tensors back
-    auto [O, stats] = graph->sdpa(Q, K, V, sdpa_options);
+    ਸਵੈਚਾਲਿਤ [O, stats] = ਗ੍ਰਾਫ->sdpa(Q, K, V, sdpa_options);
 
     // Output is (B, T, NH, HS) BF16/FP16 and stats for backward pass is (B, NH, T) FP32
-    O->set_output(true).set_dim({B, H, T, HS}).set_stride({H * HS * T, HS, H * HS, 1}).set_uid(O_UID);
+    O->ਸੈੱਟ_output(ਸੱਚ).ਸੈੱਟ_dim({B, H, T, HS}).ਸੈੱਟ_stride({H * HS * T, HS, H * HS, 1}).ਸੈੱਟ_uid(O_UID);
 
-    assert(stats == nullptr || is_inference_only == false);
-    if (is_inference_only == false) {
-        stats->set_output(true).set_data_type(fe::DataType_t::FLOAT)
-                               .set_dim({B, H, T, 1})
-                               .set_stride({H * T, T, 1, 1})
-                               .set_uid(Stats_UID);
+    ਪ੍ਰਤਿਜ੍ਞਾ(stats == ਖਾਲੀ_ਸੂਚਕ || is_inference_only == ਝੂਠ);
+    ਜੇ (is_inference_only == ਝੂਠ) {
+        stats->ਸੈੱਟ_output(ਸੱਚ).ਸੈੱਟ_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT)
+                               .ਸੈੱਟ_dim({B, H, T, 1})
+                               .ਸੈੱਟ_stride({H * T, T, 1, 1})
+                               .ਸੈੱਟ_uid(Stats_UID);
     }
 
-    checkCudnnFE(graph->validate());
+    checkCudnnFE(ਗ੍ਰਾਫ->validate());
 
     // Build the operation graph and execution part (this is the VERY SLOW PART)
-    checkCudnnFE(graph->build_operation_graph(cudnn_handle));
-    auto plans = graph->create_execution_plans({fe::HeurMode_t::A});
-    checkCudnnFE(graph->check_support(cudnn_handle));
-    checkCudnnFE(graph->build_plans(cudnn_handle));
+    checkCudnnFE(ਗ੍ਰਾਫ->build_operation_ਗ੍ਰਾਫ(cudnn_handle));
+    ਸਵੈਚਾਲਿਤ plans = ਗ੍ਰਾਫ->create_execution_plans({fe::Heur_ਬਹੁਲਕ_t::A});
+    checkCudnnFE(ਗ੍ਰਾਫ->check_support(cudnn_handle));
+    checkCudnnFE(ਗ੍ਰਾਫ->build_plans(cudnn_handle));
     // Reallocate the workspace if the required size is greater than the current workspace
     // In H100 this may be around 16B
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ਜੇ (ਗ੍ਰਾਫ->get_workspace_ਮਾਪ() > cudnn_workspace_ਮਾਪ) {
+        ਜੇ (cudnn_workspace_ਮਾਪ > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
-        cudnn_workspace_size = graph->get_workspace_size();
-        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
+        cudnn_workspace_ਮਾਪ = ਗ੍ਰਾਫ->get_workspace_ਮਾਪ();
+        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_ਮਾਪ));
     }
 
-    user_maintained_cache_fwd.insert({key, graph});
+    user_maintained_cache_fwd.insert({ਕੁੰਜੀ, ਗ੍ਰਾਫ});
 
-    return graph;
+    ਵਾਪਸ ਗ੍ਰਾਫ;
 }
 
-auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
-    static cache_type_bwd user_maintained_cache_bwd;
+ਸਵੈਚਾਲਿਤ lookup_cache_or_build_ਗ੍ਰਾਫ_bwd(ਪੂਰਨ B, ਪੂਰਨ NH, ਪੂਰਨ T, ਪੂਰਨ HS) {
+    ਸਥਿਰ cache_type_bwd user_maintained_cache_bwd;
 
-    auto key = std::make_tuple(B, NH, T, HS);
+    ਸਵੈਚਾਲਿਤ ਕੁੰਜੀ = std::make_tuple(B, NH, T, HS);
 
-    auto it = user_maintained_cache_bwd.find(key);
-    if (it != user_maintained_cache_bwd.end()) {
-        return it->second;
+    ਸਵੈਚਾਲਿਤ it = user_maintained_cache_bwd.find(ਕੁੰਜੀ);
+    ਜੇ (it != user_maintained_cache_bwd.end()) {
+        ਵਾਪਸ it->second;
     }
 
-    auto graph = std::make_shared<fe::graph::Graph>();
-    graph->set_io_data_type(CUDNN_16BIT)
-          .set_intermediate_data_type(fe::DataType_t::FLOAT)
-          .set_compute_data_type(fe::DataType_t::FLOAT);
+    ਸਵੈਚਾਲਿਤ ਗ੍ਰਾਫ = std::make_shared<fe::ਗ੍ਰਾਫ::ਗ੍ਰਾਫ_2>();
+    ਗ੍ਰਾਫ->ਸੈੱਟ_io_ਅੰਕੜੇ_type(CUDNN_16_ਦੋਆਧਾਰੀ_ਅੰਕ)
+          .ਸੈੱਟ_intermediate_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT)
+          .ਸੈੱਟ_compute_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT);
 
     // (B, N, 3, NH, HS)
     // must come from inp (which means we also need to convert THAT to FP16)
-    auto Q = graph->tensor(fe::graph::Tensor_attributes().set_name("Q")
-                            .set_dim({B, NH, T, HS})
-                            .set_uid(Q_UID)
-                            .set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
-    auto K = graph->tensor(fe::graph::Tensor_attributes().set_name("K")
-                            .set_dim({B, NH, T, HS})
-                            .set_uid(K_UID)
-                            .set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
-    auto V = graph->tensor(fe::graph::Tensor_attributes().set_name("V")
-                            .set_dim({B, NH, T, HS})
-                            .set_uid(V_UID)
-                            .set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
-    auto O = graph->tensor(fe::graph::Tensor_attributes().set_name("O")
-                            .set_dim({B, NH, T, HS})
-                            .set_uid(O_UID)
-                            .set_stride({NH * HS * T, HS, NH * HS, 1}));
-    auto dO = graph->tensor(fe::graph::Tensor_attributes().set_name("dO")
-                            .set_dim({B, NH, T, HS})
-                            .set_uid(dO_UID)
-                            .set_stride({NH * HS * T, HS, NH * HS, 1}));
+    ਸਵੈਚਾਲਿਤ Q = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("Q")
+                            .ਸੈੱਟ_dim({B, NH, T, HS})
+                            .ਸੈੱਟ_uid(Q_UID)
+                            .ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
+    ਸਵੈਚਾਲਿਤ K = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("K")
+                            .ਸੈੱਟ_dim({B, NH, T, HS})
+                            .ਸੈੱਟ_uid(K_UID)
+                            .ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
+    ਸਵੈਚਾਲਿਤ V = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("V")
+                            .ਸੈੱਟ_dim({B, NH, T, HS})
+                            .ਸੈੱਟ_uid(V_UID)
+                            .ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}));
+    ਸਵੈਚਾਲਿਤ O = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("O")
+                            .ਸੈੱਟ_dim({B, NH, T, HS})
+                            .ਸੈੱਟ_uid(O_UID)
+                            .ਸੈੱਟ_stride({NH * HS * T, HS, NH * HS, 1}));
+    ਸਵੈਚਾਲਿਤ dO = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("dO")
+                            .ਸੈੱਟ_dim({B, NH, T, HS})
+                            .ਸੈੱਟ_uid(dO_UID)
+                            .ਸੈੱਟ_stride({NH * HS * T, HS, NH * HS, 1}));
 
-    auto stats = graph->tensor(fe::graph::Tensor_attributes().set_name("stats")
-                            .set_dim({B, NH, T, 1})
-                            .set_uid(Stats_UID)
-                            .set_stride({NH * T, T, 1, 1})
-                            .set_data_type(fe::DataType_t::FLOAT));
-    auto attn_scale = graph->tensor(fe::graph::Tensor_attributes().set_name("attn_scale")
-                            .set_dim({1, 1, 1, 1})
-                            .set_stride({1, 1, 1, 1})
-                            .set_is_pass_by_value(true)
-                            .set_uid(Attn_scale_UID)
-                            .set_data_type(fe::DataType_t::FLOAT));
-    auto sdpa_backward_options = fe::graph::SDPA_backward_attributes().set_name("flash_attention_backward")
-#if CUDNN_FRONTEND_MAJOR_VERSION > 1 || CUDNN_FRONTEND_MINOR_VERSION >= 5
-                            .set_deterministic_algorithm(true) // 1.5+ needs this for determinism
-#endif
-                            .set_causal_mask(true)
-                            .set_attn_scale(attn_scale);
+    ਸਵੈਚਾਲਿਤ stats = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("stats")
+                            .ਸੈੱਟ_dim({B, NH, T, 1})
+                            .ਸੈੱਟ_uid(Stats_UID)
+                            .ਸੈੱਟ_stride({NH * T, T, 1, 1})
+                            .ਸੈੱਟ_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT));
+    ਸਵੈਚਾਲਿਤ attn_scale = ਗ੍ਰਾਫ->tensor(fe::ਗ੍ਰਾਫ::Tensor_ਗੁਣ().ਸੈੱਟ_name("attn_scale")
+                            .ਸੈੱਟ_dim({1, 1, 1, 1})
+                            .ਸੈੱਟ_stride({1, 1, 1, 1})
+                            .ਸੈੱਟ_is_pass_by_ਮੁੱਲ(ਸੱਚ)
+                            .ਸੈੱਟ_uid(Attn_scale_UID)
+                            .ਸੈੱਟ_ਅੰਕੜੇ_type(fe::ਅੰਕੜੇ_Type_t::FLOAT));
+    ਸਵੈਚਾਲਿਤ sdpa_backward_options = fe::ਗ੍ਰਾਫ::SDPA_backward_ਗੁਣ().ਸੈੱਟ_name("flash_attention_backward")
+#ਜੇ CUDNN_FRONTEND_MAJOR_ਸੰਸਕਰਣ > 1 || CUDNN_FRONTEND_MINOR_ਸੰਸਕਰਣ >= 5
+                            .ਸੈੱਟ_deterministic_algorithm(ਸੱਚ) // 1.5+ needs this for determinism
+#ਜੇ_ਅੰਤ
+                            .ਸੈੱਟ_causal_ਨਕਾਬ(ਸੱਚ)
+                            .ਸੈੱਟ_attn_scale(attn_scale);
 
     // Create the graph operation and get the output tensors back
-    auto [dQ, dK, dV] = graph->sdpa_backward(Q, K, V, O, dO, stats, sdpa_backward_options);
+    ਸਵੈਚਾਲਿਤ [dQ, dK, dV] = ਗ੍ਰਾਫ->sdpa_backward(Q, K, V, O, dO, stats, sdpa_backward_options);
 
-    dQ->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dQ_UID);
-    dK->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dK_UID);
-    dV->set_output(true).set_dim({B, NH, T, HS}).set_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).set_uid(dV_UID);
+    dQ->ਸੈੱਟ_output(ਸੱਚ).ਸੈੱਟ_dim({B, NH, T, HS}).ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).ਸੈੱਟ_uid(dQ_UID);
+    dK->ਸੈੱਟ_output(ਸੱਚ).ਸੈੱਟ_dim({B, NH, T, HS}).ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).ਸੈੱਟ_uid(dK_UID);
+    dV->ਸੈੱਟ_output(ਸੱਚ).ਸੈੱਟ_dim({B, NH, T, HS}).ਸੈੱਟ_stride({3 * NH * HS * T, HS, 3 * NH * HS, 1}).ਸੈੱਟ_uid(dV_UID);
 
-    checkCudnnFE(graph->validate());
+    checkCudnnFE(ਗ੍ਰਾਫ->validate());
 
     // Build the operation graph and execution part (this is the VERY SLOW PART)
-    checkCudnnFE(graph->build_operation_graph(cudnn_handle));
-    auto plans = graph->create_execution_plans({fe::HeurMode_t::A});
-    checkCudnnFE(graph->check_support(cudnn_handle));
-    checkCudnnFE(graph->build_plans(cudnn_handle));
+    checkCudnnFE(ਗ੍ਰਾਫ->build_operation_ਗ੍ਰਾਫ(cudnn_handle));
+    ਸਵੈਚਾਲਿਤ plans = ਗ੍ਰਾਫ->create_execution_plans({fe::Heur_ਬਹੁਲਕ_t::A});
+    checkCudnnFE(ਗ੍ਰਾਫ->check_support(cudnn_handle));
+    checkCudnnFE(ਗ੍ਰਾਫ->build_plans(cudnn_handle));
 
     // Reallocate the workspace if the required size is greater than the current workspace
     // By default, cuDNN uses up to 256MiB of workspace, so we don't want to just allocate the maximum
-    if (graph->get_workspace_size() > cudnn_workspace_size) {
-        if (cudnn_workspace_size > 0) {
+    ਜੇ (ਗ੍ਰਾਫ->get_workspace_ਮਾਪ() > cudnn_workspace_ਮਾਪ) {
+        ਜੇ (cudnn_workspace_ਮਾਪ > 0) {
             cudaCheck(cudaFree(cudnn_workspace));
         }
-        cudnn_workspace_size = graph->get_workspace_size();
-        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
+        cudnn_workspace_ਮਾਪ = ਗ੍ਰਾਫ->get_workspace_ਮਾਪ();
+        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_ਮਾਪ));
     }
 
-    user_maintained_cache_bwd.insert({key, graph});
-    return graph;
+    user_maintained_cache_bwd.insert({ਕੁੰਜੀ, ਗ੍ਰਾਫ});
+    ਵਾਪਸ ਗ੍ਰਾਫ;
 }
 
-void attention_forward_cudnn(floatX* out,  // output: (B, T, NH, HS)
-                             float* stats, // output for backward pass: (B, NH, T)
+ਖਾਲੀ attention_forward_cudnn(floatX* ਬਾਹਰਲਾ,  // output: (B, T, NH, HS)
+                             ਦਸ਼ਮਲਵ* stats, // output for backward pass: (B, NH, T)
                              floatX* inp,  // input: (B, T, 3, NH, HS) QKV
-                             int B, int T, int NH, int C, cudaStream_t stream) {
+                             ਪੂਰਨ B, ਪੂਰਨ T, ਪੂਰਨ NH, ਪੂਰਨ C, cuda_ਧਾਰਾ_t ਧਾਰਾ) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
-    bool is_inference_only = (stats == nullptr);
+    ਪੂਰਨ HS = C / NH; // number of features per head
+    ਤਾਰਕਿਕ is_inference_only = (stats == ਖਾਲੀ_ਸੂਚਕ);
 
-    cuDNNCheck(cudnnSetStream(cudnn_handle, stream));
+    cuDNNCheck(cudnn_ਸੈੱਟ_ਧਾਰਾ(cudnn_handle, ਧਾਰਾ));
 
     // Get graph and tensors from cache (or generate it on first use)
-    auto graph = lookup_cache_or_build_graph_fwd(B, NH, T, HS, is_inference_only);
+    ਸਵੈਚਾਲਿਤ ਗ੍ਰਾਫ = lookup_cache_or_build_ਗ੍ਰਾਫ_fwd(B, NH, T, HS, is_inference_only);
 
     // Prepare all the tensor pointers for executing the graph
-    void* devPtrQ = inp;
-    void* devPtrK = (inp + C);
-    void* devPtrV = (inp + 2 * C);
-    float attn_scale_cpu = 1.0 / sqrtf(HS);
-    void* devPtrO = out;
+    ਖਾਲੀ* devPtrQ = inp;
+    ਖਾਲੀ* devPtrK = (inp + C);
+    ਖਾਲੀ* devPtrV = (inp + 2 * C);
+    ਦਸ਼ਮਲਵ attn_scale_cpu = 1.0 / sqrtf(HS);
+    ਖਾਲੀ* devPtrO = ਬਾਹਰਲਾ;
 
     // Build variant pack
-    std::unordered_map<int64_t , void*> variant_pack = {
+    std::unordered_map<int64_t , ਖਾਲੀ*> variant_pack = {
         {Q_UID, devPtrQ}, {K_UID, devPtrK}, {V_UID, devPtrV}, {Attn_scale_UID, &attn_scale_cpu}, {O_UID, devPtrO}};
 
     // Add the stats tensor unless we are only doing inference (only needed for backward pass)
-    if (is_inference_only == false) {
+    ਜੇ (is_inference_only == ਝੂਠ) {
         variant_pack[Stats_UID] = stats;
     }
 
     // Execute graph
-    checkCudnnFE(graph->execute(cudnn_handle, variant_pack, cudnn_workspace));
-    cudaCheck(cudaGetLastError());
+    checkCudnnFE(ਗ੍ਰਾਫ->execute(cudnn_handle, variant_pack, cudnn_workspace));
+    cudaCheck(cuda_Get_ਆਖਰੀ_Error());
 }
 
-void attention_backward_cudnn(floatX* dqkvr,                                       // output
-                              floatX* dout, floatX* qkvr, floatX* o, float* stats, // inputs
-                              int B, int T, int NH, int C, cudaStream_t stream) {
+ਖਾਲੀ attention_backward_cudnn(floatX* dqkvr,                                       // output
+                              floatX* dout, floatX* qkvr, floatX* o, ਦਸ਼ਮਲਵ* stats, // inputs
+                              ਪੂਰਨ B, ਪੂਰਨ T, ਪੂਰਨ NH, ਪੂਰਨ C, cuda_ਧਾਰਾ_t ਧਾਰਾ) {
     NVTX_RANGE_FN();
-    int HS = C / NH; // number of features per head
+    ਪੂਰਨ HS = C / NH; // number of features per head
 
     // Get graph and tensors from cache (or generate it on first use)
-    auto graph = lookup_cache_or_build_graph_bwd(B, NH, T, HS);
+    ਸਵੈਚਾਲਿਤ ਗ੍ਰਾਫ = lookup_cache_or_build_ਗ੍ਰਾਫ_bwd(B, NH, T, HS);
 
     // Prepare all the tensor pointers for executing the graph
-    void* devPtrQ = qkvr;
-    void* devPtrK = (qkvr + NH * HS);
-    void* devPtrV = (qkvr + 2 * NH * HS);
-    void* devPtrO = o;
-    void* devPtrdO = dout;
-    void* devPtrStats = stats;
-    float attn_scale_cpu = 1.0 / sqrtf(HS);
+    ਖਾਲੀ* devPtrQ = qkvr;
+    ਖਾਲੀ* devPtrK = (qkvr + NH * HS);
+    ਖਾਲੀ* devPtrV = (qkvr + 2 * NH * HS);
+    ਖਾਲੀ* devPtrO = o;
+    ਖਾਲੀ* devPtrdO = dout;
+    ਖਾਲੀ* devPtrStats = stats;
+    ਦਸ਼ਮਲਵ attn_scale_cpu = 1.0 / sqrtf(HS);
 
-    void* devPtrdQ = dqkvr;
-    void* devPtrdK = (dqkvr + NH * HS);
-    void* devPtrdV = (dqkvr + 2 * NH * HS);
+    ਖਾਲੀ* devPtrdQ = dqkvr;
+    ਖਾਲੀ* devPtrdK = (dqkvr + NH * HS);
+    ਖਾਲੀ* devPtrdV = (dqkvr + 2 * NH * HS);
 
     // Build variant pack that links each tensor to its data pointer
-    std::unordered_map<int64_t, void*> variant_pack = {
+    std::unordered_map<int64_t, ਖਾਲੀ*> variant_pack = {
         {Q_UID, devPtrQ}, {K_UID, devPtrK}, {V_UID, devPtrV}, {O_UID, devPtrO}, {dO_UID, devPtrdO}, {Stats_UID, devPtrStats},
         {dQ_UID, devPtrdQ}, {dK_UID, devPtrdK}, {dV_UID, devPtrdV},
         {Attn_scale_UID, &attn_scale_cpu}};
 
     // Execute graph
-    cuDNNCheck(cudnnSetStream(cudnn_handle, stream));
-    checkCudnnFE(graph->execute(cudnn_handle, variant_pack, cudnn_workspace));
-    cudaCheck(cudaGetLastError());
+    cuDNNCheck(cudnn_ਸੈੱਟ_ਧਾਰਾ(cudnn_handle, ਧਾਰਾ));
+    checkCudnnFE(ਗ੍ਰਾਫ->execute(cudnn_handle, variant_pack, cudnn_workspace));
+    cudaCheck(cuda_Get_ਆਖਰੀ_Error());
 }
 
-void create_cudnn() {
+ਖਾਲੀ create_cudnn() {
     cuDNNCheck(cudnnCreate(&cudnn_handle));
 }
 
-void destroy_cudnn() {
-    if (cudnn_workspace != NULL) { cudaCheck(cudaFree(cudnn_workspace)); }
+ਖਾਲੀ destroy_cudnn() {
+    ਜੇ (cudnn_workspace != ਨਿਰਾ) { cudaCheck(cudaFree(cudnn_workspace)); }
     cuDNNCheck(cudnnDestroy(cudnn_handle));
 }

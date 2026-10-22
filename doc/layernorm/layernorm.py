@@ -1,70 +1,70 @@
-import torch
+ਆਯਾਤ torch
 
 eps = 1e-5
 
-class LayerNorm:
+ਵਰਗ LayerNorm:
 
     @staticmethod
-    def forward(x, w, b):
-        B, T, C = x.size()
-        mean = x.sum(-1, keepdim=True) / C # B,T,1
-        xshift = x - mean # B,T,C
-        var = (xshift**2).sum(-1, keepdim=True) / C # B,T,1
+    ਪਰਿਭਾਸ਼ਾ forward(x, w, b):
+        B, T, C = x.ਮਾਪ()
+        ਔਸਤ = x.ਜੋੜ(-1, keepdim=ਸੱਚ) / C # B,T,1
+        xshift = x - ਔਸਤ # B,T,C
+        var = (xshift**2).ਜੋੜ(-1, keepdim=ਸੱਚ) / C # B,T,1
         rstd = (var + eps) ** -0.5 # B,T,1
         norm = xshift * rstd # B,T,C
-        out = norm * w + b # B,T,C
+        ਬਾਹਰਲਾ = norm * w + b # B,T,C
 
-        cache = (x, w, mean, rstd)
-        return out, cache
+        cache = (x, w, ਔਸਤ, rstd)
+        ਵਾਪਸ ਬਾਹਰਲਾ, cache
 
     @staticmethod
-    def backward(dout, cache):
-        x, w, mean, rstd = cache
+    ਪਰਿਭਾਸ਼ਾ backward(dout, cache):
+        x, w, ਔਸਤ, rstd = cache
         # recompute the norm (save memory at the cost of compute)
-        norm = (x - mean) * rstd
+        norm = (x - ਔਸਤ) * rstd
         # gradients for weights, bias
-        db = dout.sum((0, 1))
-        dw = (dout * norm).sum((0, 1))
+        db = dout.ਜੋੜ((0, 1))
+        dw = (dout * norm).ਜੋੜ((0, 1))
         # gradients for input
         dnorm = dout * w
-        dx = dnorm - dnorm.mean(-1, keepdim=True) - norm * (dnorm * norm).mean(-1, keepdim=True)
+        dx = dnorm - dnorm.ਔਸਤ(-1, keepdim=ਸੱਚ) - norm * (dnorm * norm).ਔਸਤ(-1, keepdim=ਸੱਚ)
         dx *= rstd
-        return dx, dw, db
+        ਵਾਪਸ dx, dw, db
 
 # create a small dummy example and check w.r.t PyTorch backward
 B = 2
 T = 3
 C = 4
-x = torch.randn(B, T, C, requires_grad=True)
-w = torch.randn(C, requires_grad=True)
-b = torch.randn(C, requires_grad=True)
-out, cache = LayerNorm.forward(x, w, b)
+x = torch.randn(B, T, C, requires_grad=ਸੱਚ)
+w = torch.randn(C, requires_grad=ਸੱਚ)
+b = torch.randn(C, requires_grad=ਸੱਚ)
+ਬਾਹਰਲਾ, cache = LayerNorm.forward(x, w, b)
 
 dout = torch.randn(B, T, C)
 dx, dw, db = LayerNorm.backward(dout, cache)
 
 # compare to PyTorch autograd
-fakeloss = (out * dout).sum()
+fakeloss = (ਬਾਹਰਲਾ * dout).ਜੋੜ()
 fakeloss.backward()
-print("dx error:", (x.grad - dx).abs().max().item())
-print("dw error:", (w.grad - dw).abs().max().item())
-print("db error:", (b.grad - db).abs().max().item())
+ਛਾਪੋ("dx error:", (x.grad - dx).abs().max().ਵਸਤੂ_2())
+ਛਾਪੋ("dw error:", (w.grad - dw).abs().max().ਵਸਤੂ_2())
+ਛਾਪੋ("db error:", (b.grad - db).abs().max().ਵਸਤੂ_2())
 
 # for reference checking in C also
-x, w, mean, rstd = cache
+x, w, ਔਸਤ, rstd = cache
 
-def write(tensor, handle):
-    handle.write(tensor.detach().numpy().astype("float32").tobytes())
+ਪਰਿਭਾਸ਼ਾ ਲਿਖ(tensor, handle):
+    handle.ਲਿਖ(tensor.detach().numpy().astype("float32").tobytes())
 
 # Write to file
-with open('ln.bin', 'wb') as file:
-    write(x, file) # (B, T, C)
-    write(w, file) # (C, )
-    write(b, file) # (C, )
-    write(out, file) # (B, T, C)
-    write(mean, file) # (B, T)
-    write(rstd, file) # (B, T)
-    write(dout, file) # (B, T, C)
-    write(dx, file) # (B, T, C)
-    write(dw, file) # (C, )
-    write(db, file) # (C, )
+ਨਾਲ open('ln.bin', 'wb') ਇਵ file:
+    ਲਿਖ(x, file) # (B, T, C)
+    ਲਿਖ(w, file) # (C, )
+    ਲਿਖ(b, file) # (C, )
+    ਲਿਖ(ਬਾਹਰਲਾ, file) # (B, T, C)
+    ਲਿਖ(ਔਸਤ, file) # (B, T)
+    ਲਿਖ(rstd, file) # (B, T)
+    ਲਿਖ(dout, file) # (B, T, C)
+    ਲਿਖ(dx, file) # (B, T, C)
+    ਲਿਖ(dw, file) # (C, )
+    ਲਿਖ(db, file) # (C, )

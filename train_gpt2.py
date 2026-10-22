@@ -16,417 +16,417 @@ you can also turn on flash-attention by appending --flash=1
 torchrun --standalone --nproc_per_node=4 train_gpt2.py --write_tensors=0 --num_iterations=50 --sequence_length=1024 --compile=1 --tensorcores=1 --dtype=bfloat16
 """
 
-import os
-import math
-import glob
-import struct
-import inspect
-from contextlib import nullcontext
-from dataclasses import dataclass
+ਆਯਾਤ os
+ਆਯਾਤ math
+ਆਯਾਤ glob
+ਆਯਾਤ struct
+ਆਯਾਤ inspect
+ਤਃ contextlib ਆਯਾਤ nullcontext
+ਤਃ dataclasses ਆਯਾਤ dataclass
 
-import numpy as np
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-import torch._inductor.config as config
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
-from torch.distributed.optim import ZeroRedundancyOptimizer
-import torch.distributed as dist
+ਆਯਾਤ numpy ਇਵ np
+ਆਯਾਤ torch
+ਆਯਾਤ torch.nn ਇਵ nn
+ਤਃ torch.nn ਆਯਾਤ functional ਇਵ F
+ਆਯਾਤ torch._inductor.config ਇਵ config
+ਤਃ torch.nn.parallel ਆਯਾਤ Distributed_ਅੰਕੜੇ_Parallel ਇਵ DDP
+ਤਃ torch.distributed ਆਯਾਤ init_process_ਸਮੂਹ, destroy_process_ਸਮੂਹ
+ਤਃ torch.distributed.optim ਆਯਾਤ ZeroRedundancyOptimizer
+ਆਯਾਤ torch.distributed ਇਵ dist
 
 # -----------------------------------------------------------------------------
 # PyTorch nn.Module definitions for the GPT-2 model
 
-class NewGELU(nn.Module):
+ਵਰਗ NewGELU(nn.Module):
     """Careful there are a few versions of GeLU, this one is the exact one used by OpenAI"""
-    def forward(self, input):
-        return 0.5 * input * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (input + 0.044715 * torch.pow(input, 3.0))))
+    ਪਰਿਭਾਸ਼ਾ forward(self, ਨਿਵੇਸ਼):
+        ਵਾਪਸ 0.5 * ਨਿਵੇਸ਼ * (1.0 + torch.tanh(math.ਵਰਗਮੂਲ(2.0 / math.pi) * (ਨਿਵੇਸ਼ + 0.044715 * torch.pow(ਨਿਵੇਸ਼, 3.0))))
 
 # using a global to toggle flash-attention
 FLASH = 0
 
-class CausalSelfAttention(nn.Module):
+ਵਰਗ CausalSelfAttention(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
-        assert config.n_embd % config.n_head == 0
+    ਪਰਿਭਾਸ਼ਾ __init__(self, config):
+        ਪਰਮ().__init__()
+        ਪ੍ਰਤਿਜ੍ਞਾ config.n_embd % config.n_ਸਿਰ == 0
         # key, query, value projections for all heads, but in a batch
-        self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd)
+        self.c_attn = nn.ਰੇਖਿਕ(config.n_embd, 3 * config.n_embd)
         # output projection
-        self.c_proj = nn.Linear(config.n_embd, config.n_embd)
+        self.c_proj = nn.ਰੇਖਿਕ(config.n_embd, config.n_embd)
         self.c_proj.LLMC_RESIDUAL_SCALE_FLAG = 1
         # regularization
-        self.n_head = config.n_head
+        self.n_ਸਿਰ = config.n_ਸਿਰ
         self.n_embd = config.n_embd
         # not really a 'bias', more of a mask, but following the OpenAI/HF naming though
-        self.register_buffer("bias", torch.tril(torch.ones(config.block_size, config.block_size))
-                                     .view(1, 1, config.block_size, config.block_size))
+        self.ਰਜਿਸਟਰ_ਬਫਰ("bias", torch.tril(torch.ones(config.ਖੰਡ_ਮਾਪ, config.ਖੰਡ_ਮਾਪ))
+                                     .view(1, 1, config.ਖੰਡ_ਮਾਪ, config.ਖੰਡ_ਮਾਪ))
 
-    def forward(self, x):
-        B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
+    ਪਰਿਭਾਸ਼ਾ forward(self, x):
+        B, T, C = x.ਮਾਪ() # batch size, sequence length, embedding dimensionality (n_embd)
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         qkv = self.c_attn(x)
-        q, k, v = qkv.split(self.n_embd, dim=2)
-        k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        if FLASH:
+        q, k, v = qkv.ਵੰਡੋ(self.n_embd, dim=2)
+        k = k.view(B, T, self.n_ਸਿਰ, C // self.n_ਸਿਰ).transpose(1, 2) # (B, nh, T, hs)
+        q = q.view(B, T, self.n_ਸਿਰ, C // self.n_ਸਿਰ).transpose(1, 2) # (B, nh, T, hs)
+        v = v.view(B, T, self.n_ਸਿਰ, C // self.n_ਸਿਰ).transpose(1, 2) # (B, nh, T, hs)
+        ਜੇ FLASH:
             # flashattention
-            y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
-        else:
+            y = F.scaled_dot_ਗੁਣਨਫਲ_attention(q, k, v, is_causal=ਸੱਚ)
+        ਨਹੀਂਤਾਂ:
             # manual implementation of attention
             # this materializes the large (T,T) matrix for all the queries and keys
-            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+            att = (q @ k.transpose(-2, -1)) * (1.0 / math.ਵਰਗਮੂਲ(k.ਮਾਪ(-1)))
+            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, ਦਸ਼ਮਲਵ('-inf'))
             att = F.softmax(att, dim=-1)
             y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
         # output projection
         y = self.c_proj(y)
-        return y
+        ਵਾਪਸ y
 
-class MLP(nn.Module):
+ਵਰਗ MLP(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
-        self.c_fc    = nn.Linear(config.n_embd, 4 * config.n_embd)
+    ਪਰਿਭਾਸ਼ਾ __init__(self, config):
+        ਪਰਮ().__init__()
+        self.c_fc    = nn.ਰੇਖਿਕ(config.n_embd, 4 * config.n_embd)
         self.gelu    = NewGELU()
-        self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd)
+        self.c_proj  = nn.ਰੇਖਿਕ(4 * config.n_embd, config.n_embd)
         self.c_proj.LLMC_RESIDUAL_SCALE_FLAG = 1
 
-    def forward(self, x):
+    ਪਰਿਭਾਸ਼ਾ forward(self, x):
         x = self.c_fc(x)
         x = self.gelu(x)
         x = self.c_proj(x)
-        return x
+        ਵਾਪਸ x
 
-class Block(nn.Module):
+ਵਰਗ ਖੰਡ(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
+    ਪਰਿਭਾਸ਼ਾ __init__(self, config):
+        ਪਰਮ().__init__()
         self.ln_1 = nn.LayerNorm(config.n_embd)
         self.attn = CausalSelfAttention(config)
         self.ln_2 = nn.LayerNorm(config.n_embd)
         self.mlp = MLP(config)
 
-    def forward(self, x):
+    ਪਰਿਭਾਸ਼ਾ forward(self, x):
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
-        return x
+        ਵਾਪਸ x
 
 # -----------------------------------------------------------------------------
 # The main GPT-2 model
 
 @dataclass
-class GPTConfig:
-    block_size: int = 1024
-    vocab_size: int = 50257
-    n_layer: int = 12
-    n_head: int = 12
-    n_embd: int = 768
+ਵਰਗ GPTConfig:
+    ਖੰਡ_ਮਾਪ: ਪੂਰਨ = 1024
+    vocab_ਮਾਪ: ਪੂਰਨ = 50257
+    n_layer: ਪੂਰਨ = 12
+    n_ਸਿਰ: ਪੂਰਨ = 12
+    n_embd: ਪੂਰਨ = 768
 
-class GPT(nn.Module):
+ਵਰਗ GPT(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
+    ਪਰਿਭਾਸ਼ਾ __init__(self, config):
+        ਪਰਮ().__init__()
         self.config = config
 
         self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(config.vocab_size, config.n_embd),
-            wpe = nn.Embedding(config.block_size, config.n_embd),
-            h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+            wte = nn.Embedding(config.vocab_ਮਾਪ, config.n_embd),
+            wpe = nn.Embedding(config.ਖੰਡ_ਮਾਪ, config.n_embd),
+            h = nn.ModuleList([ਖੰਡ(config) ਲਈ _ ਵਿੱਚ ਸੀਮਾ(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.lm_head.LLMC_SKIP_INIT = 1 # don't init this one, we will tie weights
-        self.transformer.wte.weight = self.lm_head.weight # https://paperswithcode.com/method/weight-tying
+        self.lm_ਸਿਰ = nn.ਰੇਖਿਕ(config.n_embd, config.vocab_ਮਾਪ, bias=ਝੂਠ)
+        self.lm_ਸਿਰ.LLMC_SKIP_INIT = 1 # don't init this one, we will tie weights
+        self.transformer.wte.ਭਾਰ = self.lm_ਸਿਰ.ਭਾਰ # https://paperswithcode.com/method/weight-tying
 
         # init all weights, use a torch rng object to be very careful
         self.init_rng = torch.Generator()
-        self.init_rng.manual_seed(42)
+        self.init_rng.manual_ਬੀਜ(42)
         self.apply(self._init_weights)
 
-    def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
+    ਪਰਿਭਾਸ਼ਾ _init_weights(self, module):
+        ਜੇ isinstance(module, nn.ਰੇਖਿਕ):
             # apply special scaled init to the residual projections, per GPT-2 paper
-            std = 0.02 if not hasattr(module, 'LLMC_RESIDUAL_SCALE_FLAG') else 0.02/math.sqrt(2 * self.config.n_layer)
+            std = 0.02 ਜੇ ਨਹੀਂ hasattr(module, 'LLMC_RESIDUAL_SCALE_FLAG') ਨਹੀਂਤਾਂ 0.02/math.ਵਰਗਮੂਲ(2 * self.config.n_layer)
             # we want to skip initializing lm_head, which shares parameters with wte
             # and wte was already initialized down below during the Embedding init
-            if not hasattr(module, 'LLMC_SKIP_INIT'):
-                torch.nn.init.normal_(module.weight, mean=0.0, std=std, generator=self.init_rng)
-            if module.bias is not None:
+            ਜੇ ਨਹੀਂ hasattr(module, 'LLMC_SKIP_INIT'):
+                torch.nn.init.ਸਾਧਾਰਨ(module.ਭਾਰ, ਔਸਤ=0.0, std=std, generator=self.init_rng)
+            ਜੇ module.bias ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ:
                 torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Embedding):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02, generator=self.init_rng)
+        ਜਾਂਜੇ isinstance(module, nn.Embedding):
+            torch.nn.init.ਸਾਧਾਰਨ(module.ਭਾਰ, ਔਸਤ=0.0, std=0.02, generator=self.init_rng)
 
-    def forward(self, idx, targets=None, return_logits=True):
+    ਪਰਿਭਾਸ਼ਾ forward(self, idx, targets=ਕੁਝ_ਨਹੀਂ, return_logits=ਸੱਚ):
         device = idx.device
-        b, t = idx.size()
-        assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
-        pos = torch.arange(0, t, dtype=torch.long, device=device) # shape (t)
+        b, t = idx.ਮਾਪ()
+        ਪ੍ਰਤਿਜ੍ਞਾ t <= self.config.ਖੰਡ_ਮਾਪ, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
+        pos = torch.arange(0, t, dtype=torch.ਲੰਮਾ, device=device) # shape (t)
 
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = tok_emb + pos_emb
 
-        for block in self.transformer.h:
-            x = block(x)
+        ਲਈ ਖੰਡ_2 ਵਿੱਚ self.transformer.h:
+            x = ਖੰਡ_2(x)
         x = self.transformer.ln_f(x)
 
-        if targets is not None:
+        ਜੇ targets ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ:
             # if we are given some desired targets also calculate the loss
-            logits = self.lm_head(x)
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-        else:
+            logits = self.lm_ਸਿਰ(x)
+            loss = F.cross_entropy(logits.view(-1, logits.ਮਾਪ(-1)), targets.view(-1), ignore_ਸੂਚਕਾਂਕ=-1)
+        ਨਹੀਂਤਾਂ:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
-            loss = None
+            logits = self.lm_ਸਿਰ(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+            loss = ਕੁਝ_ਨਹੀਂ
 
         # there are performance reasons why not returning logits is prudent, if not needed
-        if not return_logits:
-            logits = None
+        ਜੇ ਨਹੀਂ return_logits:
+            logits = ਕੁਝ_ਨਹੀਂ
 
-        return logits, loss
+        ਵਾਪਸ logits, loss
 
     @classmethod
-    def from_pretrained(cls, model_type):
+    ਪਰਿਭਾਸ਼ਾ from_pretrained(cls, model_type):
         """Loads pretrained GPT-2 model weights from huggingface"""
-        assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
-        from transformers import GPT2LMHeadModel
-        print("loading weights from pretrained gpt: %s" % model_type)
+        ਪ੍ਰਤਿਜ੍ਞਾ model_type ਵਿੱਚ {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
+        ਤਃ transformers ਆਯਾਤ GPT2LMHeadModel
+        ਛਾਪੋ("loading weights from pretrained gpt: %s" % model_type)
 
         # n_layer, n_head and n_embd are determined from model_type
-        config_args = {
-            'gpt2':         dict(n_layer=12, n_head=12, n_embd=768),  # 124M params
-            'gpt2-medium':  dict(n_layer=24, n_head=16, n_embd=1024), # 350M params
-            'gpt2-large':   dict(n_layer=36, n_head=20, n_embd=1280), # 774M params
-            'gpt2-xl':      dict(n_layer=48, n_head=25, n_embd=1600), # 1558M params
+        config_ਦਲੀਲਾਂ = {
+            'gpt2':         dict(n_layer=12, n_ਸਿਰ=12, n_embd=768),  # 124M params
+            'gpt2-medium':  dict(n_layer=24, n_ਸਿਰ=16, n_embd=1024), # 350M params
+            'gpt2-large':   dict(n_layer=36, n_ਸਿਰ=20, n_embd=1280), # 774M params
+            'gpt2-xl':      dict(n_layer=48, n_ਸਿਰ=25, n_embd=1600), # 1558M params
         }[model_type]
-        config_args['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
-        config_args['block_size'] = 1024 # always 1024 for GPT model checkpoints
+        config_ਦਲੀਲਾਂ['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
+        config_ਦਲੀਲਾਂ['block_size'] = 1024 # always 1024 for GPT model checkpoints
         # create a from-scratch initialized minGPT model
-        config = GPTConfig(**config_args)
+        config = GPTConfig(**config_ਦਲੀਲਾਂ)
         model = GPT(config)
         sd = model.state_dict()
-        sd_keys = sd.keys()
-        sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')] # discard this mask / buffer, not a param
+        sd_ਕੁੰਜੀਆਂ = sd.ਕੁੰਜੀਆਂ()
+        sd_ਕੁੰਜੀਆਂ = [k ਲਈ k ਵਿੱਚ sd_ਕੁੰਜੀਆਂ ਜੇ ਨਹੀਂ k.endswith('.attn.bias')] # discard this mask / buffer, not a param
 
         # init a huggingface/transformers model
         model_hf = GPT2LMHeadModel.from_pretrained(model_type)
         sd_hf = model_hf.state_dict()
 
         # copy while ensuring all of the parameters are aligned and match in names and shapes
-        sd_keys_hf = sd_hf.keys()
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.masked_bias')] # ignore these, just a buffer
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.bias')] # same, just the mask (buffer)
+        sd_ਕੁੰਜੀਆਂ_hf = sd_hf.ਕੁੰਜੀਆਂ()
+        sd_ਕੁੰਜੀਆਂ_hf = [k ਲਈ k ਵਿੱਚ sd_ਕੁੰਜੀਆਂ_hf ਜੇ ਨਹੀਂ k.endswith('.attn.masked_bias')] # ignore these, just a buffer
+        sd_ਕੁੰਜੀਆਂ_hf = [k ਲਈ k ਵਿੱਚ sd_ਕੁੰਜੀਆਂ_hf ਜੇ ਨਹੀਂ k.endswith('.attn.bias')] # same, just the mask (buffer)
         transposed = ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
         # basically the openai checkpoints use a "Conv1D" module, but we only want to use a vanilla Linear
         # this means that we have to transpose these weights when we import them
-        assert len(sd_keys_hf) == len(sd_keys), f"mismatched keys: {len(sd_keys_hf)} != {len(sd_keys)}"
-        for k in sd_keys_hf:
-            if any(k.endswith(w) for w in transposed):
+        ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(sd_ਕੁੰਜੀਆਂ_hf) == ਲੰਬਾਈ(sd_ਕੁੰਜੀਆਂ), f"mismatched keys: {len(sd_keys_hf)} != {len(sd_keys)}"
+        ਲਈ k ਵਿੱਚ sd_ਕੁੰਜੀਆਂ_hf:
+            ਜੇ any(k.endswith(w) ਲਈ w ਵਿੱਚ transposed):
                 # special treatment for the Conv1D weights we need to transpose
-                assert sd_hf[k].shape[::-1] == sd[k].shape
-                with torch.no_grad():
+                ਪ੍ਰਤਿਜ੍ਞਾ sd_hf[k].shape[::-1] == sd[k].shape
+                ਨਾਲ torch.no_grad():
                     sd[k].copy_(sd_hf[k].t())
-            else:
+            ਨਹੀਂਤਾਂ:
                 # vanilla copy over the other parameters
-                assert sd_hf[k].shape == sd[k].shape
-                with torch.no_grad():
+                ਪ੍ਰਤਿਜ੍ਞਾ sd_hf[k].shape == sd[k].shape
+                ਨਾਲ torch.no_grad():
                     sd[k].copy_(sd_hf[k])
 
-        return model
+        ਵਾਪਸ model
 
-    def configure_optimizers(self, weight_decay, learning_rate, betas, device_type, zero_stage):
+    ਪਰਿਭਾਸ਼ਾ configure_optimizers(self, ਭਾਰ_decay, learning_ਦਰ, betas, device_type, zero_stage):
         # start with all of the candidate parameters
-        param_dict = {pn: p for pn, p in self.named_parameters()}
+        param_dict = {pn: p ਲਈ pn, p ਵਿੱਚ self.named_parameters()}
         # filter out those that do not require grad
-        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+        param_dict = {pn: p ਲਈ pn, p ਵਿੱਚ param_dict.ਚੀਜ਼ਾਂ() ਜੇ p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p ਲਈ n, p ਵਿੱਚ param_dict.ਚੀਜ਼ਾਂ() ਜੇ p.dim() >= 2]
+        nodecay_params = [p ਲਈ n, p ਵਿੱਚ param_dict.ਚੀਜ਼ਾਂ() ਜੇ p.dim() < 2]
         optim_groups = [
-            {'params': decay_params, 'weight_decay': weight_decay},
+            {'params': decay_params, 'weight_decay': ਭਾਰ_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
         ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        ਅੰਕ_decay_params = ਜੋੜ(p.numel() ਲਈ p ਵਿੱਚ decay_params)
+        ਅੰਕ_nodecay_params = ਜੋੜ(p.numel() ਲਈ p ਵਿੱਚ nodecay_params)
         print0(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
         print0(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
-        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and device_type == 'cuda'
+        fused_ਉਪਲਬਧ = 'fused' ਵਿੱਚ inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_ਉਪਲਬਧ ਅਤੇ device_type == 'cuda'
         print0(f"using fused AdamW: {use_fused}")
-        if zero_stage == 1:
+        ਜੇ zero_stage == 1:
             print0("using ZeroRedundancyOptimizer")
             optimizer = ZeroRedundancyOptimizer(**optim_groups[0], optimizer_class=torch.optim.AdamW,
-                                                lr=learning_rate, betas=betas, fused=use_fused)
-            optimizer.add_param_group(optim_groups[1])
-        else:
+                                                lr=learning_ਦਰ, betas=betas, fused=use_fused)
+            optimizer.ਜੋੜੋ_param_ਸਮੂਹ(optim_groups[1])
+        ਨਹੀਂਤਾਂ:
             print0("using regular AdamW")
-            optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, fused=use_fused)
-        return optimizer
+            optimizer = torch.optim.AdamW(optim_groups, lr=learning_ਦਰ, betas=betas, fused=use_fused)
+        ਵਾਪਸ optimizer
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
+    ਪਰਿਭਾਸ਼ਾ generate(self, idx, max_new_ਟੋਕਨ, temperature=1.0, ਸਿਖਰ_k=ਕੁਝ_ਨਹੀਂ):
         """
         Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
         the sequence max_new_tokens times, feeding the predictions back into the model each time.
         Most likely you'll want to make sure to be in model.eval() mode of operation for this.
         """
-        for _ in range(max_new_tokens):
+        ਲਈ _ ਵਿੱਚ ਸੀਮਾ(max_new_ਟੋਕਨ):
             # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
+            idx_cond = idx ਜੇ idx.ਮਾਪ(1) <= self.config.ਖੰਡ_ਮਾਪ ਨਹੀਂਤਾਂ idx[:, -self.config.ਖੰਡ_ਮਾਪ:]
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(idx_cond)
             # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / temperature
             # optionally crop the logits to only the top k options
-            if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float('Inf')
+            ਜੇ ਸਿਖਰ_k ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ:
+                v, _ = torch.topk(logits, min(ਸਿਖਰ_k, logits.ਮਾਪ(-1)))
+                logits[logits < v[:, [-1]]] = -ਦਸ਼ਮਲਵ('Inf')
             # apply softmax to convert logits to (normalized) probabilities
             probs = F.softmax(logits, dim=-1)
             # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)
+            idx_ਅਗਲਾ = torch.multinomial(probs, ਅੰਕ_samples=1)
             # append sampled index to the running sequence and continue
-            idx = torch.cat((idx, idx_next), dim=1)
+            idx = torch.cat((idx, idx_ਅਗਲਾ), dim=1)
 
-        return idx
+        ਵਾਪਸ idx
 
 # -----------------------------------------------------------------------------
 # Our own simple Distributed Data Loader
 
-def _peek_data_shard(filename):
+ਪਰਿਭਾਸ਼ਾ peek_ਅੰਕੜੇ_shard(filename):
     # only reads the header, returns header data
-    with open(filename, "rb") as f:
+    ਨਾਲ open(filename, "rb") ਇਵ f:
         # first read the header, which is 256 int32 integers (4 bytes each)
-        header = np.frombuffer(f.read(256*4), dtype=np.int32)
-    if header[0] != 20240520:
-        print("ERROR: magic number mismatch in the data .bin file!")
-        print("---> HINT: Are you passing in a correct file with --input_bin?")
-        print("---> HINT: Dataset encoding changed recently, re-run data prepro or refer again to README")
-        print("---> HINT: For example re-run: `python dev/data/tinyshakespeare.py`, then re-try")
+        ਸਿਰਲੇਖ = np.frombuffer(f.ਪਠ(256*4), dtype=np.int32)
+    ਜੇ ਸਿਰਲੇਖ[0] != 20240520:
+        ਛਾਪੋ("ERROR: magic number mismatch in the data .bin file!")
+        ਛਾਪੋ("---> HINT: Are you passing in a correct file with --input_bin?")
+        ਛਾਪੋ("---> HINT: Dataset encoding changed recently, re-run data prepro or refer again to README")
+        ਛਾਪੋ("---> HINT: For example re-run: `python dev/data/tinyshakespeare.py`, then re-try")
         exit(1)
-    assert header[1] == 1, "unsupported version"
-    ntok = header[2] # number of tokens (claimed)
-    return ntok # for now just return the number of tokens
+    ਪ੍ਰਤਿਜ੍ਞਾ ਸਿਰਲੇਖ[1] == 1, "unsupported version"
+    ntok = ਸਿਰਲੇਖ[2] # number of tokens (claimed)
+    ਵਾਪਸ ntok # for now just return the number of tokens
 
-def _load_data_shard(filename):
-    with open(filename, "rb") as f:
+ਪਰਿਭਾਸ਼ਾ ਲੱਦੋ_ਅੰਕੜੇ_shard(filename):
+    ਨਾਲ open(filename, "rb") ਇਵ f:
         # first read the header, which is 256 int32 integers (4 bytes each)
-        header = np.frombuffer(f.read(256*4), dtype=np.int32)
-        assert header[0] == 20240520, "magic number mismatch in the data .bin file"
-        assert header[1] == 1, "unsupported version"
-        ntok = header[2] # number of tokens (claimed)
+        ਸਿਰਲੇਖ = np.frombuffer(f.ਪਠ(256*4), dtype=np.int32)
+        ਪ੍ਰਤਿਜ੍ਞਾ ਸਿਰਲੇਖ[0] == 20240520, "magic number mismatch in the data .bin file"
+        ਪ੍ਰਤਿਜ੍ਞਾ ਸਿਰਲੇਖ[1] == 1, "unsupported version"
+        ntok = ਸਿਰਲੇਖ[2] # number of tokens (claimed)
         # the rest of it are tokens, stored as uint16
-        tokens = np.frombuffer(f.read(), dtype=np.uint16)
-    assert len(tokens) == ntok, "number of tokens read does not match header?"
-    return tokens
+        ਟੋਕਨ = np.frombuffer(f.ਪਠ(), dtype=np.uint16)
+    ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(ਟੋਕਨ) == ntok, "number of tokens read does not match header?"
+    ਵਾਪਸ ਟੋਕਨ
 
-class DistributedDataLoader:
-    def __init__(self, filename_pattern, B, T, process_rank, num_processes):
+ਵਰਗ Distributed_ਅੰਕੜੇ_Loader:
+    ਪਰਿਭਾਸ਼ਾ __init__(self, filename_ਨਮੂਨਾ, B, T, process_rank, ਅੰਕ_processes):
         self.process_rank = process_rank
-        self.num_processes = num_processes
+        self.ਅੰਕ_processes = ਅੰਕ_processes
         self.B = B
         self.T = T
 
         # glob files that match the pattern
-        self.files = sorted(glob.glob(filename_pattern))
-        assert len(self.files) > 0, f"did not find any files that match the pattern {filename_pattern}"
+        self.files = sorted(glob.glob(filename_ਨਮੂਨਾ))
+        ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(self.files) > 0, f"did not find any files that match the pattern {filename_pattern}"
 
         # load and validate all data shards, count number of tokens in total
-        ntok_total = 0
-        for fname in self.files:
-            shard_ntok = _peek_data_shard(fname)
-            assert shard_ntok >= num_processes * B * T + 1
-            ntok_total += shard_ntok
-        self.ntok_total = ntok_total
+        ntok_ਕੁੱਲ = 0
+        ਲਈ fname ਵਿੱਚ self.files:
+            shard_ntok = peek_ਅੰਕੜੇ_shard(fname)
+            ਪ੍ਰਤਿਜ੍ਞਾ shard_ntok >= ਅੰਕ_processes * B * T + 1
+            ntok_ਕੁੱਲ += shard_ntok
+        self.ntok_ਕੁੱਲ = ntok_ਕੁੱਲ
         print0(f"DataLoader: total number of tokens: {ntok_total:,} across {len(self.files)} files")
 
         # kick things off
-        self.current_shard = None
+        self.current_shard = ਕੁਝ_ਨਹੀਂ
         self.reset()
 
-    def reset(self):
+    ਪਰਿਭਾਸ਼ਾ reset(self):
         # we're being a bit clever here: if we already had shard 0 loaded,
         # then don't do the work to reload it, just reset the pointer
-        if self.current_shard != 0:
+        ਜੇ self.current_shard != 0:
             self.current_shard = 0
-            self.tokens = _load_data_shard(self.files[self.current_shard])
+            self.ਟੋਕਨ = ਲੱਦੋ_ਅੰਕੜੇ_shard(self.files[self.current_shard])
         self.current_position = self.process_rank * self.B * self.T
 
-    def advance(self): # advance to next data shard
-        self.current_shard = (self.current_shard + 1) % len(self.files)
+    ਪਰਿਭਾਸ਼ਾ advance(self): # advance to next data shard
+        self.current_shard = (self.current_shard + 1) % ਲੰਬਾਈ(self.files)
         self.current_position = self.process_rank * self.B * self.T
-        self.tokens = _load_data_shard(self.files[self.current_shard])
+        self.ਟੋਕਨ = ਲੱਦੋ_ਅੰਕੜੇ_shard(self.files[self.current_shard])
 
-    def next_batch(self):
+    ਪਰਿਭਾਸ਼ਾ ਅਗਲਾ_batch(self):
         B = self.B
         T = self.T
-        buf = self.tokens[self.current_position : self.current_position+B*T+1]
-        buf = torch.tensor(buf.astype(np.int32), dtype=torch.long)
+        buf = self.ਟੋਕਨ[self.current_position : self.current_position+B*T+1]
+        buf = torch.tensor(buf.astype(np.int32), dtype=torch.ਲੰਮਾ)
         x = (buf[:-1]).view(B, T) # inputs
         y = (buf[1:]).view(B, T) # targets
         # advance the start pointer in current shard
-        self.current_position += B * T * self.num_processes
+        self.current_position += B * T * self.ਅੰਕ_processes
         # if loading the next batch would be out of bounds advance the shard
-        if self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
+        ਜੇ self.current_position + (B * T * self.ਅੰਕ_processes + 1) > ਲੰਬਾਈ(self.ਟੋਕਨ):
             self.advance()
-        return x, y
+        ਵਾਪਸ x, y
 
 # -----------------------------------------------------------------------------
 # Python -> C bridge utilities for saving params/grads/activations to .bin files
 
-def write_fp32(tensor, file):
-    t = tensor.detach().cpu().to(torch.float32)
+ਪਰਿਭਾਸ਼ਾ write_fp32(tensor, file):
+    t = tensor.detach().cpu().ਮੰਜ਼ਿਲ(torch.float32)
     b = t.numpy().tobytes()
-    file.write(b)
+    file.ਲਿਖ(b)
 
-def write_bf16(tensor, file):
-    t = tensor.detach().cpu().to(torch.bfloat16)
+ਪਰਿਭਾਸ਼ਾ write_bf16(tensor, file):
+    t = tensor.detach().cpu().ਮੰਜ਼ਿਲ(torch.bfloat16)
     # numpy doesn't have bf16 datatype so we have to trick it
     t = t.view(torch.int16) # trick: reinterpret as int16
     b = t.numpy().tobytes()
-    file.write(b)
+    file.ਲਿਖ(b)
 
-def write_tensors(model_tensors, L, file, dtype):
+ਪਰਿਭਾਸ਼ਾ write_tensors(model_tensors, L, file, dtype):
     # writes the GPT-2 model's weights to a binary file
-    assert dtype in {"float32", "bfloat16"}
-    write_fun = write_fp32 if dtype == "float32" else write_bf16
+    ਪ੍ਰਤਿਜ੍ਞਾ dtype ਵਿੱਚ {"float32", "bfloat16"}
+    write_fun = write_fp32 ਜੇ dtype == "float32" ਨਹੀਂਤਾਂ write_bf16
     write_fun(model_tensors["transformer.wte.weight"], file) # (V, C)
     write_fun(model_tensors["transformer.wpe.weight"], file) # (T, C)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.weight"], file)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.bias"], file)
-    for i in range(L): # (L, 3C, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, 3C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.weight"], file)
-    for i in range(L): # (L, 3C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, 3C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.bias"], file)
-    for i in range(L): # (L, C, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.bias"], file)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.weight"], file)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.bias"], file)
-    for i in range(L): # (L, 4C, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.weight"], file)
-    for i in range(L): # (L, 4C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.bias"], file)
-    for i in range(L): # (L, C, 4C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    ਲਈ i ਵਿੱਚ ਸੀਮਾ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.bias"], file)
     write_fun(model_tensors["transformer.ln_f.weight"], file) # (C, )
     write_fun(model_tensors["transformer.ln_f.bias"], file) # (C, )
 
 @torch.no_grad()
-def pad_vocab(tensor, multiple=128, value=0):
+ਪਰਿਭਾਸ਼ਾ pad_vocab(tensor, ਗੁਣਜ=128, ਮੁੱਲ=0):
     """
     The dimension of the vocab size in GPT-2 is 50,257
     which is unfortunately a very unfriendly number for a lot of
@@ -435,237 +435,237 @@ def pad_vocab(tensor, multiple=128, value=0):
     export the weights into C land. This is a NOOP algorithmically
     and is only done to make the tensor operations more efficient.
     """
-    assert tensor.ndim == 2
+    ਪ੍ਰਤਿਜ੍ਞਾ tensor.ndim == 2
     V, C = tensor.shape
-    assert V == 50257, "just being defensive here"
+    ਪ੍ਰਤਿਜ੍ਞਾ V == 50257, "just being defensive here"
     # calculate padded vocab size by rounding up to nearest multiple
-    Vp = ((V + multiple - 1) // multiple) * multiple
+    Vp = ((V + ਗੁਣਜ - 1) // ਗੁਣਜ) * ਗੁਣਜ
     # pad the tensor
-    pad_rows = Vp - V
-    padded = tensor if pad_rows == 0 else F.pad(tensor, (0, 0, 0, pad_rows), value=value)
-    assert padded.shape == (Vp, C)
-    return padded
+    pad_ਪੰਕਤੀਆਂ = Vp - V
+    padded = tensor ਜੇ pad_ਪੰਕਤੀਆਂ == 0 ਨਹੀਂਤਾਂ F.pad(tensor, (0, 0, 0, pad_ਪੰਕਤੀਆਂ), ਮੁੱਲ=ਮੁੱਲ)
+    ਪ੍ਰਤਿਜ੍ਞਾ padded.shape == (Vp, C)
+    ਵਾਪਸ padded
 
-def write_model(model, filename, dtype):
+ਪਰਿਭਾਸ਼ਾ write_model(model, filename, dtype):
     # everything we need to instantiate the model
     # 1) header is: version int, GPTConfig ints, padding to 1024 bytes
-    assert dtype in {"float32", "bfloat16"} # float16 todo maybe later
-    version = {
+    ਪ੍ਰਤਿਜ੍ਞਾ dtype ਵਿੱਚ {"float32", "bfloat16"} # float16 todo maybe later
+    ਸੰਸਕਰਣ = {
         "float32": 3, # 3: all tensors are fp32, padded vocab
         "bfloat16": 5, # 5: all tensors are bf16, padded vocab
     }[dtype]
-    header = torch.zeros(256, dtype=torch.int32)
-    header[0] = 20240326 # magic
-    header[1] = version # checkpoint version
-    header[2] = model.config.block_size
-    header[3] = model.config.vocab_size
-    header[4] = model.config.n_layer
-    header[5] = model.config.n_head
-    header[6] = model.config.n_embd
+    ਸਿਰਲੇਖ = torch.zeros(256, dtype=torch.int32)
+    ਸਿਰਲੇਖ[0] = 20240326 # magic
+    ਸਿਰਲੇਖ[1] = ਸੰਸਕਰਣ # checkpoint version
+    ਸਿਰਲੇਖ[2] = model.config.ਖੰਡ_ਮਾਪ
+    ਸਿਰਲੇਖ[3] = model.config.vocab_ਮਾਪ
+    ਸਿਰਲੇਖ[4] = model.config.n_layer
+    ਸਿਰਲੇਖ[5] = model.config.n_ਸਿਰ
+    ਸਿਰਲੇਖ[6] = model.config.n_embd
     # 2) the parameters follow the header
-    params = {name: param.cpu() for name, param in model.named_parameters()}
+    params = {name: param.cpu() ਲਈ name, param ਵਿੱਚ model.named_parameters()}
     # pad the vocab to a multiple of 128 here at export, for efficiency in C
     wte = params["transformer.wte.weight"] # (V, C)
     wte_padded = pad_vocab(wte) # (Vp, C)
     params["transformer.wte.weight"] = wte_padded # (Vp, C)
-    print(f"padded vocab size from {wte.size(0)} to {wte_padded.size(0)}")
-    header[7] = wte_padded.size(0) # padded vocab size store in header
+    ਛਾਪੋ(f"padded vocab size from {wte.size(0)} to {wte_padded.size(0)}")
+    ਸਿਰਲੇਖ[7] = wte_padded.ਮਾਪ(0) # padded vocab size store in header
     # now write to file
-    with open(filename, "wb") as file:
-        file.write(header.numpy().tobytes()) # header
+    ਨਾਲ open(filename, "wb") ਇਵ file:
+        file.ਲਿਖ(ਸਿਰਲੇਖ.numpy().tobytes()) #ਸਿਰਲੇਖ
         write_tensors(params, model.config.n_layer, file, dtype) # params
-    print(f"wrote {filename}")
+    ਛਾਪੋ(f"wrote {filename}")
 
-def write_state(model, x, y, logits, loss, filename):
+ਪਰਿਭਾਸ਼ਾ write_state(model, x, y, logits, loss, filename):
     # the state is used for debugging.
     # it contains information about the input, logits, loss, and the parameter gradients
     # this can be used for checking the computation correctness in C
-    header = torch.zeros(256, dtype=torch.int32)
-    header[0] = 20240327 # magic
-    header[1] = 2 # run state version = 2 (1 -> 2 for padded vocab changes)
-    header[2] = x.size(0) # batch size of the batch, B
-    header[3] = x.size(1) # temporal extent of the batch, T
-    grads = {name: param.grad.cpu() for name, param in model.named_parameters()}
+    ਸਿਰਲੇਖ = torch.zeros(256, dtype=torch.int32)
+    ਸਿਰਲੇਖ[0] = 20240327 # magic
+    ਸਿਰਲੇਖ[1] = 2 # run state version = 2 (1 -> 2 for padded vocab changes)
+    ਸਿਰਲੇਖ[2] = x.ਮਾਪ(0) # batch size of the batch, B
+    ਸਿਰਲੇਖ[3] = x.ਮਾਪ(1) # temporal extent of the batch, T
+    grads = {name: param.grad.cpu() ਲਈ name, param ਵਿੱਚ model.named_parameters()}
     # pad the vocab grads here as well, to mirror write_model
     wte_grad = grads["transformer.wte.weight"] # (V, C)
-    wte_grad_padded = pad_vocab(wte_grad, value=0) # (Vp, C) # TODO later maybe pad with nan?
+    wte_grad_padded = pad_vocab(wte_grad, ਮੁੱਲ=0) # (Vp, C) # TODO later maybe pad with nan?
     grads["transformer.wte.weight"] = wte_grad_padded # (Vp, C)
-    print(f"padded vocab size in reference grads from {wte_grad.size(0)} to {wte_grad_padded.size(0)}")
-    with open(filename, "wb") as file:
-        # header
-        file.write(header.numpy().tobytes())
+    ਛਾਪੋ(f"padded vocab size in reference grads from {wte_grad.size(0)} to {wte_grad_padded.size(0)}")
+    ਨਾਲ open(filename, "wb") ਇਵ file:
+        #ਸਿਰਲੇਖ
+        file.ਲਿਖ(ਸਿਰਲੇਖ.numpy().tobytes())
         # input x
-        file.write(x.cpu().numpy().astype("int32").tobytes()) # (B, T)
+        file.ਲਿਖ(x.cpu().numpy().astype("int32").tobytes()) # (B, T)
         # targets y
-        file.write(y.cpu().numpy().astype("int32").tobytes()) # (B, T)
+        file.ਲਿਖ(y.cpu().numpy().astype("int32").tobytes()) # (B, T)
         # logits (result of the model forward pass)
         write_fp32(logits.cpu(), file)
         # loss (single float, result of the cross entropy loss)
         write_fp32(loss.cpu(), file)
         # gradients
         write_tensors(grads, model.config.n_layer, file, "float32")
-    print(f"wrote {filename}")
+    ਛਾਪੋ(f"wrote {filename}")
 
-def write_tokenizer(enc, filename):
-    n = enc.max_token_value + 1
-    header = torch.zeros(256, dtype=torch.int32)
-    header[0] = 20240328 # magic
-    header[1] = 2 # tokenizer version = 2 (1 -> 2: includes EOT token)
-    header[2] = n # number of tokens
-    header[3] = enc.eot_token # EOT token
-    with open(filename, "wb") as file:
-        file.write(header.numpy().tobytes())
-        for i in range(n):
-            b = enc.decode_bytes([i])
-            length = len(b)
-            assert length < 256, f"Token length exceeds 255: {length}"
-            file.write(struct.pack("<B", length))  # Write the length as a 1-byte unsigned integer
-            file.write(b)  # Write the actual bytes
-    print(f"wrote {filename}")
+ਪਰਿਭਾਸ਼ਾ write_tokenizer(enc, filename):
+    n = enc.max_token_ਮੁੱਲ + 1
+    ਸਿਰਲੇਖ = torch.zeros(256, dtype=torch.int32)
+    ਸਿਰਲੇਖ[0] = 20240328 # magic
+    ਸਿਰਲੇਖ[1] = 2 # tokenizer version = 2 (1 -> 2: includes EOT token)
+    ਸਿਰਲੇਖ[2] = n # number of tokens
+    ਸਿਰਲੇਖ[3] = enc.eot_token # EOT token
+    ਨਾਲ open(filename, "wb") ਇਵ file:
+        file.ਲਿਖ(ਸਿਰਲੇਖ.numpy().tobytes())
+        ਲਈ i ਵਿੱਚ ਸੀਮਾ(n):
+            b = enc.decode_ਬਾਈਟਾਂ([i])
+            ਲੰਮਾਈ = ਲੰਬਾਈ(b)
+            ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਮਾਈ < 256, f"Token length exceeds 255: {length}"
+            file.ਲਿਖ(struct.pack("<B", ਲੰਮਾਈ))  # Write the length as a 1-byte unsigned integer
+            file.ਲਿਖ(b)  # Write the actual bytes
+    ਛਾਪੋ(f"wrote {filename}")
 
 # -----------------------------------------------------------------------------
 # int main
 
-def print0(*args, **kwargs):
+ਪਰਿਭਾਸ਼ਾ print0(*ਦਲੀਲਾਂ, **kwargs):
     # modified print that only prints from the master process
     # if this is not a distributed run, it's just a print
-    if int(os.environ.get("RANK", 0)) == 0:
-        print(*args, **kwargs)
+    ਜੇ ਪੂਰਨ(os.environ.get("RANK", 0)) == 0:
+        ਛਾਪੋ(*ਦਲੀਲਾਂ, **kwargs)
 
-if __name__ == "__main__":
-    import time
-    import argparse
-    import tiktoken
+ਜੇ __name__ == "__main__":
+    ਆਯਾਤ time
+    ਆਯਾਤ argparse
+    ਆਯਾਤ tiktoken
     print0(f"Running pytorch {torch.version.__version__}")
 
     # default settings will overfit a tiny batch of data
     # and save model weights and debug state to disk on the first iteration
-    parser = argparse.ArgumentParser()
+    parser = argparse.ਦਲੀਲ_Parser()
     # file system input / output
-    parser.add_argument("--input_bin", type=str, default="dev/data/tinyshakespeare/tiny_shakespeare_val.bin", help="input .bin to train on")
-    parser.add_argument("--input_val_bin", type=str, default="", help="input .bin to eval validation loss on")
-    parser.add_argument("--output_dir", type=str, default="", help="output directory to which to write logs and checkpoints")
-    parser.add_argument("--model", type=str, default="gpt2", help="gpt2|gpt2-medium|gpt2-large|gpt2-xl|d12|d24|d36|d48")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--input_bin", type=str, ਮੂਲ="dev/data/tinyshakespeare/tiny_shakespeare_val.bin", help="input .bin to train on")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--input_val_bin", type=str, ਮੂਲ="", help="input .bin to eval validation loss on")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--output_dir", type=str, ਮੂਲ="", help="output directory to which to write logs and checkpoints")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--model", type=str, ਮੂਲ="gpt2", help="gpt2|gpt2-medium|gpt2-large|gpt2-xl|d12|d24|d36|d48")
     # token layout for each step of the optimization
-    parser.add_argument("--batch_size", type=int, default=4, help="batch size, in units of #batch dimensions")
-    parser.add_argument("--sequence_length", type=int, default=64, help="sequence length")
-    parser.add_argument("--total_batch_size", type=int, default=256, help="total desired batch size, in units of #tokens")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--batch_size", type=ਪੂਰਨ, ਮੂਲ=4, help="batch size, in units of #batch dimensions")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--sequence_length", type=ਪੂਰਨ, ਮੂਲ=64, help="sequence length")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--total_batch_size", type=ਪੂਰਨ, ਮੂਲ=256, help="total desired batch size, in units of #tokens")
     # workload (number of steps)
-    parser.add_argument("--num_iterations", type=int, default=10, help="number of iterations to run")
-    parser.add_argument("--inference_only", type=int, default=0, help="only run inference")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--num_iterations", type=ਪੂਰਨ, ਮੂਲ=10, help="number of iterations to run")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--inference_only", type=ਪੂਰਨ, ਮੂਲ=0, help="only run inference")
     # optimization
-    parser.add_argument("--learning_rate", type=float, default=1e-4, help="learning rate warmup iterations")
-    parser.add_argument("--warmup_iters", type=int, default=0, help="learning rate warmup iterations")
-    parser.add_argument("--learning_rate_decay_frac", type=float, default=1.0, help="learning rate warmup iterations")
-    parser.add_argument("--weight_decay", type=float, default=0.0, help="weight decay")
-    parser.add_argument("--grad_clip", type=float, default=1.0, help="maximum gradient magnitude")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--learning_rate", type=ਦਸ਼ਮਲਵ, ਮੂਲ=1e-4, help="learning rate warmup iterations")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--warmup_iters", type=ਪੂਰਨ, ਮੂਲ=0, help="learning rate warmup iterations")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--learning_rate_decay_frac", type=ਦਸ਼ਮਲਵ, ਮੂਲ=1.0, help="learning rate warmup iterations")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--weight_decay", type=ਦਸ਼ਮਲਵ, ਮੂਲ=0.0, help="weight decay")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--grad_clip", type=ਦਸ਼ਮਲਵ, ਮੂਲ=1.0, help="maximum gradient magnitude")
     # evaluation
-    parser.add_argument("--val_loss_every", type=int, default=0, help="every how mant steps to evaluate val loss?")
-    parser.add_argument("--val_max_steps", type=int, default=20, help="how many batches of val to average?")
-    parser.add_argument("--sample_every", type=int, default=0, help="how often to sample from the model?")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--val_loss_every", type=ਪੂਰਨ, ਮੂਲ=0, help="every how mant steps to evaluate val loss?")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--val_max_steps", type=ਪੂਰਨ, ਮੂਲ=20, help="how many batches of val to average?")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--sample_every", type=ਪੂਰਨ, ਮੂਲ=0, help="how often to sample from the model?")
     # debugging
-    parser.add_argument("--overfit_single_batch", type=int, default=1, help="overfit just one batch of data")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--overfit_single_batch", type=ਪੂਰਨ, ਮੂਲ=1, help="overfit just one batch of data")
     # numerics
-    parser.add_argument("--tensorcores", type=int, default=0, help="use tensorcores")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--tensorcores", type=ਪੂਰਨ, ਮੂਲ=0, help="use tensorcores")
     # memory management
-    parser.add_argument("--device", type=str, default="", help="by default we autodetect, or set it here")
-    parser.add_argument("--compile", type=int, default=0, help="torch.compile the model")
-    parser.add_argument("--flash", type=int, default=0, help="use flash attention")
-    parser.add_argument("--dtype", type=str, default="float32", help="float32|float16|bfloat16")
-    parser.add_argument("--zero_stage", type=int, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--device", type=str, ਮੂਲ="", help="by default we autodetect, or set it here")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--compile", type=ਪੂਰਨ, ਮੂਲ=0, help="torch.compile the model")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--flash", type=ਪੂਰਨ, ਮੂਲ=0, help="use flash attention")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--dtype", type=str, ਮੂਲ="float32", help="float32|float16|bfloat16")
+    parser.ਜੋੜੋ_ਦਲੀਲ("--zero_stage", type=ਪੂਰਨ, ਮੂਲ=0, help="zero redundancy optimizer stage (0/1/2/3)")
     # python -> C bridge
-    parser.add_argument("--write_tensors", type=int, default=1, help="write tensors to disk")
-    args = parser.parse_args()
+    parser.ਜੋੜੋ_ਦਲੀਲ("--write_tensors", type=ਪੂਰਨ, ਮੂਲ=1, help="write tensors to disk")
+    ਦਲੀਲਾਂ = parser.parse_ਦਲੀਲਾਂ()
 
     # args error checking and convenience variables
-    B, T = args.batch_size, args.sequence_length
-    assert 1 <= T <= 1024
-    assert args.dtype in {"float32", "float16", "bfloat16"}
-    assert args.model in {"gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl", "d12", "d24", "d36", "d48"}
+    B, T = ਦਲੀਲਾਂ.batch_ਮਾਪ, ਦਲੀਲਾਂ.sequence_ਲੰਮਾਈ
+    ਪ੍ਰਤਿਜ੍ਞਾ 1 <= T <= 1024
+    ਪ੍ਰਤਿਜ੍ਞਾ ਦਲੀਲਾਂ.dtype ਵਿੱਚ {"float32", "float16", "bfloat16"}
+    ਪ੍ਰਤਿਜ੍ਞਾ ਦਲੀਲਾਂ.model ਵਿੱਚ {"gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl", "d12", "d24", "d36", "d48"}
 
     # set up DDP (distributed data parallel). torchrun sets this env variable
-    ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
-    if ddp:
+    ddp = ਪੂਰਨ(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+    ਜੇ ddp:
         # use of DDP atm demands CUDA, we set the device appropriately according to rank
-        assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
-        init_process_group(backend='nccl')
-        ddp_rank = int(os.environ['RANK'])
-        ddp_local_rank = int(os.environ['LOCAL_RANK'])
-        ddp_world_size = int(os.environ['WORLD_SIZE'])
+        ਪ੍ਰਤਿਜ੍ਞਾ torch.cuda.is_ਉਪਲਬਧ(), "for now i think we need CUDA for DDP"
+        init_process_ਸਮੂਹ(backend='nccl')
+        ddp_rank = ਪੂਰਨ(os.environ['RANK'])
+        ddp_local_rank = ਪੂਰਨ(os.environ['LOCAL_RANK'])
+        ddp_world_ਮਾਪ = ਪੂਰਨ(os.environ['WORLD_SIZE'])
         device = f'cuda:{ddp_local_rank}'
-        torch.cuda.set_device(device)
+        torch.cuda.ਸੈੱਟ_device(device)
         master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
-        seed_offset = 0 # each process gets the exact same seed
-        zero_stage = args.zero_stage
-    else:
+        ਬੀਜ_ਵਿੱਥ = 0 # each process gets the exact same seed
+        zero_stage = ਦਲੀਲਾਂ.zero_stage
+    ਨਹੀਂਤਾਂ:
         ddp_rank = 0
         ddp_local_rank = 0
         zero_stage = 0
-        ddp_world_size = 1
-        master_process = True
-        seed_offset = 0
+        ddp_world_ਮਾਪ = 1
+        master_process = ਸੱਚ
+        ਬੀਜ_ਵਿੱਥ = 0
         # select the device
-        if args.device:
+        ਜੇ ਦਲੀਲਾਂ.device:
             # provided explicitly by the user
-            device = args.device
-        else:
+            device = ਦਲੀਲਾਂ.device
+        ਨਹੀਂਤਾਂ:
             # attempt to autodetect the device
             device = "cpu"
-            if torch.cuda.is_available():
+            ਜੇ torch.cuda.is_ਉਪਲਬਧ():
                 device = "cuda"
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            ਜਾਂਜੇ hasattr(torch.backends, "mps") ਅਤੇ torch.backends.mps.is_ਉਪਲਬਧ():
                 device = "mps"
-    print(f"using device: {device}")
-    device_type = 'cuda' if 'cuda' in device else 'cpu'
+    ਛਾਪੋ(f"using device: {device}")
+    device_type = 'cuda' ਜੇ 'cuda' ਵਿੱਚ device ਨਹੀਂਤਾਂ 'cpu'
 
     # calculate gradient accumulation from the desired total batch size and the current run configuration
-    tokens_per_fwdbwd = B * T * ddp_world_size
-    assert args.total_batch_size % tokens_per_fwdbwd == 0
-    grad_accum_steps = args.total_batch_size // tokens_per_fwdbwd
+    ਟੋਕਨ_ਪ੍ਰਤੀ_fwdbwd = B * T * ddp_world_ਮਾਪ
+    ਪ੍ਰਤਿਜ੍ਞਾ ਦਲੀਲਾਂ.ਕੁੱਲ_batch_ਮਾਪ % ਟੋਕਨ_ਪ੍ਰਤੀ_fwdbwd == 0
+    grad_accum_ਕਦਮਾਂ = ਦਲੀਲਾਂ.ਕੁੱਲ_batch_ਮਾਪ // ਟੋਕਨ_ਪ੍ਰਤੀ_fwdbwd
     print0(f"total desired batch size: {args.total_batch_size}")
     print0(f"=> calculated gradient accumulation steps: {grad_accum_steps}")
 
     # set up a context manager following the desired dtype and device
-    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[args.dtype]
-    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if device_type == "cuda" else nullcontext()
+    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[ਦਲੀਲਾਂ.dtype]
+    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) ਜੇ device_type == "cuda" ਨਹੀਂਤਾਂ nullcontext()
 
     # rng / reproducibility
-    torch.manual_seed(42)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
+    torch.manual_ਬੀਜ(42)
+    ਜੇ torch.cuda.is_ਉਪਲਬਧ():
+        torch.cuda.manual_ਬੀਜ(42)
 
     # set the torch precision mode to use TensorFloat32 (TF32) for matmuls
     # docs https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
-    if args.tensorcores:
-        torch.set_float32_matmul_precision('high')
+    ਜੇ ਦਲੀਲਾਂ.tensorcores:
+        torch.ਸੈੱਟ_float32_matmul_precision('high')
 
     # turn on/off flash attention
-    assert args.flash in {0, 1}
-    FLASH = args.flash
+    ਪ੍ਰਤਿਜ੍ਞਾ ਦਲੀਲਾਂ.flash ਵਿੱਚ {0, 1}
+    FLASH = ਦਲੀਲਾਂ.flash
 
     # init (and write) the tokenizer
     enc = tiktoken.get_encoding("gpt2")
-    if master_process and args.write_tensors: # tokenizer is technically not tensors but ok
+    ਜੇ master_process ਅਤੇ ਦਲੀਲਾਂ.write_tensors: # tokenizer is technically not tensors but ok
         write_tokenizer(enc, "gpt2_tokenizer.bin")
 
     # init the model, either from scratch or from OpenAI pretrained checkpoint
-    if args.model[0] == "d":
+    ਜੇ ਦਲੀਲਾਂ.model[0] == "d":
         # from scratch (random weights)
         model_config = {
-            "d12": GPTConfig(block_size=1024, vocab_size=50257, n_layer=12, n_head=12, n_embd=768),
-            "d24": GPTConfig(block_size=1024, vocab_size=50257, n_layer=24, n_head=16, n_embd=1024),
-            "d36": GPTConfig(block_size=1024, vocab_size=50257, n_layer=36, n_head=20, n_embd=1280),
-            "d48": GPTConfig(block_size=1024, vocab_size=50257, n_layer=48, n_head=25, n_embd=1600),
-        }[args.model]
+            "d12": GPTConfig(ਖੰਡ_ਮਾਪ=1024, vocab_ਮਾਪ=50257, n_layer=12, n_ਸਿਰ=12, n_embd=768),
+            "d24": GPTConfig(ਖੰਡ_ਮਾਪ=1024, vocab_ਮਾਪ=50257, n_layer=24, n_ਸਿਰ=16, n_embd=1024),
+            "d36": GPTConfig(ਖੰਡ_ਮਾਪ=1024, vocab_ਮਾਪ=50257, n_layer=36, n_ਸਿਰ=20, n_embd=1280),
+            "d48": GPTConfig(ਖੰਡ_ਮਾਪ=1024, vocab_ਮਾਪ=50257, n_layer=48, n_ਸਿਰ=25, n_embd=1600),
+        }[ਦਲੀਲਾਂ.model]
         model = GPT(model_config)
-    else:
+    ਨਹੀਂਤਾਂ:
         # load the GPT-2 model weights
-        model = GPT.from_pretrained(args.model)
+        model = GPT.from_pretrained(ਦਲੀਲਾਂ.model)
     model.train()
-    model.to(device)
-    if args.compile:
-        if hasattr(config, "coordinate_descent_tuning"):
-            config.coordinate_descent_tuning = True # suggested by @Chillee
+    model.ਮੰਜ਼ਿਲ(device)
+    ਜੇ ਦਲੀਲਾਂ.compile:
+        ਜੇ hasattr(config, "coordinate_descent_tuning"):
+            config.coordinate_descent_tuning = ਸੱਚ # suggested by @Chillee
         print0("compiling the model...")
         model = torch.compile(model)
 
@@ -673,24 +673,24 @@ if __name__ == "__main__":
     # Our own version of a simple DistributedDataLoader
 
     # load tokens
-    train_loader = DistributedDataLoader(args.input_bin, B, T, ddp_rank, ddp_world_size)
-    val_loader = None
-    if args.input_val_bin:
-        val_loader = DistributedDataLoader(args.input_val_bin, B, T, ddp_rank, ddp_world_size)
+    train_loader = Distributed_ਅੰਕੜੇ_Loader(ਦਲੀਲਾਂ.ਨਿਵੇਸ਼_bin, B, T, ddp_rank, ddp_world_ਮਾਪ)
+    val_loader = ਕੁਝ_ਨਹੀਂ
+    ਜੇ ਦਲੀਲਾਂ.ਨਿਵੇਸ਼_val_bin:
+        val_loader = Distributed_ਅੰਕੜੇ_Loader(ਦਲੀਲਾਂ.ਨਿਵੇਸ਼_val_bin, B, T, ddp_rank, ddp_world_ਮਾਪ)
 
     # -------------------------------------------------------------------------
     # PyTorch -> C bridge: save some weights and state for C to load later as reference
 
     # do one forward pass to generate ground truth for our C tests
-    if master_process and args.write_tensors and (not args.inference_only):
-        x, y = train_loader.next_batch()
-        x, y = x.to(device), y.to(device)
+    ਜੇ master_process ਅਤੇ ਦਲੀਲਾਂ.write_tensors ਅਤੇ (ਨਹੀਂ ਦਲੀਲਾਂ.inference_only):
+        x, y = train_loader.ਅਗਲਾ_batch()
+        x, y = x.ਮੰਜ਼ਿਲ(device), y.ਮੰਜ਼ਿਲ(device)
         logits, loss = model(x, y)
         loss.backward()
         # save model params, in both float32 and bfloat16
-        model_to_size = {"gpt2": "124M", "gpt2-medium": "355M", "gpt2-large": "774M", "gpt2-xl": "1558M"}
-        model_to_size.update({f"d{d}": f"d{d}" for d in [12, 24, 36, 48]})
-        model_size_str = model_to_size[args.model] # e.g. "124M", or "d12"
+        model_ਮੰਜ਼ਿਲ_ਮਾਪ = {"gpt2": "124M", "gpt2-medium": "355M", "gpt2-large": "774M", "gpt2-xl": "1558M"}
+        model_ਮੰਜ਼ਿਲ_ਮਾਪ.update({f"d{d}": f"d{d}" ਲਈ d ਵਿੱਚ [12, 24, 36, 48]})
+        model_ਮਾਪ_str = model_ਮੰਜ਼ਿਲ_ਮਾਪ[ਦਲੀਲਾਂ.model] # e.g. "124M", or "d12"
         write_model(model, f"gpt2_{model_size_str}.bin", dtype="float32")
         write_model(model, f"gpt2_{model_size_str}_bf16.bin", dtype="bfloat16")
         # save x, y, logits, loss, and parameter gradients, for debugging C
@@ -703,80 +703,80 @@ if __name__ == "__main__":
     # main training loop
 
     # here we wrap model into DDP container
-    if ddp:
+    ਜੇ ddp:
         model = DDP(model, device_ids=[ddp_local_rank])
-    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    raw_model = model.module ਜੇ ddp ਨਹੀਂਤਾਂ model # always contains the "raw" unwrapped model
 
     # init the optimizer
-    optimizer = raw_model.configure_optimizers(weight_decay=args.weight_decay,
-                                               learning_rate=args.learning_rate, betas=(0.9, 0.95),
+    optimizer = raw_model.configure_optimizers(ਭਾਰ_decay=ਦਲੀਲਾਂ.ਭਾਰ_decay,
+                                               learning_ਦਰ=ਦਲੀਲਾਂ.learning_ਦਰ, betas=(0.9, 0.95),
                                                device_type=device, zero_stage=zero_stage)
 
     # learning rate decay scheduler (cosine with warmup)
-    def get_lr(it):
-        min_lr = args.learning_rate * args.learning_rate_decay_frac
+    ਪਰਿਭਾਸ਼ਾ get_lr(it):
+        min_lr = ਦਲੀਲਾਂ.learning_ਦਰ * ਦਲੀਲਾਂ.learning_ਦਰ_decay_frac
         # 1) linear warmup for warmup_iters steps
-        if it < args.warmup_iters:
-            return args.learning_rate * (it+1) / args.warmup_iters
+        ਜੇ it < ਦਲੀਲਾਂ.warmup_iters:
+            ਵਾਪਸ ਦਲੀਲਾਂ.learning_ਦਰ * (it+1) / ਦਲੀਲਾਂ.warmup_iters
         # 2) if it > lr_decay_iters, return min learning rate
-        if it > args.num_iterations:
-            return min_lr
+        ਜੇ it > ਦਲੀਲਾਂ.ਅੰਕ_iterations:
+            ਵਾਪਸ min_lr
         # 3) in between, use cosine decay down to min learning rate
-        decay_ratio = (it - args.warmup_iters) / (args.num_iterations - args.warmup_iters)
-        assert 0 <= decay_ratio <= 1
-        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
-        return min_lr + coeff * (args.learning_rate - min_lr)
+        decay_ਅਨੁਪਾਤ = (it - ਦਲੀਲਾਂ.warmup_iters) / (ਦਲੀਲਾਂ.ਅੰਕ_iterations - ਦਲੀਲਾਂ.warmup_iters)
+        ਪ੍ਰਤਿਜ੍ਞਾ 0 <= decay_ਅਨੁਪਾਤ <= 1
+        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ਅਨੁਪਾਤ)) # coeff starts at 1 and goes to 0
+        ਵਾਪਸ min_lr + coeff * (ਦਲੀਲਾਂ.learning_ਦਰ - min_lr)
 
     # create the logging directory if it does not exist
-    logfile = None
-    if args.output_dir:
-        os.makedirs(args.output_dir, exist_ok=True)
-        logfile = os.path.join(args.output_dir, "main.log")
+    logfile = ਕੁਝ_ਨਹੀਂ
+    ਜੇ ਦਲੀਲਾਂ.output_dir:
+        os.makedirs(ਦਲੀਲਾਂ.output_dir, exist_ok=ਸੱਚ)
+        logfile = os.ਰਸਤਾ.join(ਦਲੀਲਾਂ.output_dir, "main.log")
         # create the log file "main.log" inside it, and wipe it clean
-        with open(logfile, "w") as f:
-            pass
+        ਨਾਲ open(logfile, "w") ਇਵ f:
+            ਲੰਘੋ
 
-    if device == "cuda":
-        torch.cuda.reset_peak_memory_stats()
+    ਜੇ device == "cuda":
+        torch.cuda.reset_peak_ਸਮ੍ਰਿਤੀ_stats()
     timings = []
     norm = -1.0   # dummy value to print in inference-only mode
-    for step in range(args.num_iterations + 1):
+    ਲਈ ਕਦਮ ਵਿੱਚ ਸੀਮਾ(ਦਲੀਲਾਂ.ਅੰਕ_iterations + 1):
         t0 = time.time()
-        last_step = (step == args.num_iterations)
+        ਆਖਰੀ_ਕਦਮ = (ਕਦਮ == ਦਲੀਲਾਂ.ਅੰਕ_iterations)
 
         # once in a while evaluate the validation dataset
-        if (args.val_loss_every > 0 \
-            and (step % args.val_loss_every == 0 or last_step)) \
-            and (val_loader is not None):
+        ਜੇ (ਦਲੀਲਾਂ.val_loss_every > 0 \
+            ਅਤੇ (ਕਦਮ % ਦਲੀਲਾਂ.val_loss_every == 0 ਜਾਂ ਆਖਰੀ_ਕਦਮ)) \
+            ਅਤੇ (val_loader ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ):
             model.eval()
             val_loader.reset()
-            with torch.no_grad():
+            ਨਾਲ torch.no_grad():
                 val_loss = 0.0
-                for _ in range(args.val_max_steps):
-                    x, y = val_loader.next_batch()
-                    x, y = x.to(device), y.to(device)
-                    _, loss = model(x, y, return_logits=False)
-                    val_loss += loss.item()
-                val_loss /= args.val_max_steps
+                ਲਈ _ ਵਿੱਚ ਸੀਮਾ(ਦਲੀਲਾਂ.val_max_ਕਦਮਾਂ):
+                    x, y = val_loader.ਅਗਲਾ_batch()
+                    x, y = x.ਮੰਜ਼ਿਲ(device), y.ਮੰਜ਼ਿਲ(device)
+                    _, loss = model(x, y, return_logits=ਝੂਠ)
+                    val_loss += loss.ਵਸਤੂ_2()
+                val_loss /= ਦਲੀਲਾਂ.val_max_ਕਦਮਾਂ
             # log to console and to file
             print0(f"val loss {val_loss}")
-            if master_process and logfile is not None:
-                with open(logfile, "a") as f:
-                    f.write("s:%d tel:%f\n" % (step, val_loss))
+            ਜੇ master_process ਅਤੇ logfile ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ:
+                ਨਾਲ open(logfile, "a") ਇਵ f:
+                    f.ਲਿਖ("s:%d tel:%f\n" % (ਕਦਮ, val_loss))
 
         # once in a while perform model inference on the master process
-        if (args.sample_every > 0 \
-            and (step % args.sample_every == 0 or last_step)) \
-            and master_process:
+        ਜੇ (ਦਲੀਲਾਂ.sample_every > 0 \
+            ਅਤੇ (ਕਦਮ % ਦਲੀਲਾਂ.sample_every == 0 ਜਾਂ ਆਖਰੀ_ਕਦਮ)) \
+            ਅਤੇ master_process:
             model.eval()
             # before we end, let's also do one round of inference
             # we'll kick off the generation with "<|endoftext|>", which designates the start of a new sequence
-            start_ids = [enc.eot_token]
-            xg = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
-            max_new_tokens = 32
+            ਸ਼ੁਰੂ_ids = [enc.eot_token]
+            xg = (torch.tensor(ਸ਼ੁਰੂ_ids, dtype=torch.ਲੰਮਾ, device=device)[ਕੁਝ_ਨਹੀਂ, ...])
+            max_new_ਟੋਕਨ = 32
             temperature = 1.0
-            top_k = 40
-            yg = raw_model.generate(xg, max_new_tokens, temperature=temperature, top_k=top_k)
+            ਸਿਖਰ_k = 40
+            yg = raw_model.generate(xg, max_new_ਟੋਕਨ, temperature=temperature, ਸਿਖਰ_k=ਸਿਖਰ_k)
             print0('---------------')
             print0(enc.decode(yg[0].tolist()))
             print0('---------------')
@@ -785,68 +785,68 @@ if __name__ == "__main__":
         # but also after the very last iteration. so we loop for step <= num_iterations
         # instead of just < num_iterations (one extra due to <=), only to do
         # the validation/sampling one last time, and then we break right here as we're done.
-        if last_step:
-            break
+        ਜੇ ਆਖਰੀ_ਕਦਮ:
+            ਰੋਕੋ
 
         # --------------- TRAINING SECTION BEGIN -----------------
         model.train()
-        optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad(ਸੈੱਟ_ਮੰਜ਼ਿਲ_none=ਸੱਚ)
         # if we are trying to overfit a single batch, we reset the loader here
-        if args.overfit_single_batch:
+        ਜੇ ਦਲੀਲਾਂ.overfit_single_batch:
             train_loader.reset()
         # micro-batch loop where we do gradient accumulation to reach desired total batch size
         lossf = 0.0 # for getting the mean loss (as simple float) over the accumulation steps
-        for micro_step in range(grad_accum_steps):
+        ਲਈ micro_ਕਦਮ ਵਿੱਚ ਸੀਮਾ(grad_accum_ਕਦਮਾਂ):
             # fetch a batch
-            x, y = train_loader.next_batch()
-            x, y = x.to(device), y.to(device)
-            if ddp:
+            x, y = train_loader.ਅਗਲਾ_batch()
+            x, y = x.ਮੰਜ਼ਿਲ(device), y.ਮੰਜ਼ਿਲ(device)
+            ਜੇ ddp:
                 # we want only the last micro-step to sync grads in a DDP model
                 # the official way to do this is with model.no_sync(), but that is a
                 # context manager that bloats the code, so we just toggle this variable
-                model.require_backward_grad_sync = (micro_step == grad_accum_steps - 1)
+                model.require_backward_grad_sync = (micro_ਕਦਮ == grad_accum_ਕਦਮਾਂ - 1)
             # forward pass
-            with ctx:
-                _, loss = model(x, y, return_logits=False)
+            ਨਾਲ ctx:
+                _, loss = model(x, y, return_logits=ਝੂਠ)
                 # we have to scale the loss to account for gradient accumulation,
                 # because the gradients just add on each successive backward().
                 # addition of gradients corresponds to a SUM in the objective, but
                 # instead of a SUM we want MEAN, so we scale the loss here
-                loss = loss / grad_accum_steps
+                loss = loss / grad_accum_ਕਦਮਾਂ
                 lossf += loss.detach() # keep track of the mean loss
             # backward pass
-            if not args.inference_only:
+            ਜੇ ਨਹੀਂ ਦਲੀਲਾਂ.inference_only:
                 loss.backward()
-        if ddp:
+        ਜੇ ddp:
             dist.all_reduce(lossf, op=dist.ReduceOp.AVG)
-        lossf = lossf.item()
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        lossf = lossf.ਵਸਤੂ_2()
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), ਦਲੀਲਾਂ.grad_clip)
         # determine and set the learning rate for this iteration
-        lr = get_lr(step)
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+        lr = get_lr(ਕਦਮ)
+        ਲਈ param_ਸਮੂਹ ਵਿੱਚ optimizer.param_groups:
+            param_ਸਮੂਹ['lr'] = lr
         # step the optimizer
-        optimizer.step()
+        optimizer.ਕਦਮ()
         # --------------- TRAINING SECTION END -------------------
         # everything that follows now is just diagnostics, prints, logging, etc.
 
         # wait on the CPU for all device work to end so we get accurate per-iteration timings below
-        if device == "mps":
+        ਜੇ device == "mps":
             torch.mps.synchronize()
-        elif device == "cuda":
+        ਜਾਂਜੇ device == "cuda":
             torch.cuda.synchronize()
         # time and print
         t1 = time.time()
         # the 0th iteration is often an outlier (much slower) => skip logging it
-        tokens_per_second = grad_accum_steps * ddp_world_size * B * T / (t1-t0)
+        ਟੋਕਨ_ਪ੍ਰਤੀ_ਦੂਜਾ = grad_accum_ਕਦਮਾਂ * ddp_world_ਮਾਪ * B * T / (t1-t0)
         print0(f"step {step+1:4d}/{args.num_iterations} | train loss {lossf:.6f} | norm {norm:.4f} | lr {lr:.2e} | ({(t1-t0)*1000:.2f} ms | {tokens_per_second:.0f} tok/s)")
         # log to logile
-        if master_process and logfile is not None:
-            with open(logfile, "a") as f:
-                f.write("s:%d trl:%f\n" % (step, lossf))
+        ਜੇ master_process ਅਤੇ logfile ਹੈ ਨਹੀਂ ਕੁਝ_ਨਹੀਂ:
+            ਨਾਲ open(logfile, "a") ਇਵ f:
+                f.ਲਿਖ("s:%d trl:%f\n" % (ਕਦਮ, lossf))
 
         # keep track of smooth timings, last 20 iterations
-        if step > 0 and step > args.num_iterations - 20:
+        ਜੇ ਕਦਮ > 0 ਅਤੇ ਕਦਮ > ਦਲੀਲਾਂ.ਅੰਕ_iterations - 20:
             timings.append(t1-t0)
 
     # print the average of the last 20 timings, to get something smooth-ish
@@ -856,5 +856,5 @@ if __name__ == "__main__":
 
     # -------------------------------------------------------------------------
     # clean up nice
-    if ddp:
-        destroy_process_group()
+    ਜੇ ddp:
+        destroy_process_ਸਮੂਹ()

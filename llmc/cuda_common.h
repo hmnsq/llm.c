@@ -1,22 +1,22 @@
 /*
 Common utilities for CUDA code.
 */
-#ifndef CUDA_COMMON_H
-#define CUDA_COMMON_H
+#ਜੇ_ਅਪਰਿਭਾਸ਼ਿਤ CUDA_COMMON_H
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ CUDA_COMMON_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string>
-#include <type_traits>      // std::bool_constant
-#include <cuda_runtime.h>
-#include <nvtx3/nvToolsExt.h>
-#include <nvtx3/nvToolsExtCudaRt.h>
-#include <cuda_profiler_api.h>
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <stdlib.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <stdio.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <math.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <string>
+#ਅਨ੍ਤਰ੍ਭਾਵ <type_traits>      // std::bool_constant
+#ਅਨ੍ਤਰ੍ਭਾਵ <cuda_runtime.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <nvtx3/nvToolsExt.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <nvtx3/nvToolsExtCudaRt.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <cuda_profiler_api.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <cuda_bf16.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <cuda_fp16.h>
 
-#include "utils.h"
+#ਅਨ੍ਤਰ੍ਭਾਵ "utils.h"
 
 // ----------------------------------------------------------------------------
 // Global defines and settings
@@ -24,22 +24,22 @@ Common utilities for CUDA code.
 // Device properties of the CUDA device used in this process
 // defined as extern here because the individual kernels wish to use it
 // but it is actually created and instantiated in the main program file
-extern cudaDeviceProp deviceProp;
+ਬਾਹਰੀ cudaDeviceProp deviceProp;
 
 // WarpSize is not a compile time constant
 // Defining here like this possibly allows the compiler to optimize better
-#define WARP_SIZE 32U
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ WARP_ਮਾਪ 32U
 
 // try to make sure that 2 blocks fit on A100/H100 to maximise latency tolerance
 // this needs to be defines rather than queried to be used for __launch_bounds__
-#if __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
-#define MAX_1024_THREADS_BLOCKS 2
-#else
-#define MAX_1024_THREADS_BLOCKS 1
-#endif
+#ਜੇ __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ MAX_1024_ਧਾਗੇ_ਖੰਡਾਂ 2
+#ਨਹੀਂਤਾਂ
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ MAX_1024_ਧਾਗੇ_ਖੰਡਾਂ 1
+#ਜੇ_ਅੰਤ
 
 // convenience macro for calculating grid/block dimensions for kernels
-#define CEIL_DIV(M, N) (((M) + (N)-1) / (N))
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ CEIL_DIV(M, N) (((M) + (N)-1) / (N))
 
 // short-cuts for compile-time boolean values that can be used as function arguments
 constexpr std::bool_constant<true> True;
@@ -49,47 +49,47 @@ constexpr std::bool_constant<true> False;
 // Error checking
 
 // CUDA error checking. Underscore added so this function can be called directly not just via macro
-inline void cudaCheck_(cudaError_t error, const char *file, int line) {
-  if (error != cudaSuccess) {
-    printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
-    exit(EXIT_FAILURE);
+ਸਤਰਅੰਦਰ ਖਾਲੀ cudaCheck_(cudaError_t error, ਅਚਲ ਅੱਖਰ *file, ਪੂਰਨ ਸਤਰ) {
+  ਜੇ (error != cudaSuccess) {
+    ਲਿਖੋ("[CUDA ERROR] at file %s:%d:\n%s\n", file, ਸਤਰ, cudaGetErrorString(error));
+    ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
   }
 };
-#define cudaCheck(err) (cudaCheck_(err, __FILE__, __LINE__))
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ cudaCheck(err) (cudaCheck_(err, __FILE__, __LINE__))
 
 // like cudaFree, but checks for errors _and_ resets the pointer.
-template<class T>
-inline void cudaFreeCheck(T** ptr, const char *file, int line) {
+ਸਾਂਚਾ<class T>
+ਸਤਰਅੰਦਰ ਖਾਲੀ cudaFreeCheck(T** ptr, ਅਚਲ ਅੱਖਰ *file, ਪੂਰਨ ਸਤਰ) {
     cudaError_t error = cudaFree(*ptr);
-    if (error != cudaSuccess) {
-        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
+    ਜੇ (error != cudaSuccess) {
+        ਲਿਖੋ("[CUDA ERROR] at file %s:%d:\n%s\n", file, ਸਤਰ, cudaGetErrorString(error));
+        ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
     }
     *ptr = nullptr;
 }
-#define cudaFreeCheck(ptr) (cudaFreeCheck(ptr, __FILE__, __LINE__))
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ cudaFreeCheck(ptr) (cudaFreeCheck(ptr, __FILE__, __LINE__))
 
 // ----------------------------------------------------------------------------
 // CUDA Precision settings and defines
 
-enum PrecisionMode {
+ਗਿਣਤੀ Precision_ਬਹੁਲਕ {
     PRECISION_FP32,
     PRECISION_FP16,
     PRECISION_BF16
 };
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
-typedef float floatX;
-#define PRECISION_MODE PRECISION_FP32
+#ਜੇ defined(ENABLE_FP32)
+ਕਿਸਮਪਰਿਭਾਸ਼ਾ ਦਸ਼ਮਲਵ floatX;
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ PRECISION_ਬਹੁਲਕ PRECISION_FP32
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
-#elif defined(ENABLE_FP16)
-typedef half floatX;
-#define PRECISION_MODE PRECISION_FP16
-#else // Default to bfloat16
-typedef __nv_bfloat16 floatX;
-#define PRECISION_MODE PRECISION_BF16
-#endif
+#ਜਾਂਜੇ defined(ENABLE_FP16)
+ਕਿਸਮਪਰਿਭਾਸ਼ਾ half floatX;
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ PRECISION_ਬਹੁਲਕ PRECISION_FP16
+#ਨਹੀਂਤਾਂ // Default to bfloat16
+ਕਿਸਮਪਰਿਭਾਸ਼ਾ __nv_bfloat16 floatX;
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ PRECISION_ਬਹੁਲਕ PRECISION_BF16
+#ਜੇ_ਅੰਤ
 
 // ----------------------------------------------------------------------------
 // Load and store with streaming cache hints
@@ -98,112 +98,112 @@ typedef __nv_bfloat16 floatX;
 // our own versions if none already exist, otherwise the compiler will complain.
 // If not, you easily get "no viable overload" (for sm52) and "function already exists" (sm_80)
 
-#if defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
-__device__ floatX __ldcs(const floatX* address) {
-    unsigned short bf = __ldcs(reinterpret_cast<const unsigned short*>(address));
-    return __nv_bfloat16_raw{bf};
+#ਜੇ defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
+__device__ floatX __ldcs(ਅਚਲ floatX* ਪਤਾ) {
+    ਬਿਨਾਨਿਸ਼ਾਨੀ ਛੋਟਾ bf = __ldcs(reinterpret_cast<ਅਚਲ ਬਿਨਾਨਿਸ਼ਾਨੀ ਛੋਟਾ*>(ਪਤਾ));
+    ਵਾਪਸ __nv_bfloat16_raw{bf};
 }
 
-__device__ void __stcs(floatX* address, floatX value) {
-    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)value).x);
+__device__ ਖਾਲੀ __stcs(floatX* ਪਤਾ, floatX ਮੁੱਲ) {
+    __stcs(reinterpret_cast<ਬਿਨਾਨਿਸ਼ਾਨੀ ਛੋਟਾ*>(ਪਤਾ), ((__nv_bfloat16_raw)ਮੁੱਲ).x);
 }
-#endif
+#ਜੇ_ਅੰਤ
 
 // ----------------------------------------------------------------------------
 // Profiler utils
 
 class NvtxRange {
- public:
-    NvtxRange(const char* s) { nvtxRangePush(s); }
-    NvtxRange(const std::string& base_str, int number) {
-        std::string range_string = base_str + " " + std::to_string(number);
-        nvtxRangePush(range_string.c_str());
+ ਜਨਤਕ:
+    NvtxRange(ਅਚਲ ਅੱਖਰ* s) { nvtx_Range_ਧੱਕੋ(s); }
+    NvtxRange(ਅਚਲ std::string& ਅਧਾਰ_str, ਪੂਰਨ ਸੰਖਿਆ) {
+        std::string range_string = ਅਧਾਰ_str + " " + std::ਮੰਜ਼ਿਲ_string(ਸੰਖਿਆ);
+        nvtx_Range_ਧੱਕੋ(range_string.c_str());
     }
-    ~NvtxRange() { nvtxRangePop(); }
+    ~NvtxRange() { nvtx_Range_ਕੱਢੋ(); }
 };
-#define NVTX_RANGE_FN() NvtxRange nvtx_range(__FUNCTION__)
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ NVTX_RANGE_FN() NvtxRange nvtx_range(__FUNCTION__)
 
 // ----------------------------------------------------------------------------
 // Utilities to Read & Write between CUDA memory <-> files
 
 // copy num_bytes from device pointer src into file dest, using double buffering running on the given stream.
-inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+ਸਤਰਅੰਦਰ ਖਾਲੀ device_ਮੰਜ਼ਿਲ_file(FILE* dest, ਖਾਲੀ* src, size_t ਅੰਕ_ਬਾਈਟਾਂ, size_t ਬਫਰ_ਮਾਪ, cuda_ਧਾਰਾ_t ਧਾਰਾ) {
     // allocate pinned buffer for faster, async transfer
-    char* buffer_space;
-    cudaCheck(cudaMallocHost(&buffer_space, 2*buffer_size));
+    ਅੱਖਰ* ਬਫਰ_space;
+    cudaCheck(cudaMallocHost(&ਬਫਰ_space, 2*ਬਫਰ_ਮਾਪ));
     // split allocation in two
-    void* read_buffer = buffer_space;
-    void* write_buffer = buffer_space + buffer_size;
+    ਖਾਲੀ* read_ਬਫਰ = ਬਫਰ_space;
+    ਖਾਲੀ* write_ਬਫਰ = ਬਫਰ_space + ਬਫਰ_ਮਾਪ;
 
     // prime the read buffer; first copy means we have to wait
-    char* gpu_read_ptr = (char*)src;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
-    cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
-    cudaCheck(cudaStreamSynchronize(stream));
-    size_t rest_bytes = num_bytes - copy_amount;
-    size_t write_buffer_size = copy_amount;
+    ਅੱਖਰ* gpu_read_ptr = (ਅੱਖਰ*)src;
+    size_t copy_amount = std::min(ਬਫਰ_ਮਾਪ, ਅੰਕ_ਬਾਈਟਾਂ);
+    cudaCheck(cudaMemcpyAsync(read_ਬਫਰ, gpu_read_ptr, copy_amount, cuda_Memcpy_Device_ਮੰਜ਼ਿਲ_Host, ਧਾਰਾ));
+    cudaCheck(cuda_ਧਾਰਾ_Synchronize(ਧਾਰਾ));
+    size_t rest_ਬਾਈਟਾਂ = ਅੰਕ_ਬਾਈਟਾਂ - copy_amount;
+    size_t write_ਬਫਰ_ਮਾਪ = copy_amount;
     gpu_read_ptr += copy_amount;
 
-    std::swap(read_buffer, write_buffer);
+    std::ਅਦਲਾ_ਬਦਲੀ(read_ਬਫਰ, write_ਬਫਰ);
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    ਜਦੋਂ(rest_ਬਾਈਟਾਂ > 0) {
         // initiate next read
-        copy_amount = std::min(buffer_size, rest_bytes);
-        cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
+        copy_amount = std::min(ਬਫਰ_ਮਾਪ, rest_ਬਾਈਟਾਂ);
+        cudaCheck(cudaMemcpyAsync(read_ਬਫਰ, gpu_read_ptr, copy_amount, cuda_Memcpy_Device_ਮੰਜ਼ਿਲ_Host, ਧਾਰਾ));
         // while this is going on, transfer the write buffer to disk
-        fwriteCheck(write_buffer, 1, write_buffer_size, dest);
-        cudaCheck(cudaStreamSynchronize(stream));     // wait for both buffers to be ready.
+        fwriteCheck(write_ਬਫਰ, 1, write_ਬਫਰ_ਮਾਪ, dest);
+        cudaCheck(cuda_ਧਾਰਾ_Synchronize(ਧਾਰਾ));     // wait for both buffers to be ready.
 
-        std::swap(read_buffer, write_buffer);
-        rest_bytes -= copy_amount;
-        write_buffer_size = copy_amount;
+        std::ਅਦਲਾ_ਬਦਲੀ(read_ਬਫਰ, write_ਬਫਰ);
+        rest_ਬਾਈਟਾਂ -= copy_amount;
+        write_ਬਫਰ_ਮਾਪ = copy_amount;
         gpu_read_ptr += copy_amount;
     }
 
     // make sure to write the last remaining write buffer
-    fwriteCheck(write_buffer, 1, write_buffer_size, dest);
-    cudaCheck(cudaFreeHost(buffer_space));
+    fwriteCheck(write_ਬਫਰ, 1, write_ਬਫਰ_ਮਾਪ, dest);
+    cudaCheck(cudaFreeHost(ਬਫਰ_space));
 }
 
 // copy num_bytes from file src into device pointer dest, using double buffering running on the given stream.
-inline void file_to_device(void* dest, FILE* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+ਸਤਰਅੰਦਰ ਖਾਲੀ file_ਮੰਜ਼ਿਲ_device(ਖਾਲੀ* dest, FILE* src, size_t ਅੰਕ_ਬਾਈਟਾਂ, size_t ਬਫਰ_ਮਾਪ, cuda_ਧਾਰਾ_t ਧਾਰਾ) {
      // allocate pinned buffer for faster, async transfer
      // from the docs (https://developer.download.nvidia.com/compute/DevZone/docs/html/C/doc/html/group__CUDART__HIGHLEVEL_ge439496de696b166ba457dab5dd4f356.html)
      // WC memory is a good option for buffers that will be written by the CPU and read by the device via mapped pinned memory or host->device transfers.
-    char* buffer_space;
-    cudaCheck(cudaMallocHost(&buffer_space, 2*buffer_size, cudaHostAllocWriteCombined));
+    ਅੱਖਰ* ਬਫਰ_space;
+    cudaCheck(cudaMallocHost(&ਬਫਰ_space, 2*ਬਫਰ_ਮਾਪ, cudaHostAllocWriteCombined));
     // split allocation in two
-    void* read_buffer = buffer_space;
-    void* write_buffer = buffer_space + buffer_size;
+    ਖਾਲੀ* read_ਬਫਰ = ਬਫਰ_space;
+    ਖਾਲੀ* write_ਬਫਰ = ਬਫਰ_space + ਬਫਰ_ਮਾਪ;
 
     // prime the read buffer;
-    char* gpu_write_ptr = (char*)dest;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
-    freadCheck(read_buffer, 1, copy_amount, src);
+    ਅੱਖਰ* gpu_write_ptr = (ਅੱਖਰ*)dest;
+    size_t copy_amount = std::min(ਬਫਰ_ਮਾਪ, ਅੰਕ_ਬਾਈਟਾਂ);
+    freadCheck(read_ਬਫਰ, 1, copy_amount, src);
 
-    size_t rest_bytes = num_bytes - copy_amount;
-    size_t write_buffer_size = copy_amount;
-    std::swap(read_buffer, write_buffer);
+    size_t rest_ਬਾਈਟਾਂ = ਅੰਕ_ਬਾਈਟਾਂ - copy_amount;
+    size_t write_ਬਫਰ_ਮਾਪ = copy_amount;
+    std::ਅਦਲਾ_ਬਦਲੀ(read_ਬਫਰ, write_ਬਫਰ);
 
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    ਜਦੋਂ(rest_ਬਾਈਟਾਂ > 0) {
         // initiate next read
-        copy_amount = std::min(buffer_size, rest_bytes);
-        cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_buffer, write_buffer_size, cudaMemcpyHostToDevice, stream));
-        gpu_write_ptr += write_buffer_size;
+        copy_amount = std::min(ਬਫਰ_ਮਾਪ, rest_ਬਾਈਟਾਂ);
+        cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_ਬਫਰ, write_ਬਫਰ_ਮਾਪ, cuda_Memcpy_Host_ਮੰਜ਼ਿਲ_Device, ਧਾਰਾ));
+        gpu_write_ptr += write_ਬਫਰ_ਮਾਪ;
         // while this is going on, read from disk
-        freadCheck(read_buffer, 1, copy_amount, src);
-        cudaCheck(cudaStreamSynchronize(stream));     // wait for both buffers to be ready.
+        freadCheck(read_ਬਫਰ, 1, copy_amount, src);
+        cudaCheck(cuda_ਧਾਰਾ_Synchronize(ਧਾਰਾ));     // wait for both buffers to be ready.
 
-        std::swap(read_buffer, write_buffer);
-        rest_bytes -= copy_amount;
-        write_buffer_size = copy_amount;
+        std::ਅਦਲਾ_ਬਦਲੀ(read_ਬਫਰ, write_ਬਫਰ);
+        rest_ਬਾਈਟਾਂ -= copy_amount;
+        write_ਬਫਰ_ਮਾਪ = copy_amount;
     }
 
     // copy the last remaining write buffer to gpu
-    cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_buffer, write_buffer_size, cudaMemcpyHostToDevice, stream));
-    cudaCheck(cudaStreamSynchronize(stream));
-    cudaCheck(cudaFreeHost(buffer_space));
+    cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_ਬਫਰ, write_ਬਫਰ_ਮਾਪ, cuda_Memcpy_Host_ਮੰਜ਼ਿਲ_Device, ਧਾਰਾ));
+    cudaCheck(cuda_ਧਾਰਾ_Synchronize(ਧਾਰਾ));
+    cudaCheck(cudaFreeHost(ਬਫਰ_space));
 }
 
-#endif // CUDA_COMMON_H
+#ਜੇ_ਅੰਤ // CUDA_COMMON_H

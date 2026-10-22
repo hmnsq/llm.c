@@ -2,28 +2,28 @@
 Common utilities for the datasets
 """
 
-import requests
-from tqdm import tqdm
-import numpy as np
+ਆਯਾਤ ਬੇਨਤੀਆਂ
+ਤਃ tqdm ਆਯਾਤ tqdm
+ਆਯਾਤ numpy ਇਵ np
 
 
-def download_file(url: str, fname: str, chunk_size=1024):
+ਪਰਿਭਾਸ਼ਾ download_file(url: str, fname: str, chunk_ਮਾਪ=1024):
     """Helper function to download a file from a given url"""
-    resp = requests.get(url, stream=True)
-    total = int(resp.headers.get("content-length", 0))
-    with open(fname, "wb") as file, tqdm(
+    resp = ਬੇਨਤੀਆਂ.get(url, ਧਾਰਾ=ਸੱਚ)
+    ਕੁੱਲ = ਪੂਰਨ(resp.ਸਿਰਲੇਖਾਂ.get("content-length", 0))
+    ਨਾਲ open(fname, "wb") ਇਵ file, tqdm(
         desc=fname,
-        total=total,
+        ਕੁੱਲ=ਕੁੱਲ,
         unit="iB",
-        unit_scale=True,
-        unit_divisor=1024,
-    ) as bar:
-        for data in resp.iter_content(chunk_size=chunk_size):
-            size = file.write(data)
-            bar.update(size)
+        unit_scale=ਸੱਚ,
+        unit_ਭਾਜਕ=1024,
+    ) ਇਵ bar:
+        ਲਈ ਅੰਕੜੇ ਵਿੱਚ resp.iter_content(chunk_ਮਾਪ=chunk_ਮਾਪ):
+            ਮਾਪ = file.ਲਿਖ(ਅੰਕੜੇ)
+            bar.update(ਮਾਪ)
 
 
-HEADERS_INFO = {
+ਸਿਰਲੇਖਾਂ_INFO = {
     "gpt-2": {
         "magic": 20240520,
         "version": 1,
@@ -36,30 +36,30 @@ HEADERS_INFO = {
     },
 }
 
-def write_datafile(filename, toks, model_desc="gpt-2"):
+ਪਰਿਭਾਸ਼ਾ write_datafile(filename, toks, model_desc="gpt-2"):
     """
     Saves token data as a .bin file, for reading in C.
     - First comes a header with 256 int32s
     - The tokens follow, each as uint16 (gpt-2) or uint32 (llama)
     """
-    assert len(toks) < 2**31, "token count too large" # ~2.1B tokens
-    assert model_desc in ["gpt-2", "llama-3"], f"unknown model descriptor {model_desc}"
-    info = HEADERS_INFO[model_desc]
+    ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(toks) < 2**31, "token count too large" # ~2.1B tokens
+    ਪ੍ਰਤਿਜ੍ਞਾ model_desc ਵਿੱਚ ["gpt-2", "llama-3"], f"unknown model descriptor {model_desc}"
+    info = ਸਿਰਲੇਖਾਂ_INFO[model_desc]
     # construct the header
-    header = np.zeros(256, dtype=np.int32) # header is always 256 int32 values
-    header[0] = info["magic"]
-    header[1] = info["version"]
-    header[2] = len(toks) # number of tokens after the 256*4 bytes of header
+    ਸਿਰਲੇਖ = np.zeros(256, dtype=np.int32) # header is always 256 int32 values
+    ਸਿਰਲੇਖ[0] = info["magic"]
+    ਸਿਰਲੇਖ[1] = info["version"]
+    ਸਿਰਲੇਖ[2] = ਲੰਬਾਈ(toks) # number of tokens after the 256*4 bytes of header
     # construct the data (numpy array of tokens)
     toks_np = np.array(toks, dtype=info["token_dtype"])
     # write to file
-    num_bytes = (256 * 4) + (len(toks) * toks_np.itemsize)
-    print(f"writing {len(toks):,} tokens to {filename} ({num_bytes:,} bytes) in the {model_desc} format")
-    with open(filename, "wb") as f:
-        f.write(header.tobytes())
-        f.write(toks_np.tobytes())
+    ਅੰਕ_ਬਾਈਟਾਂ = (256 * 4) + (ਲੰਬਾਈ(toks) * toks_np.itemsize)
+    ਛਾਪੋ(f"writing {len(toks):,} tokens to {filename} ({num_bytes:,} bytes) in the {model_desc} format")
+    ਨਾਲ open(filename, "wb") ਇਵ f:
+        f.ਲਿਖ(ਸਿਰਲੇਖ.tobytes())
+        f.ਲਿਖ(toks_np.tobytes())
 
-def write_evalfile(filename, datas):
+ਪਰਿਭਾਸ਼ਾ write_evalfile(filename, datas):
     """
     Saves eval data as a .bin file, for reading in C.
     Used for multiple-choice style evals, e.g. HellaSwag and MMLU
@@ -74,48 +74,48 @@ def write_evalfile(filename, datas):
         - <NUM><COMPLETION_TOKENS>, repeated NUM_COMPLETIONS times
     """
     # construct the header
-    header = np.zeros(256, dtype=np.int32)
-    header[0] = 20240522 # magic
-    header[1] = 1 # version
-    header[2] = len(datas) # number of examples
-    header[3] = 0 # reserved for longest_example_bytes, fill in later
+    ਸਿਰਲੇਖ = np.zeros(256, dtype=np.int32)
+    ਸਿਰਲੇਖ[0] = 20240522 # magic
+    ਸਿਰਲੇਖ[1] = 1 #ਸੰਸਕਰਣ
+    ਸਿਰਲੇਖ[2] = ਲੰਬਾਈ(datas) # number of examples
+    ਸਿਰਲੇਖ[3] = 0 # reserved for longest_example_bytes, fill in later
     # now write the individual examples
-    longest_example_bytes = 0 # in units of uint16s
-    full_stream = [] # the stream of uint16s, we'll write a single time at the end
-    assert len(datas) < 2**16, "too many examples?"
-    for idx, data in enumerate(datas):
-        stream = []
+    longest_example_ਬਾਈਟਾਂ = 0 # in units of uint16s
+    ਭਰਿਆ_ਧਾਰਾ = [] # the stream of uint16s, we'll write a single time at the end
+    ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(datas) < 2**16, "too many examples?"
+    ਲਈ idx, ਅੰਕੜੇ ਵਿੱਚ enumerate(datas):
+        ਧਾਰਾ = []
         # header of the example
-        stream.append(2**16-1) # <START_EXAMPLE>
-        stream.append(0) # <EXAMPLE_BYTES> (fill in later)
-        stream.append(idx) # <EXAMPLE_INDEX>
-        stream.append(data["label"]) # <LABEL>
-        ending_tokens = data["ending_tokens"]
-        assert len(ending_tokens) == 4, "expected 4 completions for now? can relax later"
-        stream.append(len(ending_tokens)) # <NUM_COMPLETIONS>
+        ਧਾਰਾ.append(2**16-1) # <START_EXAMPLE>
+        ਧਾਰਾ.append(0) # <EXAMPLE_BYTES> (fill in later)
+        ਧਾਰਾ.append(idx) # <EXAMPLE_INDEX>
+        ਧਾਰਾ.append(ਅੰਕੜੇ["label"]) # <LABEL>
+        ending_ਟੋਕਨ = ਅੰਕੜੇ["ending_tokens"]
+        ਪ੍ਰਤਿਜ੍ਞਾ ਲੰਬਾਈ(ending_ਟੋਕਨ) == 4, "expected 4 completions for now? can relax later"
+        ਧਾਰਾ.append(ਲੰਬਾਈ(ending_ਟੋਕਨ)) # <NUM_COMPLETIONS>
         # the (shared) context tokens
-        ctx_tokens = data["ctx_tokens"]
-        assert all(0 <= t < 2**16-1 for t in ctx_tokens), "bad context token"
-        stream.append(len(ctx_tokens))
-        stream.extend(ctx_tokens)
+        ctx_ਟੋਕਨ = ਅੰਕੜੇ["ctx_tokens"]
+        ਪ੍ਰਤਿਜ੍ਞਾ all(0 <= t < 2**16-1 ਲਈ t ਵਿੱਚ ctx_ਟੋਕਨ), "bad context token"
+        ਧਾਰਾ.append(ਲੰਬਾਈ(ctx_ਟੋਕਨ))
+        ਧਾਰਾ.extend(ctx_ਟੋਕਨ)
         # the completion tokens
-        for end_tokens in ending_tokens:
-            assert all(0 <= t < 2**16-1 for t in end_tokens), "bad completion token"
-            stream.append(len(end_tokens))
-            stream.extend(end_tokens)
+        ਲਈ ਸਿਰਾ_ਟੋਕਨ ਵਿੱਚ ending_ਟੋਕਨ:
+            ਪ੍ਰਤਿਜ੍ਞਾ all(0 <= t < 2**16-1 ਲਈ t ਵਿੱਚ ਸਿਰਾ_ਟੋਕਨ), "bad completion token"
+            ਧਾਰਾ.append(ਲੰਬਾਈ(ਸਿਰਾ_ਟੋਕਨ))
+            ਧਾਰਾ.extend(ਸਿਰਾ_ਟੋਕਨ)
         # write to full stream
-        nbytes = len(stream)*2 # 2 bytes per uint16
-        assert nbytes < 2**16, "example too large?"
-        stream[1] = nbytes # fill in the <EXAMPLE_BYTES> field
-        longest_example_bytes = max(longest_example_bytes, nbytes)
-        full_stream.extend(stream)
+        nbytes = ਲੰਬਾਈ(ਧਾਰਾ)*2 # 2 bytes per uint16
+        ਪ੍ਰਤਿਜ੍ਞਾ nbytes < 2**16, "example too large?"
+        ਧਾਰਾ[1] = nbytes # fill in the <EXAMPLE_BYTES> field
+        longest_example_ਬਾਈਟਾਂ = max(longest_example_ਬਾਈਟਾਂ, nbytes)
+        ਭਰਿਆ_ਧਾਰਾ.extend(ਧਾਰਾ)
     # construct the numpy array
-    stream_np = np.array(full_stream, dtype=np.uint16)
+    ਧਾਰਾ_np = np.array(ਭਰਿਆ_ਧਾਰਾ, dtype=np.uint16)
     # fill in the longest_example field
-    assert 0 < longest_example_bytes < 2**16, f"bad longest_example"
-    header[3] = longest_example_bytes
+    ਪ੍ਰਤਿਜ੍ਞਾ 0 < longest_example_ਬਾਈਟਾਂ < 2**16, f"bad longest_example"
+    ਸਿਰਲੇਖ[3] = longest_example_ਬਾਈਟਾਂ
     # write to file (for HellaSwag val this is 10,042 examples, 3.6MB file)
-    print(f"writing {len(datas):,} examples to {filename}")
-    with open(filename, "wb") as f:
-        f.write(header.tobytes())
-        f.write(stream_np.tobytes())
+    ਛਾਪੋ(f"writing {len(datas):,} examples to {filename}")
+    ਨਾਲ open(filename, "wb") ਇਵ f:
+        f.ਲਿਖ(ਸਿਰਲੇਖ.tobytes())
+        f.ਲਿਖ(ਧਾਰਾ_np.tobytes())

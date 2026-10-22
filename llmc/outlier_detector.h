@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <stdio.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
-#define OUTLIER_DETECTOR_WINDOW_SIZE 128
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+ਕਿਸਮਪਰਿਭਾਸ਼ਾ ਬਣਤਰ {
+    ਦੁੱਗਣਾ ਬਫਰ[OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ];
+    ਪੂਰਨ ਗਿਣਤੀ_2;
+    ਪੂਰਨ ਸੂਚਕਾਂਕ;
+    ਦੁੱਗਣਾ ਜੋੜ;
+    ਦੁੱਗਣਾ ਜੋੜ_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
-        detector->buffer[i] = 0.0;
+ਖਾਲੀ init_detector(OutlierDetector *detector) {
+    ਲਈ (ਪੂਰਨ i = 0; i < OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ; i++) {
+        detector->ਬਫਰ[i] = 0.0;
     }
-    detector->count = 0;
-    detector->index = 0;
-    detector->sum = 0.0;
-    detector->sum_sq = 0.0;
+    detector->ਗਿਣਤੀ_2 = 0;
+    detector->ਸੂਚਕਾਂਕ = 0;
+    detector->ਜੋੜ = 0.0;
+    detector->ਜੋੜ_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+ਦੁੱਗਣਾ update_detector(OutlierDetector *detector, ਦੁੱਗਣਾ new_ਮੁੱਲ) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    ਜੇ (detector->ਗਿਣਤੀ_2 < OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->ਬਫਰ[detector->ਗਿਣਤੀ_2] = new_ਮੁੱਲ;
+        detector->ਜੋੜ += new_ਮੁੱਲ;
+        detector->ਜੋੜ_sq += new_ਮੁੱਲ * new_ਮੁੱਲ;
+        detector->ਗਿਣਤੀ_2++;
+        ਵਾਪਸ nan(""); // not enough data yet
 
-    } else {
+    } ਨਹੀਂਤਾਂ {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        ਦੁੱਗਣਾ old_ਮੁੱਲ = detector->ਬਫਰ[detector->ਸੂਚਕਾਂਕ];
+        detector->ਜੋੜ -= old_ਮੁੱਲ;
+        detector->ਜੋੜ_sq -= old_ਮੁੱਲ * old_ਮੁੱਲ;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->ਬਫਰ[detector->ਸੂਚਕਾਂਕ] = new_ਮੁੱਲ;
+        detector->ਜੋੜ += new_ਮੁੱਲ;
+        detector->ਜੋੜ_sq += new_ਮੁੱਲ * new_ਮੁੱਲ;
         // move the index to the next position
-        detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
+        detector->ਸੂਚਕਾਂਕ = (detector->ਸੂਚਕਾਂਕ + 1) % OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        ਦੁੱਗਣਾ ਔਸਤ = detector->ਜੋੜ / OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ;
+        ਦੁੱਗਣਾ variance = (detector->ਜੋੜ_sq / OUTLIER_DETECTOR_ਖਿੜਕੀ_ਮਾਪ) - (ਔਸਤ * ਔਸਤ);
+        ਦੁੱਗਣਾ std_dev = ਵਰਗਮੂਲ(variance);
+        ਜੇ (std_dev == 0.0) {
+            ਵਾਪਸ 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        ਦੁੱਗਣਾ z = (new_ਮੁੱਲ - ਔਸਤ) / std_dev;
 
-        return z;
+        ਵਾਪਸ z;
     }
 }

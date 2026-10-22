@@ -9,209 +9,209 @@ CPU Kernels for matmul forward pass.
 //            cl.exe /O2 /fp:fast /Qvec-report:2 /arch:AVX2 /I. /I ..\..\dev matmul_forward.c
 //
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <unistd.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <stdio.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <stdlib.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <math.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <time.h>
+#ਅਨ੍ਤਰ੍ਭਾਵ <unistd.h>
 
 // ----------------------------------------------------------------------------
 // CPU code reference
 
-void matmul_forward_cpu(float* out,
-                    const float* inp, const float* weight, const float* bias,
-                    int B, int T, int C, int OC) {
+ਖਾਲੀ matmul_forward_cpu(ਦਸ਼ਮਲਵ* ਬਾਹਰਲਾ,
+                    ਅਚਲ ਦਸ਼ਮਲਵ* inp, ਅਚਲ ਦਸ਼ਮਲਵ* ਭਾਰ, ਅਚਲ ਦਸ਼ਮਲਵ* bias,
+                    ਪੂਰਨ B, ਪੂਰਨ T, ਪੂਰਨ C, ਪੂਰਨ OC) {
     // OC is short for "output channels"
     // inp is (B,T,C), weight is (OC, C), bias is (OC)
     // out will be (B,T,OC)
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* out_bt = out + b * T * OC + t * OC;
-            const float* inp_bt = inp + b * T * C + t * C;
-            for (int o = 0; o < OC; o++) {
-                float val = (bias != NULL) ? bias[o] : 0.0f;
-                const float* wrow = weight + o*C;
-                for (int i = 0; i < C; i++) {
+    ਲਈ (ਪੂਰਨ b = 0; b < B; b++) {
+        ਲਈ (ਪੂਰਨ t = 0; t < T; t++) {
+            ਦਸ਼ਮਲਵ* ਬਾਹਰਲਾ_bt = ਬਾਹਰਲਾ + b * T * OC + t * OC;
+            ਅਚਲ ਦਸ਼ਮਲਵ* inp_bt = inp + b * T * C + t * C;
+            ਲਈ (ਪੂਰਨ o = 0; o < OC; o++) {
+                ਦਸ਼ਮਲਵ val = (bias != ਨਿਰਾ) ? bias[o] : 0.0f;
+                ਅਚਲ ਦਸ਼ਮਲਵ* wrow = ਭਾਰ + o*C;
+                ਲਈ (ਪੂਰਨ i = 0; i < C; i++) {
                     val += inp_bt[i] * wrow[i];
                 }
-                out_bt[o] = val;
+                ਬਾਹਰਲਾ_bt[o] = val;
             }
         }
     }
 }
 
-void matmul_forward_ngc92(float* out,
-    const float* inp, const float* weight, const float* bias,
-    int B, int T, int C, int OC) {
+ਖਾਲੀ matmul_forward_ngc92(ਦਸ਼ਮਲਵ* ਬਾਹਰਲਾ,
+    ਅਚਲ ਦਸ਼ਮਲਵ* inp, ਅਚਲ ਦਸ਼ਮਲਵ* ਭਾਰ, ਅਚਲ ਦਸ਼ਮਲਵ* bias,
+    ਪੂਰਨ B, ਪੂਰਨ T, ਪੂਰਨ C, ਪੂਰਨ OC) {
     // most of the running time is spent here and in matmul_backward
     // OC is short for "output channels"
     // inp is (B,T,C), weight is (OC, C), bias is (OC)
     // out will be (B,T,OC)
 
     // make sure the tiled loop will be correct, otherwise, fallback to slow version
-    #define LOOP_UNROLL 8
+    #ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ LOOP_UNROLL 8
 
-    if (B * T % LOOP_UNROLL != 0) {
-        printf("MUST BE A MULTIPLE OF 8"); // FIXME
-        return;
+    ਜੇ (B * T % LOOP_UNROLL != 0) {
+        ਲਿਖੋ("MUST BE A MULTIPLE OF 8"); // FIXME
+        ਵਾਪਸ;
     }
 
     // collapse the B and T loops into one and turn it into a strided loop.
     // then we can tile the inner loop, and reuse the loaded weight LOOP_UNROLL many times
     // for significant speed-ups.
-    for (int obt = 0; obt < B * T; obt += LOOP_UNROLL) {
-        for (int o = 0; o < OC; o++) {
+    ਲਈ (ਪੂਰਨ obt = 0; obt < B * T; obt += LOOP_UNROLL) {
+        ਲਈ (ਪੂਰਨ o = 0; o < OC; o++) {
             // keep LOOP_UNROLL many results in register, initialized by the bias term.
-            float result[LOOP_UNROLL];
-            for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
-                result[ibt] = (bias != NULL) ? bias[o] : 0.0f;
+            ਦਸ਼ਮਲਵ ਨਤੀਜਾ[LOOP_UNROLL];
+            ਲਈ (ਪੂਰਨ ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+                ਨਤੀਜਾ[ibt] = (bias != ਨਿਰਾ) ? bias[o] : 0.0f;
             }
 
             // inner loops. Because we do LOOP_UNROLL steps of inner bt, we can cache
             // the value of weight[i + o * C] and reuse it.
             // we compile with -Ofast, so the compiler will turn the inner loop into a bunch of FMAs
-            for (int i = 0; i < C; i++) {
-                float w = weight[i + o * C];
-                for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
-                    int bt = obt + ibt;
-                    result[ibt] += inp[bt * C + i] * w;
+            ਲਈ (ਪੂਰਨ i = 0; i < C; i++) {
+                ਦਸ਼ਮਲਵ w = ਭਾਰ[i + o * C];
+                ਲਈ (ਪੂਰਨ ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+                    ਪੂਰਨ bt = obt + ibt;
+                    ਨਤੀਜਾ[ibt] += inp[bt * C + i] * w;
                 }
             }
 
             // write back results to main memory
-            for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
-                int bt = obt + ibt;
-                out[bt * OC + o] = result[ibt];
+            ਲਈ (ਪੂਰਨ ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+                ਪੂਰਨ bt = obt + ibt;
+                ਬਾਹਰਲਾ[bt * OC + o] = ਨਤੀਜਾ[ibt];
             }
         }
     }
 }
 
-#define NUM_KERNELS 2
+#ਪਰਿਭਾਸ਼ਿਤ_ਕਰੋ ਅੰਕ_KERNELS 2
 
-void matmul_forward(int kernel_num,
-    float* out,
-    const float* inp, const float* weight, const float* bias,
-    int B, int T, int C, int OC) {
+ਖਾਲੀ matmul_forward(ਪੂਰਨ kernel_ਅੰਕ,
+    ਦਸ਼ਮਲਵ* ਬਾਹਰਲਾ,
+    ਅਚਲ ਦਸ਼ਮਲਵ* inp, ਅਚਲ ਦਸ਼ਮਲਵ* ਭਾਰ, ਅਚਲ ਦਸ਼ਮਲਵ* bias,
+    ਪੂਰਨ B, ਪੂਰਨ T, ਪੂਰਨ C, ਪੂਰਨ OC) {
 
-    switch (kernel_num) {
-        case 0:
-            matmul_forward_cpu(out, inp, weight, bias, B, T, C, OC);
-            break;
-        case 1:
-            matmul_forward_ngc92(out, inp, weight, bias, B, T, C, OC);
-            break;
-        default:
-            printf("Invalid kernel number\n");
-            exit(1);
+    ਚੋਣ (kernel_ਅੰਕ) {
+        ਹਾਲਤ 0:
+            matmul_forward_cpu(ਬਾਹਰਲਾ, inp, ਭਾਰ, bias, B, T, C, OC);
+            ਰੋਕੋ;
+        ਹਾਲਤ 1:
+            matmul_forward_ngc92(ਬਾਹਰਲਾ, inp, ਭਾਰ, bias, B, T, C, OC);
+            ਰੋਕੋ;
+        ਮੂਲ:
+            ਲਿਖੋ("Invalid kernel number\n");
+            ਬਾਹਰ_ਨਿਕਲੋ(1);
     }
 }
 
 
-void validate_results_cpu(const float* device_result, const float* cpu_reference, const char* name, int num_elements, float tolerance);
-float* make_random_float(size_t N);
+ਖਾਲੀ validate_results_cpu(ਅਚਲ ਦਸ਼ਮਲਵ* device_ਨਤੀਜਾ, ਅਚਲ ਦਸ਼ਮਲਵ* cpu_reference, ਅਚਲ ਅੱਖਰ* name, ਪੂਰਨ ਅੰਕ_elements, ਦਸ਼ਮਲਵ tolerance);
+ਦਸ਼ਮਲਵ* make_random_float(size_t N);
 
-int main(int argc, char **argv) {
+ਪੂਰਨ ਮੁੱਖ(ਪੂਰਨ argc, ਅੱਖਰ **argv) {
     srand(0);
 
-    int B = 8;
-    int T = 1024;
-    int C = 768;
-    int OC = 768 * 4; // expansion of 4, e.g. in the MLP
-    int RUNS = 4; // number of times to run a kernel for benchmarks
+    ਪੂਰਨ B = 8;
+    ਪੂਰਨ T = 1024;
+    ਪੂਰਨ C = 768;
+    ਪੂਰਨ OC = 768 * 4; // expansion of 4, e.g. in the MLP
+    ਪੂਰਨ RUNS = 4; // number of times to run a kernel for benchmarks
 
     srand(137);
 
-    float* out = make_random_float(B * T * OC);
-    float* inp = make_random_float(B * T * C);
-    float* weight = make_random_float(OC * C);
-    float* bias = make_random_float(OC);
+    ਦਸ਼ਮਲਵ* ਬਾਹਰਲਾ = make_random_float(B * T * OC);
+    ਦਸ਼ਮਲਵ* inp = make_random_float(B * T * C);
+    ਦਸ਼ਮਲਵ* ਭਾਰ = make_random_float(OC * C);
+    ਦਸ਼ਮਲਵ* bias = make_random_float(OC);
 
-    float* grad_out = make_random_float(B * T * OC);
-    float* grad_inp = make_random_float(B * T * C);
-    float* grad_weight = make_random_float(OC * C);
-    float* grad_bias = make_random_float(OC);
+    ਦਸ਼ਮਲਵ* grad_ਬਾਹਰਲਾ = make_random_float(B * T * OC);
+    ਦਸ਼ਮਲਵ* grad_inp = make_random_float(B * T * C);
+    ਦਸ਼ਮਲਵ* grad_ਭਾਰ = make_random_float(OC * C);
+    ਦਸ਼ਮਲਵ* grad_bias = make_random_float(OC);
 
-    printf("> Calculating reference\n");
-    matmul_forward_cpu(out, inp, weight, bias, B, T, C, OC);
+    ਲਿਖੋ("> Calculating reference\n");
+    matmul_forward_cpu(ਬਾਹਰਲਾ, inp, ਭਾਰ, bias, B, T, C, OC);
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
-        printf("> Verifying kernel #%d\n", kernel_num);
+    ਲਈ (ਪੂਰਨ kernel_ਅੰਕ = 0; kernel_ਅੰਕ < ਅੰਕ_KERNELS; kernel_ਅੰਕ++) {
+        ਲਿਖੋ("> Verifying kernel #%d\n", kernel_ਅੰਕ);
 
         srand(137);
 
-        float* kernel_out = make_random_float(B * T * OC);
-        float* kernel_inp = make_random_float(B * T * C);
-        float* kernel_weight = make_random_float(OC * C);
-        float* kernel_bias = make_random_float(OC);
+        ਦਸ਼ਮਲਵ* kernel_ਬਾਹਰਲਾ = make_random_float(B * T * OC);
+        ਦਸ਼ਮਲਵ* kernel_inp = make_random_float(B * T * C);
+        ਦਸ਼ਮਲਵ* kernel_ਭਾਰ = make_random_float(OC * C);
+        ਦਸ਼ਮਲਵ* kernel_bias = make_random_float(OC);
 
-        matmul_forward(kernel_num, kernel_out, kernel_inp, kernel_weight, kernel_bias, B, T, C, OC);
+        matmul_forward(kernel_ਅੰਕ, kernel_ਬਾਹਰਲਾ, kernel_inp, kernel_ਭਾਰ, kernel_bias, B, T, C, OC);
 
-        validate_results_cpu(kernel_out, out, "out", B * T * OC, 1e-5);
+        validate_results_cpu(kernel_ਬਾਹਰਲਾ, ਬਾਹਰਲਾ, "out", B * T * OC, 1e-5);
 
-        free(kernel_out);
-        free(kernel_inp);
-        free(kernel_weight);
-        free(kernel_bias);
+        ਮੁਕਤ(kernel_ਬਾਹਰਲਾ);
+        ਮੁਕਤ(kernel_inp);
+        ਮੁਕਤ(kernel_ਭਾਰ);
+        ਮੁਕਤ(kernel_bias);
     }
 
-    printf("All kernels passed! Starting benchmarks.\n\n");
+    ਲਿਖੋ("All kernels passed! Starting benchmarks.\n\n");
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
-        printf("> Running kernel #%d\n", kernel_num);
-        struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
+    ਲਈ (ਪੂਰਨ kernel_ਅੰਕ = 0; kernel_ਅੰਕ < ਅੰਕ_KERNELS; kernel_ਅੰਕ++) {
+        ਲਿਖੋ("> Running kernel #%d\n", kernel_ਅੰਕ);
+        ਬਣਤਰ timespec ਸ਼ੁਰੂ, ਸਿਰਾ;
+        clock_gettime(CLOCK_MONOTONIC, &ਸ਼ੁਰੂ);
 
-        for (int i = 0; i < RUNS; i++) {
-            matmul_forward(kernel_num, out, inp, weight, bias, B, T, C, OC);
+        ਲਈ (ਪੂਰਨ i = 0; i < RUNS; i++) {
+            matmul_forward(kernel_ਅੰਕ, ਬਾਹਰਲਾ, inp, ਭਾਰ, bias, B, T, C, OC);
         }
 
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-        printf("> Kernel #%d, (took %f ms)\n", kernel_num, time_elapsed_s * 1000);
+        clock_gettime(CLOCK_MONOTONIC, &ਸਿਰਾ);
+        ਦੁੱਗਣਾ ਸਮਾਂ_elapsed_s = (ਸਿਰਾ.tv_sec - ਸ਼ੁਰੂ.tv_sec) + (ਸਿਰਾ.tv_nsec - ਸ਼ੁਰੂ.tv_nsec) / 1e9;
+        ਲਿਖੋ("> Kernel #%d, (took %f ms)\n", kernel_ਅੰਕ, ਸਮਾਂ_elapsed_s * 1000);
     }
 
     // free memory
-    free(out);
-    free(inp);
-    free(weight);
-    free(bias);
+    ਮੁਕਤ(ਬਾਹਰਲਾ);
+    ਮੁਕਤ(inp);
+    ਮੁਕਤ(ਭਾਰ);
+    ਮੁਕਤ(bias);
 
-    free(grad_out);
-    free(grad_inp);
-    free(grad_weight);
-    free(grad_bias);
+    ਮੁਕਤ(grad_ਬਾਹਰਲਾ);
+    ਮੁਕਤ(grad_inp);
+    ਮੁਕਤ(grad_ਭਾਰ);
+    ਮੁਕਤ(grad_bias);
 
-    return 0;
+    ਵਾਪਸ 0;
 }
 
-float* make_random_float(size_t N) {
-    float* arr = (float*)malloc(N * sizeof(float));
-    for (size_t i = 0; i < N; i++) {
-        arr[i] = ((float)rand() / RAND_MAX) * 2.0 - 1.0; // range -1..1
+ਦਸ਼ਮਲਵ* make_random_float(size_t N) {
+    ਦਸ਼ਮਲਵ* arr = (ਦਸ਼ਮਲਵ*)ਸਮ੍ਰਿਤੀ_ਦਿਓ(N * ਆਕਾਰ(ਦਸ਼ਮਲਵ));
+    ਲਈ (size_t i = 0; i < N; i++) {
+        arr[i] = ((ਦਸ਼ਮਲਵ)rand() / RAND_MAX) * 2.0 - 1.0; // range -1..1
     }
-    return arr;
+    ਵਾਪਸ arr;
 }
 
-void validate_results_cpu(const float* kernel_result, const float* cpu_reference, const char* name, int num_elements, float tolerance) {
-    int nfaults = 0;
-    for (int i = 0; i < num_elements; i++) {
+ਖਾਲੀ validate_results_cpu(ਅਚਲ ਦਸ਼ਮਲਵ* kernel_ਨਤੀਜਾ, ਅਚਲ ਦਸ਼ਮਲਵ* cpu_reference, ਅਚਲ ਅੱਖਰ* name, ਪੂਰਨ ਅੰਕ_elements, ਦਸ਼ਮਲਵ tolerance) {
+    ਪੂਰਨ nfaults = 0;
+    ਲਈ (ਪੂਰਨ i = 0; i < ਅੰਕ_elements; i++) {
         // print the first few comparisons
-        if (i < 5) {
-            printf("%f %f\n", cpu_reference[i], kernel_result[i]);
+        ਜੇ (i < 5) {
+            ਲਿਖੋ("%f %f\n", cpu_reference[i], kernel_ਨਤੀਜਾ[i]);
         }
-        float t_eff = tolerance + fabs(cpu_reference[i]);
+        ਦਸ਼ਮਲਵ t_eff = tolerance + fabs(cpu_reference[i]);
         // ensure correctness for all elements.
-        if (fabs(cpu_reference[i] - kernel_result[i]) > t_eff) {
-            printf("Mismatch of %s at %d: CPU_ref: %f vs CPU_new: %f\n", name, i, cpu_reference[i], kernel_result[i]);
+        ਜੇ (fabs(cpu_reference[i] - kernel_ਨਤੀਜਾ[i]) > t_eff) {
+            ਲਿਖੋ("Mismatch of %s at %d: CPU_ref: %f vs CPU_new: %f\n", name, i, cpu_reference[i], kernel_ਨਤੀਜਾ[i]);
             nfaults++;
-            if (nfaults >= 10) {
-                exit(EXIT_FAILURE);
+            ਜੇ (nfaults >= 10) {
+                ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
             }
         }
     }
-    if (nfaults > 0) {
-        exit(EXIT_FAILURE);
+    ਜੇ (nfaults > 0) {
+        ਬਾਹਰ_ਨਿਕਲੋ(EXIT_FAILURE);
     }
-    printf("OK\n");
+    ਲਿਖੋ("OK\n");
 }
