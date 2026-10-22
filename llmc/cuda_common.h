@@ -4,19 +4,19 @@ Common utilities for CUDA code.
 #ifndef CUDA_COMMON_H
 #define CUDA_COMMON_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string>
-#include <type_traits>      // std::bool_constant
-#include <cuda_runtime.h>
-#include <nvtx3/nvToolsExt.h>
-#include <nvtx3/nvToolsExtCudaRt.h>
-#include <cuda_profiler_api.h>
-#include <cuda_bf16.h>
-#include <cuda_fp16.h>
+#شامل <stdlib.h>
+#شامل <stdio.h>
+#شامل <math.h>
+#شامل <string>
+#شامل <type_traits>      // std::bool_constant
+#شامل <cuda_runtime.h>
+#شامل <nvtx3/nvToolsExt.h>
+#شامل <nvtx3/nvToolsExtCudaRt.h>
+#شامل <cuda_profiler_api.h>
+#شامل <cuda_bf16.h>
+#شامل <cuda_fp16.h>
 
-#include "utils.h"
+#شامل "utils.h"
 
 // ----------------------------------------------------------------------------
 // Global defines and settings
@@ -24,7 +24,7 @@ Common utilities for CUDA code.
 // Device properties of the CUDA device used in this process
 // defined as extern here because the individual kernels wish to use it
 // but it is actually created and instantiated in the main program file
-extern cudaDeviceProp deviceProp;
+بیرونی cudaDeviceProp deviceProp;
 
 // WarpSize is not a compile time constant
 // Defining here like this possibly allows the compiler to optimize better
@@ -32,9 +32,9 @@ extern cudaDeviceProp deviceProp;
 
 // try to make sure that 2 blocks fit on A100/H100 to maximise latency tolerance
 // this needs to be defines rather than queried to be used for __launch_bounds__
-#if __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
+#اگر __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
 #define MAX_1024_THREADS_BLOCKS 2
-#else
+#وگرنه
 #define MAX_1024_THREADS_BLOCKS 1
 #endif
 
@@ -49,9 +49,9 @@ constexpr std::bool_constant<true> False;
 // Error checking
 
 // CUDA error checking. Underscore added so this function can be called directly not just via macro
-inline void cudaCheck_(cudaError_t error, const char *file, int line) {
-  if (error != cudaSuccess) {
-    printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
+درونخطی تهی cudaCheck_(cudaError_t error, ثابت نویسه *file, صحیح سطر) {
+  اگر (error != cudaSuccess) {
+    printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, سطر, cudaGetErrorString(error));
     exit(EXIT_FAILURE);
   }
 };
@@ -59,10 +59,10 @@ inline void cudaCheck_(cudaError_t error, const char *file, int line) {
 
 // like cudaFree, but checks for errors _and_ resets the pointer.
 template<class T>
-inline void cudaFreeCheck(T** ptr, const char *file, int line) {
+درونخطی تهی cudaFreeCheck(T** ptr, ثابت نویسه *file, صحیح سطر) {
     cudaError_t error = cudaFree(*ptr);
-    if (error != cudaSuccess) {
-        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
+    اگر (error != cudaSuccess) {
+        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, سطر, cudaGetErrorString(error));
         exit(EXIT_FAILURE);
     }
     *ptr = nullptr;
@@ -72,22 +72,22 @@ inline void cudaFreeCheck(T** ptr, const char *file, int line) {
 // ----------------------------------------------------------------------------
 // CUDA Precision settings and defines
 
-enum PrecisionMode {
+شمارش PrecisionMode {
     PRECISION_FP32,
     PRECISION_FP16,
     PRECISION_BF16
 };
 
 // Specific configurations based on the enabled precision
-#if defined(ENABLE_FP32)
-typedef float floatX;
+#اگر defined(ENABLE_FP32)
+تعریفنوع اعشاری floatX;
 #define PRECISION_MODE PRECISION_FP32
 // use fp16 (note: this may require gradient scaler, currently not implemented!)
-#elif defined(ENABLE_FP16)
-typedef half floatX;
+#وگرنهاگر defined(ENABLE_FP16)
+تعریفنوع half floatX;
 #define PRECISION_MODE PRECISION_FP16
-#else // Default to bfloat16
-typedef __nv_bfloat16 floatX;
+#وگرنه // Default to bfloat16
+تعریفنوع __nv_bfloat16 floatX;
 #define PRECISION_MODE PRECISION_BF16
 #endif
 
@@ -98,14 +98,14 @@ typedef __nv_bfloat16 floatX;
 // our own versions if none already exist, otherwise the compiler will complain.
 // If not, you easily get "no viable overload" (for sm52) and "function already exists" (sm_80)
 
-#if defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
-__device__ floatX __ldcs(const floatX* address) {
-    unsigned short bf = __ldcs(reinterpret_cast<const unsigned short*>(address));
-    return __nv_bfloat16_raw{bf};
+#اگر defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
+__device__ floatX __ldcs(ثابت floatX* address) {
+    unsigned short bf = __ldcs(reinterpret_cast<ثابت unsigned short*>(address));
+    بازگشت __nv_bfloat16_raw{bf};
 }
 
-__device__ void __stcs(floatX* address, floatX value) {
-    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)value).x);
+__device__ تهی __stcs(floatX* address, floatX مقدار) {
+    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)مقدار).x);
 }
 #endif
 
@@ -113,13 +113,13 @@ __device__ void __stcs(floatX* address, floatX value) {
 // Profiler utils
 
 class NvtxRange {
- public:
-    NvtxRange(const char* s) { nvtxRangePush(s); }
-    NvtxRange(const std::string& base_str, int number) {
-        std::string range_string = base_str + " " + std::to_string(number);
-        nvtxRangePush(range_string.c_str());
+ عمومی:
+    NvtxRange(ثابت نویسه* s) { nvtx_Range_افزودن(s); }
+    NvtxRange(ثابت std::string& base_str, صحیح عدد) {
+        std::string range_string = base_str + " " + std::to_string(عدد);
+        nvtx_Range_افزودن(range_string.c_str());
     }
-    ~NvtxRange() { nvtxRangePop(); }
+    ~NvtxRange() { nvtx_Range_برداشت(); }
 };
 #define NVTX_RANGE_FN() NvtxRange nvtx_range(__FUNCTION__)
 
@@ -127,26 +127,26 @@ class NvtxRange {
 // Utilities to Read & Write between CUDA memory <-> files
 
 // copy num_bytes from device pointer src into file dest, using double buffering running on the given stream.
-inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+درونخطی تهی device_to_file(FILE* dest, تهی* src, size_t رقم_bytes, size_t buffer_size, cudaStream_t stream) {
     // allocate pinned buffer for faster, async transfer
-    char* buffer_space;
+    نویسه* buffer_space;
     cudaCheck(cudaMallocHost(&buffer_space, 2*buffer_size));
     // split allocation in two
-    void* read_buffer = buffer_space;
-    void* write_buffer = buffer_space + buffer_size;
+    تهی* read_buffer = buffer_space;
+    تهی* write_buffer = buffer_space + buffer_size;
 
     // prime the read buffer; first copy means we have to wait
-    char* gpu_read_ptr = (char*)src;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
+    نویسه* gpu_read_ptr = (نویسه*)src;
+    size_t copy_amount = std::min(buffer_size, رقم_bytes);
     cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
     cudaCheck(cudaStreamSynchronize(stream));
-    size_t rest_bytes = num_bytes - copy_amount;
+    size_t rest_bytes = رقم_bytes - copy_amount;
     size_t write_buffer_size = copy_amount;
     gpu_read_ptr += copy_amount;
 
     std::swap(read_buffer, write_buffer);
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    وقتی(rest_bytes > 0) {
         // initiate next read
         copy_amount = std::min(buffer_size, rest_bytes);
         cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
@@ -166,27 +166,27 @@ inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffe
 }
 
 // copy num_bytes from file src into device pointer dest, using double buffering running on the given stream.
-inline void file_to_device(void* dest, FILE* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+درونخطی تهی file_to_device(تهی* dest, FILE* src, size_t رقم_bytes, size_t buffer_size, cudaStream_t stream) {
      // allocate pinned buffer for faster, async transfer
      // from the docs (https://developer.download.nvidia.com/compute/DevZone/docs/html/C/doc/html/group__CUDART__HIGHLEVEL_ge439496de696b166ba457dab5dd4f356.html)
      // WC memory is a good option for buffers that will be written by the CPU and read by the device via mapped pinned memory or host->device transfers.
-    char* buffer_space;
+    نویسه* buffer_space;
     cudaCheck(cudaMallocHost(&buffer_space, 2*buffer_size, cudaHostAllocWriteCombined));
     // split allocation in two
-    void* read_buffer = buffer_space;
-    void* write_buffer = buffer_space + buffer_size;
+    تهی* read_buffer = buffer_space;
+    تهی* write_buffer = buffer_space + buffer_size;
 
     // prime the read buffer;
-    char* gpu_write_ptr = (char*)dest;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
+    نویسه* gpu_write_ptr = (نویسه*)dest;
+    size_t copy_amount = std::min(buffer_size, رقم_bytes);
     freadCheck(read_buffer, 1, copy_amount, src);
 
-    size_t rest_bytes = num_bytes - copy_amount;
+    size_t rest_bytes = رقم_bytes - copy_amount;
     size_t write_buffer_size = copy_amount;
     std::swap(read_buffer, write_buffer);
 
     // now the main loop; as long as there are bytes left
-    while(rest_bytes > 0) {
+    وقتی(rest_bytes > 0) {
         // initiate next read
         copy_amount = std::min(buffer_size, rest_bytes);
         cudaCheck(cudaMemcpyAsync(gpu_write_ptr, write_buffer, write_buffer_size, cudaMemcpyHostToDevice, stream));

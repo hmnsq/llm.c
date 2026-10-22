@@ -4,97 +4,97 @@ Implements various learning rate schedulers.
 #ifndef SCHEDULERS_H
 #define SCHEDULERS_H
 
-#include <assert.h>
-#include <math.h>
-#include <string.h>
+#شامل <assert.h>
+#شامل <math.h>
+#شامل <string.h>
 
-typedef struct {
-    const char* type;
-    float learning_rate;
-    int warmup_iterations;
-    int train_num_batches;
-    float final_learning_rate_frac;
+تعریفنوع ساختار {
+    ثابت نویسه* type;
+    اعشاری learning_rate;
+    صحیح warmup_iterations;
+    صحیح train_رقم_batches;
+    اعشاری final_learning_rate_frac;
 } LearningRateScheduler;
 
-void lr_scheduler_init(LearningRateScheduler *scheduler, const char* scheduler_type, float learning_rate, int warmup_iterations, int train_num_batches, float final_learning_rate_frac) {
+تهی lr_scheduler_init(LearningRateScheduler *scheduler, ثابت نویسه* scheduler_type, اعشاری learning_rate, صحیح warmup_iterations, صحیح train_رقم_batches, اعشاری final_learning_rate_frac) {
     scheduler->type = scheduler_type;
     scheduler->learning_rate = learning_rate;
     scheduler->warmup_iterations = warmup_iterations;
-    scheduler->train_num_batches = train_num_batches;
+    scheduler->train_رقم_batches = train_رقم_batches;
     scheduler->final_learning_rate_frac = final_learning_rate_frac;
 }
 
 // cosine: warmup linearly to max LR, then cosine decay to LR * final_learning_rate_frac
-float get_learning_rate_cosine(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float coeff = 0.5f * (1.0f + cosf(M_PI * decay_ratio)); // coeff starts at 1 and goes to 0
-        assert(0.0f <= coeff && coeff <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
+اعشاری get_learning_rate_cosine(LearningRateScheduler *scheduler, صحیح step) {
+    اعشاری lr = scheduler->learning_rate;
+    اگر (step < scheduler->warmup_iterations) {
+        lr = scheduler->learning_rate * ((اعشاری)(step + 1)) / scheduler->warmup_iterations;
+    } وگرنه {
+        اعشاری decay_ratio = ((اعشاری)(step - scheduler->warmup_iterations)) / (scheduler->train_رقم_batches - scheduler->warmup_iterations);
+        أكد(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        اعشاری coeff = 0.5f * (1.0f + cosf(M_PI * decay_ratio)); // coeff starts at 1 and goes to 0
+        أكد(0.0f <= coeff && coeff <= 1.0f);
+        اعشاری min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
         lr = min_lr + coeff * (scheduler->learning_rate - min_lr);
     }
-    return lr;
+    بازگشت lr;
 }
 
 // linear: warmup linearly to max LR, then decay linearly to LR * final_learning_rate_frac
-float get_learning_rate_linear(LearningRateScheduler *scheduler, int step) {
-    float lr = scheduler->learning_rate;
-    if (step < scheduler->warmup_iterations) {
-        lr = scheduler->learning_rate * ((float)(step + 1)) / scheduler->warmup_iterations;
-    } else {
-        float decay_ratio = ((float)(step - scheduler->warmup_iterations)) / (scheduler->train_num_batches - scheduler->warmup_iterations);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
+اعشاری get_learning_rate_linear(LearningRateScheduler *scheduler, صحیح step) {
+    اعشاری lr = scheduler->learning_rate;
+    اگر (step < scheduler->warmup_iterations) {
+        lr = scheduler->learning_rate * ((اعشاری)(step + 1)) / scheduler->warmup_iterations;
+    } وگرنه {
+        اعشاری decay_ratio = ((اعشاری)(step - scheduler->warmup_iterations)) / (scheduler->train_رقم_batches - scheduler->warmup_iterations);
+        أكد(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        اعشاری min_lr = scheduler->learning_rate * scheduler->final_learning_rate_frac;
         lr = scheduler->learning_rate - decay_ratio * (scheduler->learning_rate - min_lr);
     }
-    return lr;
+    بازگشت lr;
 }
 
 // constant
-float get_learning_rate_constant(LearningRateScheduler *scheduler, int step) {
-    return scheduler->learning_rate;
+اعشاری get_learning_rate_constant(LearningRateScheduler *scheduler, صحیح step) {
+    بازگشت scheduler->learning_rate;
 }
 
 // wsd schedule: warmup linearly, keep constant, last 20% decay using 1 - sqrt decay to final_frac (should be 0.0)
 // https://arxiv.org/abs/2405.18392
-float get_learning_rate_wsd(LearningRateScheduler *scheduler, int step) {
-    int decay_point = (int)(0.8f * scheduler->train_num_batches);
-    float max_lr = scheduler->learning_rate;
-    float lr = max_lr;
-    if (step < scheduler->warmup_iterations) {
-        float decay_ratio = ((float)(step + 1)) / scheduler->warmup_iterations;
+اعشاری get_learning_rate_wsd(LearningRateScheduler *scheduler, صحیح step) {
+    صحیح decay_point = (صحیح)(0.8f * scheduler->train_رقم_batches);
+    اعشاری max_lr = scheduler->learning_rate;
+    اعشاری lr = max_lr;
+    اگر (step < scheduler->warmup_iterations) {
+        اعشاری decay_ratio = ((اعشاری)(step + 1)) / scheduler->warmup_iterations;
         lr = max_lr * decay_ratio;
-    } else if (step < decay_point) {
+    } وگرنه اگر (step < decay_point) {
         // noop, keep lr constant
-    } else {
-        float decay_ratio = ((float)(step - decay_point)) / (scheduler->train_num_batches - decay_point);
-        assert(0.0f <= decay_ratio && decay_ratio <= 1.0f);
-        float min_lr = max_lr * scheduler->final_learning_rate_frac;
-        return min_lr + (1.0f - sqrtf(decay_ratio)) * (max_lr - min_lr);
+    } وگرنه {
+        اعشاری decay_ratio = ((اعشاری)(step - decay_point)) / (scheduler->train_رقم_batches - decay_point);
+        أكد(0.0f <= decay_ratio && decay_ratio <= 1.0f);
+        اعشاری min_lr = max_lr * scheduler->final_learning_rate_frac;
+        بازگشت min_lr + (1.0f - sqrtf(decay_ratio)) * (max_lr - min_lr);
     }
-    return lr;
+    بازگشت lr;
 }
 
 // return the learning rate at a given step
-float get_learning_rate(LearningRateScheduler *scheduler, int step) {
-    float step_learning_rate;
-    if (strcmp(scheduler->type, "cosine") == 0) {
+اعشاری get_learning_rate(LearningRateScheduler *scheduler, صحیح step) {
+    اعشاری step_learning_rate;
+    اگر (strcmp(scheduler->type, "cosine") == 0) {
         step_learning_rate = get_learning_rate_cosine(scheduler, step);
-    } else if (strcmp(scheduler->type, "linear") == 0) {
+    } وگرنه اگر (strcmp(scheduler->type, "linear") == 0) {
         step_learning_rate = get_learning_rate_linear(scheduler, step);
-    } else if (strcmp(scheduler->type, "constant") == 0) {
+    } وگرنه اگر (strcmp(scheduler->type, "constant") == 0) {
         step_learning_rate = get_learning_rate_constant(scheduler, step);
-    } else if (strcmp(scheduler->type, "wsd") == 0) {
+    } وگرنه اگر (strcmp(scheduler->type, "wsd") == 0) {
         step_learning_rate = get_learning_rate_wsd(scheduler, step);
-    } else {
+    } وگرنه {
         fprintf(stderr, "Unknown learning rate scheduler type: %s\n", scheduler->type);
         exit(EXIT_FAILURE);
     }
-    return step_learning_rate;
+    بازگشت step_learning_rate;
 }
 
 #endif // SCHEDULERS_H

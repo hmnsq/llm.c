@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#شامل <stdio.h>
+#شامل <stdlib.h>
+#شامل <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+تهی layernorm_forward(اعشاری* out, اعشاری* mean, اعشاری* rstd,
+                       اعشاری* inp, اعشاری* weight, اعشاری* bias,
+                       صحیح B, صحیح T, صحیح C) {
+    اعشاری eps = 1e-5f;
+    برای (صحیح b = 0; b < B; b++) {
+        برای (صحیح t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            اعشاری* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            اعشاری m = 0.0f;
+            برای (صحیح i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            اعشاری v = 0.0f;
+            برای (صحیح i = 0; i < C; i++) {
+                اعشاری xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            اعشاری s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            اعشاری* out_bt = out + b * T * C + t * C;
+            برای (صحیح i = 0; i < C; i++) {
+                اعشاری n = (s * (x[i] - m)); // normalized output
+                اعشاری o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+تهی layernorm_backward(اعشاری* dinp, اعشاری* dweight, اعشاری* dbias,
+                        اعشاری* dout, اعشاری* inp, اعشاری* weight, اعشاری* mean, اعشاری* rstd,
+                        صحیح B, صحیح T, صحیح C) {
+    برای (صحیح b = 0; b < B; b++) {
+        برای (صحیح t = 0; t < T; t++) {
+            اعشاری* dout_bt = dout + b * T * C + t * C;
+            اعشاری* inp_bt = inp + b * T * C + t * C;
+            اعشاری* dinp_bt = dinp + b * T * C + t * C;
+            اعشاری mean_bt = mean[b * T + t];
+            اعشاری rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            اعشاری dnorm_mean = 0.0f;
+            اعشاری dnorm_norm_mean = 0.0f;
+            برای (صحیح i = 0; i < C; i++) {
+                اعشاری norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                اعشاری dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            برای (صحیح i = 0; i < C; i++) {
+                اعشاری norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                اعشاری dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                اعشاری dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+صحیح check_tensor(اعشاری *a, اعشاری *b, صحیح n, نویسه* label) {
+    صحیح ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    برای (صحیح i = 0; i < n; i++) {
+        اگر (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } وگرنه {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    بازگشت ok;
 }
 
-int main() {
+صحیح اصلی() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    صحیح B = 2; // batch
+    صحیح T = 3; // time / sequence length
+    صحیح C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    اعشاری* x = (اعشاری*) malloc(B * T * C * اندازه(اعشاری));
+    اعشاری* w = (اعشاری*) malloc(C * اندازه(اعشاری));
+    اعشاری* b = (اعشاری*) malloc(C * اندازه(اعشاری));
+    اعشاری* out = (اعشاری*) malloc(B * T * C * اندازه(اعشاری));
+    اعشاری* mean = (اعشاری*) malloc(B * T * اندازه(اعشاری));
+    اعشاری* rstd = (اعشاری*) malloc(B * T * اندازه(اعشاری));
+    اعشاری* dout = (اعشاری*) malloc(B * T * C * اندازه(اعشاری));
+    اعشاری* dx = (اعشاری*) malloc(B * T * C * اندازه(اعشاری));
+    اعشاری* dw = (اعشاری*) malloc(C * اندازه(اعشاری));
+    اعشاری* db = (اعشاری*) malloc(C * اندازه(اعشاری));
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    اگر (file == پوچ) {
         printf("Error opening file\n");
-        return 1;
+        بازگشت 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
+    fread(x, اندازه(اعشاری), B * T * C, file);
+    fread(w, اندازه(اعشاری), C, file);
+    fread(b, اندازه(اعشاری), C, file);
+    fread(out, اندازه(اعشاری), B * T * C, file);
+    fread(mean, اندازه(اعشاری), B * T, file);
+    fread(rstd, اندازه(اعشاری), B * T, file);
+    fread(dout, اندازه(اعشاری), B * T * C, file);
+    fread(dx, اندازه(اعشاری), B * T * C, file);
+    fread(dw, اندازه(اعشاری), C, file);
+    fread(db, اندازه(اعشاری), C, file);
     fclose(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    اعشاری* c_out = (اعشاری*) malloc(B * T * C * اندازه(اعشاری));
+    اعشاری* c_mean = (اعشاری*) malloc(B * T * اندازه(اعشاری));
+    اعشاری* c_rstd = (اعشاری*) malloc(B * T * اندازه(اعشاری));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    اعشاری* c_dx = (اعشاری*) calloc(B * T * C, اندازه(اعشاری));
+    اعشاری* c_dw = (اعشاری*) calloc(B * T, اندازه(اعشاری));
+    اعشاری* c_db = (اعشاری*) calloc(B * T, اندازه(اعشاری));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    آزاد(x);
+    آزاد(w);
+    آزاد(b);
+    آزاد(out);
+    آزاد(mean);
+    آزاد(rstd);
+    آزاد(dout);
+    آزاد(dx);
+    آزاد(dw);
+    آزاد(db);
+    بازگشت 0;
 }
