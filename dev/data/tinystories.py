@@ -80,7 +80,7 @@ def process_shard(shard_index, shard_filename, model_desc):
         encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
     else:
-        raise ValueError(f"unknown model descriptor {model_desc}")
+        raise हालागा_Error(f"unknown model descriptor {model_desc}")
 
     with open(shard_filename, "r") as f:
         data = json.load(f)
@@ -117,6 +117,6 @@ def tokenize(model_desc):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tiny Stories dataset preprocessing")
     parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
-    args = parser.parse_args()
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
     download()
-    tokenize(args.model_desc)
+    tokenize(मगा_कातविरान.model_desc)

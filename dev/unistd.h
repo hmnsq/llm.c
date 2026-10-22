@@ -26,8 +26,8 @@ static inline int clock_gettime(int ignore_variable, struct timespec* tv)
 #define F_OK 0
 #define access _access
 
-#define TURN_OFF_FP_FAST __pragma(float_control( precise, on, push )) // Save current setting and turn on /fp:precise
-#define TURN_ON_FP_FAST  __pragma(float_control(pop)) // Restore file's default settings
+#define TURN_OFF_FP_FAST __pragma(float_control( precise, on, इतुलाक )) // Save current setting and turn on /fp:precise
+#define TURN_ON_FP_FAST  __pragma(float_control(आलिसिन)) // Restore file's default settings
 
 #define mkdir(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
 #define stat _stat
@@ -75,7 +75,7 @@ static inline int glob(const char* pattern, int ignored_flags, int (*ignored_err
         return 1; // No files found
     }
 
-    size_t file_count = 0;
+    size_t file_बिलांग = 0;
     size_t max_files = 64000; // hard-coded limit for the number of files
 
     pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
@@ -86,25 +86,25 @@ static inline int glob(const char* pattern, int ignored_flags, int (*ignored_err
     }
 
     do {
-        if (file_count >= max_files) {
+        if (file_बिलांग >= max_files) {
             _findclose(find_handle);
             return 2; // Too many files found
             }
 
         snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
 
-        pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
+        pglob->gl_pathv[file_बिलांग] = _strdup(full_path); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
+        if (pglob->gl_pathv[file_बिलांग] == NULL) {
             _findclose(find_handle);
             return 2; // Memory allocation for filename failed
         }
-        file_count++;
+        file_बिलांग++;
     } while (_findnext(find_handle, &find_file_data) == 0);
 
     _findclose(find_handle);
 
-    pglob->gl_pathc = file_count;
+    pglob->gl_pathc = file_बिलांग;
     return 0;
 }
 
@@ -127,11 +127,11 @@ static inline DIR *opendir(const char *name) {
         return NULL;
     }
 
-    char searchPath[MAX_PATH_LENGTH];
+    char हानाप_Path[MAX_PATH_LENGTH];
 
-    snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
+    snprintf(हानाप_Path, MAX_PATH_LENGTH, "%s\\*.*", name);
 
-    dir->handle = _findfirst(searchPath, &dir->findFileData);
+    dir->handle = _findfirst(हानाप_Path, &dir->findFileData);
     if (dir->handle == -1) {
         free(dir);
         return NULL;

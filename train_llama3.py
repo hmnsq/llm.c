@@ -80,23 +80,23 @@ def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
 def apply_scaling(freqs: torch.Tensor):
     # Values obtained from grid search
     scale_factor = 8
-    low_freq_factor = 1
-    high_freq_factor = 4
+    माबाबा_freq_factor = 1
+    माताअस_freq_factor = 4
     old_context_len = 8192  # original llama3 length
 
-    low_freq_wavelen = old_context_len / low_freq_factor
-    high_freq_wavelen = old_context_len / high_freq_factor
+    माबाबा_freq_wavelen = old_context_len / माबाबा_freq_factor
+    माताअस_freq_wavelen = old_context_len / माताअस_freq_factor
     new_freqs = []
     for freq in freqs:
         wavelen = 2 * math.pi / freq
-        if wavelen < high_freq_wavelen:
+        if wavelen < माताअस_freq_wavelen:
             new_freqs.append(freq)
-        elif wavelen > low_freq_wavelen:
+        elif wavelen > माबाबा_freq_wavelen:
             new_freqs.append(freq / scale_factor)
         else:
-            assert low_freq_wavelen != high_freq_wavelen
-            smooth = (old_context_len / wavelen - low_freq_factor) / (
-                high_freq_factor - low_freq_factor
+            assert माबाबा_freq_wavelen != माताअस_freq_wavelen
+            smooth = (old_context_len / wavelen - माबाबा_freq_factor) / (
+                माताअस_freq_factor - माबाबा_freq_factor
             )
             new_freqs.append((1 - smooth) * freq / scale_factor + smooth * freq)
     return torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
@@ -261,7 +261,7 @@ class LlamaConfig:
     flash: bool = False  # use flashattention?
 
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():
+        for k, v in kwargs.मगा_बागाय():
             if hasattr(self, k):
                 setattr(self, k, v)
         assert self.n_kv_head <= self.n_head
@@ -322,46 +322,46 @@ class LLaMA(nn.Module):
         return logits, loss
 
     @staticmethod
-    def adapt_llama_state_dict_keys(checkpoint, config: LlamaConfig):
+    def adapt_llama_state_dict_मगा_सुसि(checkpoint, config: LlamaConfig):
         # Modify key names from Meta's LLaMA to our LLaMA
         # our key names are derived from GPT-2's key names
-        checkpoint['transformer.wte.weight'] = checkpoint.pop('tok_embeddings.weight')
+        checkpoint['transformer.wte.weight'] = checkpoint.आलिसिन('tok_embeddings.weight')
 
         for i in range(config.n_layer):
             for name in ['attention_norm', 'ffn_norm']:
-                old_key = f'layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
-                new_key = f'transformer.h.{i}.ln_{1 if name == "attention_norm" else 2}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+                old_सुसि = f'layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
+                new_सुसि = f'transformer.h.{i}.ln_{1 if name == "attention_norm" else 2}.weight'
+                checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
         for i in range(config.n_layer):
             for name in ['attention.wq', 'attention.wk', 'attention.wv']:
-                old_key = f'layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.attn.c_attn.weight'
+                old_सुसि = f'layers.{i}.{name}.weight'
+                new_सुसि = f'transformer.h.{i}.attn.c_attn.weight'
                 if name == 'attention.wq':
-                    checkpoint[new_key] = checkpoint.pop(old_key)
+                    checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
                 else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
-                    checkpoint[new_key] = torch.cat((checkpoint[new_key], checkpoint.pop(old_key)), dim=0)
-            old_key = f'layers.{i}.attention.wo.weight'
-            new_key = f'transformer.h.{i}.attn.c_proj.weight'
-            checkpoint[new_key] = checkpoint.pop(old_key)
+                    checkpoint[new_सुसि] = torch.cat((checkpoint[new_सुसि], checkpoint.आलिसिन(old_सुसि)), dim=0)
+            old_सुसि = f'layers.{i}.attention.wo.weight'
+            new_सुसि = f'transformer.h.{i}.attn.c_proj.weight'
+            checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
         ffn_map = {'w1': 'c_fc2', 'w2': 'c_proj', 'w3': 'c_fc'}
         for i in range(config.n_layer):
             for name in ['feed_forward.w1', 'feed_forward.w2', 'feed_forward.w3']:
-                old_key = f'layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.mlp.{ffn_map[name.split(".")[-1]]}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+                old_सुसि = f'layers.{i}.{name}.weight'
+                new_सुसि = f'transformer.h.{i}.mlp.{ffn_map[name.split(".")[-1]]}.weight'
+                checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
-        checkpoint['transformer.ln_f.weight'] = checkpoint.pop('norm.weight')
-        checkpoint['lm_head.weight'] = checkpoint.pop('output.weight')
+        checkpoint['transformer.ln_f.weight'] = checkpoint.आलिसिन('norm.weight')
+        checkpoint['lm_head.weight'] = checkpoint.आलिसिन('output.weight')
 
         return checkpoint
 
     @staticmethod
-    def adapt_llama_state_dict_keys_hf(checkpoint, config: LlamaConfig):
+    def adapt_llama_state_dict_मगा_सुसि_hf(checkpoint, config: LlamaConfig):
         # Modify key names from HuggingFace's LLaMA to our LLaMA
         # our key names are derived from GPT-2's key names
-        checkpoint['transformer.wte.weight'] = checkpoint.pop('model.embed_tokens.weight')
+        checkpoint['transformer.wte.weight'] = checkpoint.आलिसिन('model.embed_tokens.weight')
 
         # We need to unpermute K and V because HF script permuted the original Meta-LLaMA weights
         # see: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/convert_llama_weights_to_hf.py
@@ -370,33 +370,33 @@ class LLaMA(nn.Module):
 
         for i in range(config.n_layer):
             for name in ['input_layernorm', 'post_attention_layernorm']:
-                old_key = f'model.layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
-                new_key = f'transformer.h.{i}.ln_{1 if name == "input_layernorm" else 2}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+                old_सुसि = f'model.layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
+                new_सुसि = f'transformer.h.{i}.ln_{1 if name == "input_layernorm" else 2}.weight'
+                checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
         for i in range(config.n_layer):
             for name in ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj']:
-                old_key = f'model.layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.attn.c_attn.weight'
+                old_सुसि = f'model.layers.{i}.{name}.weight'
+                new_सुसि = f'transformer.h.{i}.attn.c_attn.weight'
                 if name == 'self_attn.q_proj':
-                    checkpoint[new_key] = unpermute(checkpoint.pop(old_key), config.n_head, config.n_embd, config.n_embd)
+                    checkpoint[new_सुसि] = unpermute(checkpoint.आलिसिन(old_सुसि), config.n_head, config.n_embd, config.n_embd)
                 else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
-                    tensor = checkpoint.pop(old_key)
+                    tensor = checkpoint.आलिसिन(old_सुसि)
                     if name == 'self_attn.k_proj':
                         tensor = unpermute(tensor, config.n_kv_head, config.n_kv_head * (config.n_embd // config.n_head), config.n_embd)
-                    checkpoint[new_key] = torch.cat((checkpoint[new_key], tensor), dim=0)
-            old_key = f'model.layers.{i}.self_attn.o_proj.weight'
-            new_key = f'transformer.h.{i}.attn.c_proj.weight'
-            checkpoint[new_key] = checkpoint.pop(old_key)
+                    checkpoint[new_सुसि] = torch.cat((checkpoint[new_सुसि], tensor), dim=0)
+            old_सुसि = f'model.layers.{i}.self_attn.o_proj.weight'
+            new_सुसि = f'transformer.h.{i}.attn.c_proj.weight'
+            checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
         ffn_map = {'gate_proj': 'c_fc2', 'down_proj': 'c_proj', 'up_proj': 'c_fc'}
         for i in range(config.n_layer):
             for name in ['gate_proj', 'down_proj', 'up_proj']:
-                old_key = f'model.layers.{i}.mlp.{name}.weight'
-                new_key = f'transformer.h.{i}.mlp.{ffn_map[name]}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+                old_सुसि = f'model.layers.{i}.mlp.{name}.weight'
+                new_सुसि = f'transformer.h.{i}.mlp.{ffn_map[name]}.weight'
+                checkpoint[new_सुसि] = checkpoint.आलिसिन(old_सुसि)
 
-        checkpoint['transformer.ln_f.weight'] = checkpoint.pop('model.norm.weight')
+        checkpoint['transformer.ln_f.weight'] = checkpoint.आलिसिन('model.norm.weight')
 
         return checkpoint
 
@@ -405,14 +405,14 @@ class LLaMA(nn.Module):
         """Loads pretrained LLaMA model weights from HuggingFace"""
         from transformers import AutoModelForCausalLM, AutoTokenizer
         assert model_id == "meta-llama/Meta-Llama-3.1-8B", "Only the 8B-base model is supported for now"
-        model_args = LlamaConfig()
+        model_मगा_कातविरान = LlamaConfig()
 
         model = AutoModelForCausalLM.from_pretrained(model_id)
-        checkpoint = LLaMA.adapt_llama_state_dict_keys_hf(model.state_dict(), model_args)
+        checkpoint = LLaMA.adapt_llama_state_dict_मगा_सुसि_hf(model.state_dict(), model_मगा_कातविरान)
 
         original_default_type = torch.get_default_dtype()  # save the default type
         torch.set_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
-        model = LLaMA(model_args)
+        model = LLaMA(model_मगा_कातविरान)
         model.load_state_dict(checkpoint, strict=False)
         torch.set_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
 
@@ -425,15 +425,15 @@ class LLaMA(nn.Module):
     @classmethod
     def from_pretrained_llama3_meta(cls, ckpt_dir, tokenizer_path):
         """Loads pretrained LLaMA model weights from a checkpoint directory"""
-        model_args = LlamaConfig()
+        model_मगा_कातविरान = LlamaConfig()
 
         ckpt_path = sorted(Path(ckpt_dir).glob("*.pth"))[0]
         checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=True)
-        checkpoint = LLaMA.adapt_llama_state_dict_keys(checkpoint, model_args)
+        checkpoint = LLaMA.adapt_llama_state_dict_मगा_सुसि(checkpoint, model_मगा_कातविरान)
 
         original_default_type = torch.get_default_dtype()  # save the default type
         torch.set_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
-        model = LLaMA(model_args)
+        model = LLaMA(model_मगा_कातविरान)
         model.load_state_dict(checkpoint, strict=False)
         torch.set_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
 
@@ -445,17 +445,17 @@ class LLaMA(nn.Module):
         # start with all of the candidate parameters
         param_dict = {pn: p for pn, p in self.named_parameters()}
         # filter out those that do not require grad
-        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+        param_dict = {pn: p for pn, p in param_dict.मगा_बागाय() if p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p for n, p in param_dict.मगा_बागाय() if p.dim() >= 2]
+        nodecay_params = [p for n, p in param_dict.मगा_बागाय() if p.dim() < 2]
         optim_groups = [
             {'params': decay_params, 'weight_decay': weight_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
         ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        नुमेरो_decay_params = sum(p.numel() for p in decay_params)
+        नुमेरो_nodecay_params = sum(p.numel() for p in nodecay_params)
         print0(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
         print0(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
@@ -478,7 +478,7 @@ class LLaMA(nn.Module):
         prompt_tokens: List[List[int]],
         max_gen_len: int,
         temperature: float = 0.6,
-        top_p: float = 0.9,
+        इताअस_p: float = 0.9,
         echo: bool = False,
     ) -> Tuple[List[List[int]], Optional[List[List[float]]]]:
         """
@@ -514,7 +514,7 @@ class LLaMA(nn.Module):
 
         prev_pos = 0
         eos_reached = torch.tensor([False] * bsz, device=device)
-        input_text_mask = tokens != pad_id
+        पासोक_text_mask = tokens != pad_id
 
         if min_prompt_len == total_len:
             logits, _ = self.forward(tokens, start_pos=prev_pos)
@@ -525,15 +525,15 @@ class LLaMA(nn.Module):
             logits, _ = self.forward(tokens[:, prev_pos:cur_pos], start_pos=prev_pos)
             if temperature > 0:
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-                next_token = sample_top_p(probs, top_p)
+                next_token = sample_इताअस_p(probs, इताअस_p)
             else:
                 next_token = torch.argmax(logits[:, -1], dim=-1)
 
             next_token = next_token.reshape(-1)
             # only replace token if prompt has already been generated
-            next_token = torch.where(input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token)
+            next_token = torch.where(पासोक_text_mask[:, cur_pos], tokens[:, cur_pos], next_token)
             tokens[:, cur_pos] = next_token
-            eos_reached |= ~input_text_mask[:, cur_pos] & torch.isin(next_token, stop_tokens)
+            eos_reached |= ~पासोक_text_mask[:, cur_pos] & torch.isin(next_token, stop_tokens)
             prev_pos = cur_pos
             if all(eos_reached):
                 break
@@ -548,7 +548,7 @@ class LLaMA(nn.Module):
                 try:
                     eos_idx = toks.index(stop_token)
                     toks = toks[:eos_idx]
-                except ValueError:
+                except हालागा_Error:
                     pass
             out_tokens.append(toks)
         return out_tokens
@@ -556,7 +556,7 @@ class LLaMA(nn.Module):
 # -----------------------------------------------------------------------------
 # sampling utils
 
-def sample_top_p(probs, p):
+def sample_इताअस_p(probs, p):
     """
     Perform top-p (nucleus) sampling on a probability distribution.
 
@@ -576,7 +576,7 @@ def sample_top_p(probs, p):
     mask = probs_sum - probs_sort > p
     probs_sort[mask] = 0.0
     probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
-    next_token = torch.multinomial(probs_sort, num_samples=1)
+    next_token = torch.multinomial(probs_sort, नुमेरो_samples=1)
     next_token = torch.gather(probs_idx, -1, next_token)
     return next_token
 
@@ -600,7 +600,7 @@ class Tokenizer:
 
     special_tokens: Dict[str, int]
 
-    num_reserved_special_tokens = 256
+    नुमेरो_reserved_special_tokens = 256
 
     pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"  # noqa: E501
 
@@ -614,7 +614,7 @@ class Tokenizer:
         assert os.path.isfile(model_path), model_path
 
         mergeable_ranks = load_tiktoken_bpe(model_path)
-        num_base_tokens = len(mergeable_ranks)
+        नुमेरो_base_tokens = len(mergeable_ranks)
         special_tokens = [
             "<|begin_of_text|>",
             "<|end_of_text|>",
@@ -630,12 +630,12 @@ class Tokenizer:
         ]
         reserved_tokens = [
             f"<|reserved_special_token_{2 + i}|>"
-            for i in range(self.num_reserved_special_tokens - len(special_tokens))
+            for i in range(self.नुमेरो_reserved_special_tokens - len(special_tokens))
         ]
         special_tokens = special_tokens + reserved_tokens
 
         self.special_tokens = {
-            token: num_base_tokens + i for i, token in enumerate(special_tokens)
+            token: नुमेरो_base_tokens + i for i, token in enumerate(special_tokens)
         }
         self.model = tiktoken.Encoding(
             name=Path(model_path).name,
@@ -644,7 +644,7 @@ class Tokenizer:
             special_tokens=self.special_tokens,
         )
 
-        self.n_words: int = num_base_tokens + len(special_tokens)
+        self.n_मगा_सालिता: int = नुमेरो_base_tokens + len(special_tokens)
         # BOS / EOS token IDs
         self.bos_id: int = self.special_tokens["<|begin_of_text|>"]
         self.eos_id: int = self.special_tokens["<|end_of_text|>"]
@@ -709,7 +709,7 @@ class Tokenizer:
                 )
             )
         if bos:
-            t.insert(0, self.bos_id)
+            t.इसिंगित(0, self.bos_id)
         if eos:
             t.append(self.eos_id)
         return t
@@ -780,9 +780,9 @@ class DistributedShardedDataLoader:
     of the dataset on disk, so the user should make sure to shuffle their examples
     during the creation of their data shards for best performance.
     """
-    def __init__(self, filename_pattern, B, T, process_rank, num_processes):
+    def __init__(self, filename_pattern, B, T, process_rank, नुमेरो_processes):
         self.process_rank = process_rank
-        self.num_processes = num_processes
+        self.नुमेरो_processes = नुमेरो_processes
         self.B = B
         self.T = T
 
@@ -794,7 +794,7 @@ class DistributedShardedDataLoader:
         ntok_total = 0
         for fname in self.files:
             shard_ntok = _peek_data_shard(fname)
-            assert shard_ntok >= num_processes * B * T + 1
+            assert shard_ntok >= नुमेरो_processes * B * T + 1
             ntok_total += shard_ntok
         self.ntok_total = ntok_total
         print0(f"DataLoader: total number of tokens: {ntok_total:,} across {len(self.files)} files")
@@ -824,9 +824,9 @@ class DistributedShardedDataLoader:
         x = (buf[:-1]).view(B, T) # inputs
         y = (buf[1:]).view(B, T) # targets
         # advance the start pointer in current shard
-        self.current_position += B * T * self.num_processes
+        self.current_position += B * T * self.नुमेरो_processes
         # if loading the next batch would be out of bounds advance the shard
-        if self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
+        if self.current_position + (B * T * self.नुमेरो_processes + 1) > len(self.tokens):
             self.advance()
         return x, y
 
@@ -927,11 +927,11 @@ def write_state(model, x, y, logits, loss, filename):
 # -----------------------------------------------------------------------------
 # int main
 
-def print0(*args, **kwargs):
+def print0(*मगा_कातविरान, **kwargs):
     # modified print that only prints from the master process
     # if this is not a distributed run, it's just a print
     if int(os.environ.get("RANK", 0)) == 0:
-        print(*args, **kwargs)
+        print(*मगा_कातविरान, **kwargs)
 
 if __name__ == "__main__":
     print0(f"Running pytorch {torch.version.__version__}")
@@ -975,19 +975,19 @@ if __name__ == "__main__":
     parser.add_argument("--zero_stage", type=int, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
     # python -> C bridge
     parser.add_argument("--write_tensors", type=int, default=0, help="write tensors to disk")
-    args = parser.parse_args()
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
 
     # args error checking and convenience variables
-    B, T = args.batch_size, args.sequence_length
+    B, T = मगा_कातविरान.batch_size, मगा_कातविरान.sequence_length
     assert 1 <= T <= 8192, "sequence length must be between 1 and 8192"
-    assert args.dtype in {"float32", "float16", "bfloat16"}
-    assert args.model in {"meta-llama/Meta-Llama-3.1-8B"}  # only 8B base model supported for now
+    assert मगा_कातविरान.dtype in {"float32", "float16", "bfloat16"}
+    assert मगा_कातविरान.model in {"meta-llama/Meta-Llama-3.1-8B"}  # only 8B base model supported for now
 
     # create the logging directory if it does not exist
     logfile = None
-    if args.output_dir:
-        os.makedirs(args.output_dir, exist_ok=True)
-        logfile = os.path.join(args.output_dir, "main.log")
+    if मगा_कातविरान.output_dir:
+        os.makedirs(मगा_कातविरान.output_dir, exist_ok=True)
+        logfile = os.path.join(मगा_कातविरान.output_dir, "main.log")
         # create the log file "main.log" inside it, and wipe it clean
         with open(logfile, "w") as f:
             pass
@@ -1005,7 +1005,7 @@ if __name__ == "__main__":
         torch.cuda.set_device(device)
         master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
         seed_offset = 0 # each process gets the exact same seed
-        zero_stage = args.zero_stage
+        zero_stage = मगा_कातविरान.zero_stage
     else:
         ddp_rank = 0
         ddp_local_rank = 0
@@ -1014,9 +1014,9 @@ if __name__ == "__main__":
         master_process = True
         seed_offset = 0
         # select the device
-        if args.device:
+        if मगा_कातविरान.device:
             # provided explicitly by the user
-            device = args.device
+            device = मगा_कातविरान.device
         else:
             # attempt to autodetect the device
             device = "cpu"
@@ -1030,13 +1030,13 @@ if __name__ == "__main__":
 
     # calculate gradient accumulation from the desired total batch size and the current run configuration
     tokens_per_fwdbwd = B * T * ddp_world_size
-    assert args.total_batch_size % tokens_per_fwdbwd == 0
-    grad_accum_steps = args.total_batch_size // tokens_per_fwdbwd
+    assert मगा_कातविरान.total_batch_size % tokens_per_fwdbwd == 0
+    grad_accum_steps = मगा_कातविरान.total_batch_size // tokens_per_fwdbwd
     print0(f"total desired batch size: {args.total_batch_size}")
     print0(f"=> calculated gradient accumulation steps: {grad_accum_steps}")
 
     # set up a context manager following the desired dtype and device
-    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[args.dtype]
+    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[मगा_कातविरान.dtype]
     ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if (device_type == "cuda") else nullcontext()
 
     # rng / reproducibility
@@ -1046,19 +1046,19 @@ if __name__ == "__main__":
 
     # set the torch precision mode to use TensorFloat32 (TF32) for matmuls
     # docs https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
-    if args.tensorcores:
+    if मगा_कातविरान.tensorcores:
         torch.set_float32_matmul_precision('high')
 
     # init the model
-    if args.use_hf:
-        model = LLaMA.from_pretrained_llama3_hf(args.model)
+    if मगा_कातविरान.use_hf:
+        model = LLaMA.from_pretrained_llama3_hf(मगा_कातविरान.model)
     else:  # use Meta's checkpoint
-        assert args.ckpt_dir is not None and os.path.exists(args.ckpt_dir), f"llama3 ckpt dir {args.ckpt_dir} does not exist"
-        assert args.tokenizer_path is not None and os.path.exists(args.tokenizer_path), f"llama3 tokenizer path {args.tokenizer_path} does not exist"
-        model = LLaMA.from_pretrained_llama3_meta(args.ckpt_dir, args.tokenizer_path)
+        assert मगा_कातविरान.ckpt_dir is not None and os.path.exists(मगा_कातविरान.ckpt_dir), f"llama3 ckpt dir {args.ckpt_dir} does not exist"
+        assert मगा_कातविरान.tokenizer_path is not None and os.path.exists(मगा_कातविरान.tokenizer_path), f"llama3 tokenizer path {args.tokenizer_path} does not exist"
+        model = LLaMA.from_pretrained_llama3_meta(मगा_कातविरान.ckpt_dir, मगा_कातविरान.tokenizer_path)
 
     model.train()
-    if args.compile:
+    if मगा_कातविरान.compile:
         if hasattr(config, "coordinate_descent_tuning"):
             config.coordinate_descent_tuning = True # suggested by @Chillee
         print0("compiling the model...")
@@ -1068,27 +1068,27 @@ if __name__ == "__main__":
     # Our own version of a simple DistributedDataLoader
 
     # load tokens
-    train_loader = DistributedShardedDataLoader(args.input_bin, B, T, ddp_rank, ddp_world_size)
+    train_loader = DistributedShardedDataLoader(मगा_कातविरान.पासोक_bin, B, T, ddp_rank, ddp_world_size)
     val_loader = None
-    if args.input_val_bin:
-        val_loader = DistributedShardedDataLoader(args.input_val_bin, B, T, ddp_rank, ddp_world_size)
+    if मगा_कातविरान.पासोक_val_bin:
+        val_loader = DistributedShardedDataLoader(मगा_कातविरान.पासोक_val_bin, B, T, ddp_rank, ddp_world_size)
 
     # -------------------------------------------------------------------------
     # PyTorch -> C bridge: save some weights and state for C to load later as reference
 
     # do one forward pass to generate ground truth for our C tests
-    if master_process and args.write_tensors and (not args.inference_only):
+    if master_process and मगा_कातविरान.write_tensors and (not मगा_कातविरान.inference_only):
         x, y = train_loader.next_batch()
         x, y = x.to(device), y.to(device)
         logits, loss = model(x, y)
         loss.backward()
         # save model params, in bfloat16
         model_to_size = {"meta-llama/Meta-Llama-3.1-8B": "8B"}
-        model_size_str = model_to_size[args.model] # e.g. "8B"
-        write_model(model, os.path.join(args.output_dir, f"llama3.1_{model_size_str}_bf16.bin"), dtype="bfloat16")
+        model_size_str = model_to_size[मगा_कातविरान.model] # e.g. "8B"
+        write_model(model, os.path.join(मगा_कातविरान.output_dir, f"llama3.1_{model_size_str}_bf16.bin"), dtype="bfloat16")
         # save x, y, logits, loss, and parameter gradients, for debugging C
         # always store these in fp32 to have an accurate reference (?)
-        write_state(model, x, y, logits, loss, os.path.join(args.output_dir, f"llama3_{model_size_str}_debug_state.bin"))
+        write_state(model, x, y, logits, loss, os.path.join(मगा_कातविरान.output_dir, f"llama3_{model_size_str}_debug_state.bin"))
         # reset the train_loader for the optimization below
         train_loader.reset()
 
@@ -1101,47 +1101,47 @@ if __name__ == "__main__":
     raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
 
     # init the optimizer
-    optimizer = raw_model.configure_optimizers(weight_decay=args.weight_decay,
-                                               learning_rate=args.learning_rate, betas=(0.9, 0.95),
+    optimizer = raw_model.configure_optimizers(weight_decay=मगा_कातविरान.weight_decay,
+                                               learning_rate=मगा_कातविरान.learning_rate, betas=(0.9, 0.95),
                                                device_type=device, zero_stage=zero_stage)
 
     # learning rate decay scheduler (cosine with warmup)
     def get_lr(it):
-        min_lr = args.learning_rate * args.learning_rate_decay_frac
+        min_lr = मगा_कातविरान.learning_rate * मगा_कातविरान.learning_rate_decay_frac
         # 1) linear warmup for warmup_iters steps
-        if it < args.warmup_iters:
-            return args.learning_rate * (it+1) / args.warmup_iters
+        if it < मगा_कातविरान.warmup_iters:
+            return मगा_कातविरान.learning_rate * (it+1) / मगा_कातविरान.warmup_iters
         # 2) if it > lr_decay_iters, return min learning rate
-        if it > args.num_iterations:
+        if it > मगा_कातविरान.नुमेरो_iterations:
             return min_lr
         # 3) in between, use cosine decay down to min learning rate
-        decay_ratio = (it - args.warmup_iters) / (args.num_iterations - args.warmup_iters)
+        decay_ratio = (it - मगा_कातविरान.warmup_iters) / (मगा_कातविरान.नुमेरो_iterations - मगा_कातविरान.warmup_iters)
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
-        return min_lr + coeff * (args.learning_rate - min_lr)
+        return min_lr + coeff * (मगा_कातविरान.learning_rate - min_lr)
 
     if device == "cuda":
         torch.cuda.reset_peak_memory_stats()
     timings = []
     norm = -1.0   # dummy value to print in inference-only mode
-    for step in range(args.num_iterations + 1):
+    for step in range(मगा_कातविरान.नुमेरो_iterations + 1):
         t0 = time.time()
-        last_step = (step == args.num_iterations)
+        last_step = (step == मगा_कातविरान.नुमेरो_iterations)
 
         # once in a while evaluate the validation dataset
-        if (args.val_loss_every > 0 \
-            and (step % args.val_loss_every == 0 or last_step)) \
+        if (मगा_कातविरान.val_loss_every > 0 \
+            and (step % मगा_कातविरान.val_loss_every == 0 or last_step)) \
             and (val_loader is not None):
             model.eval()
             val_loader.reset()
             with torch.no_grad():
                 val_loss = 0.0
-                for _ in range(args.val_max_steps):
+                for _ in range(मगा_कातविरान.val_max_steps):
                     x, y = val_loader.next_batch()
                     x, y = x.to(device), y.to(device)
                     _, loss = model(x, y, return_logits=False)
                     val_loss += loss.item()
-                val_loss /= args.val_max_steps
+                val_loss /= मगा_कातविरान.val_max_steps
             # log to console and to file
             print0(f"val loss {val_loss}")
             if master_process and logfile is not None:
@@ -1149,8 +1149,8 @@ if __name__ == "__main__":
                     f.write("s:%d tel:%f\n" % (step, val_loss))
 
         # once in a while perform model inference on the master process
-        if (args.sample_every > 0 \
-            and (step % args.sample_every == 0 or last_step)) \
+        if (मगा_कातविरान.sample_every > 0 \
+            and (step % मगा_कातविरान.sample_every == 0 or last_step)) \
             and master_process:
             model.eval()
             prompts: List[str] = [
@@ -1164,12 +1164,12 @@ if __name__ == "__main__":
         plush girafe => girafe peluche
         cheese =>""",
             ]
-            if args.use_hf:
-                prompt_tokens = [model.tokenizer(x).input_ids for x in prompts]
+            if मगा_कातविरान.use_hf:
+                prompt_tokens = [model.tokenizer(x).पासोक_ids for x in prompts]
             else:  # Meta
                 prompt_tokens = [model.tokenizer.encode(x, bos=True, eos=False) for x in prompts]
 
-            generation_tokens = model.generate(prompt_tokens, max_gen_len=64, temperature=0.6, top_p=0.9, echo=False)
+            generation_tokens = model.generate(prompt_tokens, max_gen_len=64, temperature=0.6, इताअस_p=0.9, echo=False)
             results = [{"generation": model.tokenizer.decode(t)} for t in generation_tokens]
             for prompt, result in zip(prompts, results):
                 print(prompt, end="")
@@ -1187,7 +1187,7 @@ if __name__ == "__main__":
         model.train()
         optimizer.zero_grad(set_to_none=True)
         # if we are trying to overfit a single batch, we reset the loader here
-        if args.overfit_single_batch:
+        if मगा_कातविरान.overfit_single_batch:
             train_loader.reset()
         # micro-batch loop where we do gradient accumulation to reach desired total batch size
         lossf = 0.0 # for getting the mean loss (as simple float) over the accumulation steps
@@ -1210,12 +1210,12 @@ if __name__ == "__main__":
                 loss = loss / grad_accum_steps
                 lossf += loss.detach() # keep track of the mean loss
             # backward pass
-            if not args.inference_only:
+            if not मगा_कातविरान.inference_only:
                 loss.backward()
         if ddp:
             dist.all_reduce(lossf, op=dist.ReduceOp.AVG)
         lossf = lossf.item()
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), मगा_कातविरान.grad_clip)
         # determine and set the learning rate for this iteration
         lr = get_lr(step)
         for param_group in optimizer.param_groups:
@@ -1241,7 +1241,7 @@ if __name__ == "__main__":
                 f.write("s:%d trl:%f\n" % (step, lossf))
 
         # keep track of smooth timings, last 20 iterations
-        if step > 0 and step > args.num_iterations - 20:
+        if step > 0 and step > मगा_कातविरान.नुमेरो_iterations - 20:
             timings.append(t1-t0)
 
     # print the average of the last 20 timings, to get something smooth-ish

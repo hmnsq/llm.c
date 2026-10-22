@@ -87,14 +87,14 @@ void matmul_forward_ngc92(float* out,
     }
 }
 
-#define NUM_KERNELS 2
+#define नुमेरो_KERNELS 2
 
-void matmul_forward(int kernel_num,
+void matmul_forward(int kernel_नुमेरो,
     float* out,
     const float* inp, const float* weight, const float* bias,
     int B, int T, int C, int OC) {
 
-    switch (kernel_num) {
+    switch (kernel_नुमेरो) {
         case 0:
             matmul_forward_cpu(out, inp, weight, bias, B, T, C, OC);
             break;
@@ -108,7 +108,7 @@ void matmul_forward(int kernel_num,
 }
 
 
-void validate_results_cpu(const float* device_result, const float* cpu_reference, const char* name, int num_elements, float tolerance);
+void validate_results_cpu(const float* device_result, const float* cpu_reference, const char* name, int नुमेरो_elements, float tolerance);
 float* make_random_float(size_t N);
 
 int main(int argc, char **argv) {
@@ -135,8 +135,8 @@ int main(int argc, char **argv) {
     printf("> Calculating reference\n");
     matmul_forward_cpu(out, inp, weight, bias, B, T, C, OC);
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
-        printf("> Verifying kernel #%d\n", kernel_num);
+    for (int kernel_नुमेरो = 0; kernel_नुमेरो < नुमेरो_KERNELS; kernel_नुमेरो++) {
+        printf("> Verifying kernel #%d\n", kernel_नुमेरो);
 
         srand(137);
 
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
         float* kernel_weight = make_random_float(OC * C);
         float* kernel_bias = make_random_float(OC);
 
-        matmul_forward(kernel_num, kernel_out, kernel_inp, kernel_weight, kernel_bias, B, T, C, OC);
+        matmul_forward(kernel_नुमेरो, kernel_out, kernel_inp, kernel_weight, kernel_bias, B, T, C, OC);
 
         validate_results_cpu(kernel_out, out, "out", B * T * OC, 1e-5);
 
@@ -157,18 +157,18 @@ int main(int argc, char **argv) {
 
     printf("All kernels passed! Starting benchmarks.\n\n");
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
-        printf("> Running kernel #%d\n", kernel_num);
+    for (int kernel_नुमेरो = 0; kernel_नुमेरो < नुमेरो_KERNELS; kernel_नुमेरो++) {
+        printf("> Running kernel #%d\n", kernel_नुमेरो);
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         for (int i = 0; i < RUNS; i++) {
-            matmul_forward(kernel_num, out, inp, weight, bias, B, T, C, OC);
+            matmul_forward(kernel_नुमेरो, out, inp, weight, bias, B, T, C, OC);
         }
 
         clock_gettime(CLOCK_MONOTONIC, &end);
         double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-        printf("> Kernel #%d, (took %f ms)\n", kernel_num, time_elapsed_s * 1000);
+        printf("> Kernel #%d, (took %f ms)\n", kernel_नुमेरो, time_elapsed_s * 1000);
     }
 
     // free memory
@@ -193,9 +193,9 @@ float* make_random_float(size_t N) {
     return arr;
 }
 
-void validate_results_cpu(const float* kernel_result, const float* cpu_reference, const char* name, int num_elements, float tolerance) {
+void validate_results_cpu(const float* kernel_result, const float* cpu_reference, const char* name, int नुमेरो_elements, float tolerance) {
     int nfaults = 0;
-    for (int i = 0; i < num_elements; i++) {
+    for (int i = 0; i < नुमेरो_elements; i++) {
         // print the first few comparisons
         if (i < 5) {
             printf("%f %f\n", cpu_reference[i], kernel_result[i]);

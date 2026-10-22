@@ -23,13 +23,13 @@
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
+extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int लिन्या) {
     FILE *fp = fopen(path, mode);
     if (fp == NULL) {
-        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
+        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         fprintf(stderr, "  Path: %s\n", path);
         fprintf(stderr, "  Mode: %s\n", mode);
         fprintf(stderr, "---> HINT 1: dataset files/code have moved to dev/data recently (May 20, 2024). You may have to mv them from the legacy data/ dir to dev/data/(dataset), or re-run the data preprocessing script. Refer back to the main README\n");
@@ -41,20 +41,20 @@ extern inline FILE *fopen_check(const char *path, const char *mode, const char *
 
 #define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int लिन्या) {
     size_t result = fread(ptr, size, nmemb, stream);
     if (result != nmemb) {
         if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, लिन्या);
         } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
+            fprintf(stderr, "Error: File read error at %s:%d\n", file, लिन्या);
         } else {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
-                    file, line, nmemb, result);
+                    file, लिन्या, nmemb, result);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
         fprintf(stderr, "  Read elements: %zu\n", result);
         exit(EXIT_FAILURE);
@@ -63,24 +63,24 @@ extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *strea
 
 #define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
+extern inline void fclose_check(FILE *fp, const char *file, int लिन्या) {
     if (fclose(fp) != 0) {
-        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
+        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
+extern inline void sclose_check(int sockfd, const char *file, int लिन्या) {
     if (close(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         exit(EXIT_FAILURE);
     }
 }
@@ -88,12 +88,12 @@ extern inline void sclose_check(int sockfd, const char *file, int line) {
 #define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
 #ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
+extern inline void closesocket_check(int sockfd, const char *file, int लिन्या) {
     if (closesocket(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         exit(EXIT_FAILURE);
     }
 }
@@ -101,34 +101,34 @@ extern inline void closesocket_check(int sockfd, const char *file, int line) {
 #define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
 #endif
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
+extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int लिन्या) {
     if (fseek(fp, off, whence) != 0) {
-        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
+        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
         fprintf(stderr, "  Whence: %d\n", whence);
         fprintf(stderr, "  File:   %s\n", file);
-        fprintf(stderr, "  Line:   %d\n", line);
+        fprintf(stderr, "  Line:   %d\n", लिन्या);
         exit(EXIT_FAILURE);
     }
 }
 
 #define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
+extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int लिन्या) {
     size_t result = fwrite(ptr, size, nmemb, stream);
     if (result != nmemb) {
         if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, लिन्या);
         } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
+            fprintf(stderr, "Error: File write error at %s:%d\n", file, लिन्या);
         } else {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
-                    file, line, nmemb, result);
+                    file, लिन्या, nmemb, result);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
         fprintf(stderr, "  Written elements: %zu\n", result);
         exit(EXIT_FAILURE);
@@ -140,13 +140,13 @@ extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stre
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
+extern inline void *malloc_check(size_t size, const char *file, int लिन्या) {
     void *ptr = malloc(size);
     if (ptr == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
+        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, लिन्या);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", लिन्या);
         fprintf(stderr, "  Size: %zu bytes\n", size);
         exit(EXIT_FAILURE);
     }
@@ -158,13 +158,13 @@ extern inline void *malloc_check(size_t size, const char *file, int line) {
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
+extern inline void token_check(const int* tokens, int token_बिलांग, int vocab_size, const char *file, int लिन्या) {
+    for(int i = 0; i < token_बिलांग; i++) {
         if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
-            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
+            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, लिन्या);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
+            fprintf(stderr, "  Line: %d\n", लिन्या);
             fprintf(stderr, "  Token: %d\n", tokens[i]);
             fprintf(stderr, "  Position: %d\n", i);
             fprintf(stderr, "  Vocab: %d\n", vocab_size);
@@ -172,7 +172,7 @@ extern inline void token_check(const int* tokens, int token_count, int vocab_siz
         }
     }
 }
-#define tokenCheck(tokens, count, vocab) token_check(tokens, count, vocab, __FILE__, __LINE__)
+#define tokenCheck(tokens, बिलांग, vocab) token_check(tokens, बिलांग, vocab, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // I/O ops

@@ -42,7 +42,7 @@ GPU_NAME_TO_MODAL_CLASS_MAP = {
 N_GPUS = int(os.environ.get("N_GPUS", 1))
 GPU_MEM = int(os.environ.get("GPU_MEM", 40))
 GPU_NAME = os.environ.get("GPU_NAME", "A100")
-GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](count=N_GPUS, size=str(GPU_MEM) + 'GB')
+GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](बिलांग=N_GPUS, size=str(GPU_MEM) + 'GB')
 
 APP_NAME = "llm.c benchmark run"
 
@@ -70,7 +70,7 @@ image = (
     .run_commands(
         "wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin && \
         mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
+        apt-सुसि adv --fetch-मगा_सुसि https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
         add-apt-repository \"deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /\" && \
         apt-get update"
     ).run_commands(
@@ -81,9 +81,9 @@ image = (
 stub = modal.App(APP_NAME)
 
 def execute_command(command: str):
-    command_args = command.split(" ")
+    command_मगा_कातविरान = command.split(" ")
     print(f"{command_args = }")
-    subprocess.run(command_args, stdout=sys.stdout, stderr=subprocess.STDOUT)
+    subprocess.run(command_मगा_कातविरान, stdout=sys.stdout, stderr=subprocess.STDOUT)
 
 @stub.function(
     gpu=GPU_CONFIG,

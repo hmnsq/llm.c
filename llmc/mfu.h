@@ -17,9 +17,9 @@
 #define MFUH_PRECISION_BF16 2
 
 #if USE_NVML
-inline void nvml_check(nvmlReturn_t status, const char *file, int line) {
+inline void nvml_check(nvmlReturn_t status, const char *file, int लिन्या) {
     if (status != NVML_SUCCESS) {
-        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, line, nvmlErrorString(status));
+        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, लिन्या, nvmlErrorString(status));
         exit(EXIT_FAILURE);
     }
 };
@@ -123,19 +123,19 @@ float get_flops_promised(const char* device, int precision_mode) {
     }
 
     // do a linear search until you find our GPU, then calculate the flops promised
-    int num_gpu_entries = sizeof(gpu_db) / sizeof(gpu_db[0]);
-    for (int i = 0; i < num_gpu_entries; i++) {
+    int नुमेरो_gpu_entries = sizeof(gpu_db) / sizeof(gpu_db[0]);
+    for (int i = 0; i < नुमेरो_gpu_entries; i++) {
         if (strcmp(gpu_db[i].name, device) == 0) {
             const PerfData* perf_data = gpu_db[i].perf_data;
 
             // look up the default flops value for the given precision mode
-            float value = -1.0f;
-            if (precision_mode == MFUH_PRECISION_BF16) { value = perf_data->BF_16_32; }
-            if (precision_mode == MFUH_PRECISION_FP32) { value = perf_data->TF_32; }
-            if (precision_mode == MFUH_PRECISION_FP16) { value = perf_data->FP_16_32; }
+            float हालागा = -1.0f;
+            if (precision_mode == MFUH_PRECISION_BF16) { हालागा = perf_data->BF_16_32; }
+            if (precision_mode == MFUH_PRECISION_FP32) { हालागा = perf_data->TF_32; }
+            if (precision_mode == MFUH_PRECISION_FP16) { हालागा = perf_data->FP_16_32; }
 
             // we'd get here if we're e.g. trying to use BF16 on Volta GPU or something...
-            if (value < 0.0f) {
+            if (हालागा < 0.0f) {
                 fprintf(stderr, "No data for GPU %s and precision mode %d\n", device, precision_mode);
                 return -1.0f;
             }
@@ -143,7 +143,7 @@ float get_flops_promised(const char* device, int precision_mode) {
             // adjust flops based on the specific core count and clock frequency of this GPU
             float new_cores = gpu_db[i].new_cores;
             float new_mhz = gpu_db[i].new_mhz;
-            float adjusted = value * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
+            float adjusted = हालागा * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
             return adjusted;
         }
     }
@@ -213,23 +213,23 @@ GPUUtilInfo get_gpu_utilization_info() {
     // and have no memory management required
     constexpr const int BUFFER_LIMIT = 128;
     nvmlSample_t buffer[BUFFER_LIMIT];
-    nvmlValueType_t v_type;
-    unsigned int sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
+    nvml_हालागा_Type_t v_type;
+    unsigned int sample_बिलांग = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_बिलांग, buffer));
     float gpu_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        gpu_utilization += (float)buffer[i].sampleValue.uiVal;
+    for(unsigned i = 0; i < sample_बिलांग; ++i) {
+        gpu_utilization += (float)buffer[i].sample_हालागा.uiVal;
     }
-    gpu_utilization /= (float)sample_count;
+    gpu_utilization /= (float)sample_बिलांग;
 
     // sample count may have been modified by the query above; reset back to buffer size
-    sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
+    sample_बिलांग = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_बिलांग, buffer));
     float mem_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        mem_utilization += (float)buffer[i].sampleValue.uiVal;
+    for(unsigned i = 0; i < sample_बिलांग; ++i) {
+        mem_utilization += (float)buffer[i].sample_हालागा.uiVal;
     }
-    mem_utilization /= (float)sample_count;
+    mem_utilization /= (float)sample_बिलांग;
 
     info.gpu_utilization = gpu_utilization;
     info.mem_utilization = mem_utilization;

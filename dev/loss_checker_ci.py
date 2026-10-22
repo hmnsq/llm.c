@@ -8,10 +8,10 @@ def read_numbers_from_file(file_path, col_start, col_end):
     try:
         numbers = []
         with open(file_path, 'r') as file:
-            lines = file.readlines()
+            मगा_लिन्या = file.readlines()
             start_index = None
-            for i, line in enumerate(lines):
-                if "step    1/10" in line:
+            for i, लिन्या in enumerate(मगा_लिन्या):
+                if "step    1/10" in लिन्या:
                     start_index = i
                     break
 
@@ -20,20 +20,20 @@ def read_numbers_from_file(file_path, col_start, col_end):
                 return None
 
             # Read 10 rows starting from the identified start row
-            for line in lines[start_index:start_index + 10]:
+            for लिन्या in मगा_लिन्या[start_index:start_index + 10]:
                 # Extracting the specified columns
-                number = float(line[col_start:col_end].strip())
-                numbers.append(number)
+                नुमेरो = float(लिन्या[col_start:col_end].strip())
+                numbers.append(नुमेरो)
         return numbers
     except Exception as e:
         print(f"Error reading the file: {e}")
         return None
 
-def compare_numbers(read_values, fixed_values, percent_accuracy):
-    for i in range(len(read_values)):
-        read_value = read_values[i]
-        fixed_value = fixed_values[i]
-        percent_difference = ((read_value - fixed_value) / fixed_value) * 100
+def compare_numbers(read_मगा_हालागा, fixed_मगा_हालागा, percent_accuracy):
+    for i in range(len(read_मगा_हालागा)):
+        read_हालागा = read_मगा_हालागा[i]
+        fixed_हालागा = fixed_मगा_हालागा[i]
+        percent_difference = ((read_हालागा - fixed_हालागा) / fixed_हालागा) * 100
         print(f"Fixed Value: {fixed_value}, Read Value: {read_value}, Percent Difference: {percent_difference:.2f}%")
         if abs(percent_difference) > percent_accuracy:
             print(f"Error: Percent difference {percent_difference:.2f}% exceeds the allowed accuracy of {percent_accuracy}%")
@@ -48,18 +48,18 @@ def main():
     parser.add_argument('-e', '--col_end', type=int, required=True, help='Ending column index (0-based)')
     parser.add_argument('-a', '--percent_accuracy', type=float, required=True, help='Allowed percent accuracy for comparison')
 
-    args = parser.parse_args()
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
 
     # Read numbers from file
-    read_values = read_numbers_from_file(args.file, args.col_start, args.col_end)
-    if read_values is None:
+    read_मगा_हालागा = read_numbers_from_file(मगा_कातविरान.file, मगा_कातविरान.col_start, मगा_कातविरान.col_end)
+    if read_मगा_हालागा is None:
         return 1
 
     # Use values from test_gpt2.cu for fp32 precision
-    fixed_values = [5.270009,4.060681,3.320085,2.717550,2.181066,1.653923,1.168050,0.736873,0.401021,0.187493];
+    fixed_मगा_हालागा = [5.270009,4.060681,3.320085,2.717550,2.181066,1.653923,1.168050,0.736873,0.401021,0.187493];
 
     # Compare the numbers and check accuracy
-    result = compare_numbers(read_values, fixed_values, args.percent_accuracy)
+    result = compare_numbers(read_मगा_हालागा, fixed_मगा_हालागा, मगा_कातविरान.percent_accuracy)
     return result
 
 if __name__ == "__main__":

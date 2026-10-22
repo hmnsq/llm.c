@@ -103,8 +103,8 @@ def iterate_examples(split):
     # there are 10,042 examples in total in val
     download(split)
     with open(os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") as f:
-        for line in f:
-            example = json.loads(line)
+        for लिन्या in f:
+            example = json.loads(लिन्या)
             yield example
 
 @torch.no_grad()
@@ -117,9 +117,9 @@ def evaluate(model_type, device):
     # model = torch.compile(model)
 
     datas = []
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
+    नुमेरो_correct_norm = 0
+    नुमेरो_correct = 0
+    नुमेरो_total = 0
     for example in iterate_examples("val"):
         data, tokens, mask, label = render_example(example)
         datas.append(data)
@@ -147,13 +147,13 @@ def evaluate(model_type, device):
         pred_norm = avg_loss.argmin().item()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
+        नुमेरो_total += 1
+        नुमेरो_correct += int(pred == label)
+        नुमेरो_correct_norm += int(pred_norm == label)
         print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
 
         # debug: pretty print a few examples, and the losses in each case
-        if num_total < 10:
+        if नुमेरो_total < 10:
             print("---")
             print(f"Context:\n {example['ctx']}")
             print(f"Endings:")
@@ -170,5 +170,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
     parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
-    args = parser.parse_args()
-    evaluate(args.model_type, args.device)
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
+    evaluate(मगा_कातविरान.model_type, मगा_कातविरान.device)

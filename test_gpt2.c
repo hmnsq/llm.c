@@ -3,7 +3,7 @@
 
 // poor man's tensor checker
 int check_tensor(float *a, float *b, int n, const char* label) {
-    int print_upto = 5;
+    int इलिम्बाग_upto = 5;
     int ok = 1;
     float maxdiff = 0.0f;
     float tol = 2e-2f;
@@ -18,11 +18,11 @@ int check_tensor(float *a, float *b, int n, const char* label) {
 
         // for the first few elements of each tensor, pretty print
         // the actual numbers, so we can do a visual, qualitative proof/assessment
-        if (i < print_upto) {
+        if (i < इलिम्बाग_upto) {
             if (diff <= tol) {
-                if (i < print_upto) { printf("OK "); }
+                if (i < इलिम्बाग_upto) { printf("OK "); }
             } else {
-                if (i < print_upto) { printf("NOT OK "); }
+                if (i < इलिम्बाग_upto) { printf("NOT OK "); }
             }
             printf("%f %f\n", a[i], b[i]);
         }
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     int V = model.config.vocab_size;
     int Vp = model.config.padded_vocab_size;
     int maxT = model.config.max_seq_len;
-    int L = model.config.num_layers;
+    int L = model.config.नुमेरो_layers;
 
     // load additional information that we will use for debugging and error checking
     FILE *state_file = fopen("gpt2_124M_debug_state.bin", "rb");
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     freadCheck(y, sizeof(int), B*T, state_file);
     freadCheck(expected_logits, sizeof(float), B*T*V, state_file);
     freadCheck(expected_loss, sizeof(float), 1, state_file);
-    freadCheck(expected_grads_memory, sizeof(float), model.num_parameters, state_file);
+    freadCheck(expected_grads_memory, sizeof(float), model.नुमेरो_parameters, state_file);
     fcloseCheck(state_file);
 
     // overall OK signal for the test

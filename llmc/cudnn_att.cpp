@@ -23,17 +23,17 @@ static cudnnHandle_t cudnn_handle;
 static size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256MiB!)
 static void* cudnn_workspace = NULL;
 
-static void cuDNNCheck(cudnnStatus_t error, const char *file, int line) {
+static void cuDNNCheck(cudnnStatus_t error, const char *file, int लिन्या) {
     if (error != CUDNN_STATUS_SUCCESS) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, cudnnGetErrorString(error));
+        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, लिन्या, cudnnGetErrorString(error));
         exit(EXIT_FAILURE);
     }
 };
 #define cuDNNCheck(err) (cuDNNCheck(err, __FILE__, __LINE__))
 
-static void checkCudnnFE(const fe::error_object& e, const char *file, int line) {
+static void checkCudnnFE(const fe::error_object& e, const char *file, int लिन्या) {
     if(!e.is_good()) {
-        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, e.err_msg.c_str());
+        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, लिन्या, e.err_मेनसाहे.c_str());
         exit(EXIT_FAILURE);
     }
 }
@@ -61,9 +61,9 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
 
     static cache_type_fwd user_maintained_cache_fwd;
 
-    auto key = std::make_tuple(B, H, T, HS, is_inference_only);
+    auto सुसि = std::make_tuple(B, H, T, HS, is_inference_only);
 
-    auto it = user_maintained_cache_fwd.find(key);
+    auto it = user_maintained_cache_fwd.find(सुसि);
     if (it != user_maintained_cache_fwd.end()) {
         return it->second;
     }
@@ -90,7 +90,7 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
                                .set_dim({1, 1, 1, 1})
                                .set_stride({1, 1, 1, 1})
                                .set_uid(Attn_scale_UID)
-                               .set_is_pass_by_value(true)
+                               .set_is_pass_by_हालागा(true)
                                .set_data_type(fe::DataType_t::FLOAT));
 
     auto sdpa_options = fe::graph::SDPA_attributes().set_name("flash_attention");
@@ -129,7 +129,7 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
         cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
     }
 
-    user_maintained_cache_fwd.insert({key, graph});
+    user_maintained_cache_fwd.insert({सुसि, graph});
 
     return graph;
 }
@@ -137,9 +137,9 @@ auto lookup_cache_or_build_graph_fwd(int B,int H,int T,int HS, int is_inference_
 auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
     static cache_type_bwd user_maintained_cache_bwd;
 
-    auto key = std::make_tuple(B, NH, T, HS);
+    auto सुसि = std::make_tuple(B, NH, T, HS);
 
-    auto it = user_maintained_cache_bwd.find(key);
+    auto it = user_maintained_cache_bwd.find(सुसि);
     if (it != user_maintained_cache_bwd.end()) {
         return it->second;
     }
@@ -180,7 +180,7 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
     auto attn_scale = graph->tensor(fe::graph::Tensor_attributes().set_name("attn_scale")
                             .set_dim({1, 1, 1, 1})
                             .set_stride({1, 1, 1, 1})
-                            .set_is_pass_by_value(true)
+                            .set_is_pass_by_हालागा(true)
                             .set_uid(Attn_scale_UID)
                             .set_data_type(fe::DataType_t::FLOAT));
     auto sdpa_backward_options = fe::graph::SDPA_backward_attributes().set_name("flash_attention_backward")
@@ -215,7 +215,7 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS) {
         cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
     }
 
-    user_maintained_cache_bwd.insert({key, graph});
+    user_maintained_cache_bwd.insert({सुसि, graph});
     return graph;
 }
 

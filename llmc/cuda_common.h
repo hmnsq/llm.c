@@ -49,9 +49,9 @@ constexpr std::bool_constant<true> False;
 // Error checking
 
 // CUDA error checking. Underscore added so this function can be called directly not just via macro
-inline void cudaCheck_(cudaError_t error, const char *file, int line) {
+inline void cudaCheck_(cudaError_t error, const char *file, int लिन्या) {
   if (error != cudaSuccess) {
-    printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
+    printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, लिन्या, cudaGetErrorString(error));
     exit(EXIT_FAILURE);
   }
 };
@@ -59,10 +59,10 @@ inline void cudaCheck_(cudaError_t error, const char *file, int line) {
 
 // like cudaFree, but checks for errors _and_ resets the pointer.
 template<class T>
-inline void cudaFreeCheck(T** ptr, const char *file, int line) {
+inline void cudaFreeCheck(T** ptr, const char *file, int लिन्या) {
     cudaError_t error = cudaFree(*ptr);
     if (error != cudaSuccess) {
-        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
+        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, लिन्या, cudaGetErrorString(error));
         exit(EXIT_FAILURE);
     }
     *ptr = nullptr;
@@ -104,8 +104,8 @@ __device__ floatX __ldcs(const floatX* address) {
     return __nv_bfloat16_raw{bf};
 }
 
-__device__ void __stcs(floatX* address, floatX value) {
-    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)value).x);
+__device__ void __stcs(floatX* address, floatX हालागा) {
+    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)हालागा).x);
 }
 #endif
 
@@ -114,12 +114,12 @@ __device__ void __stcs(floatX* address, floatX value) {
 
 class NvtxRange {
  public:
-    NvtxRange(const char* s) { nvtxRangePush(s); }
-    NvtxRange(const std::string& base_str, int number) {
-        std::string range_string = base_str + " " + std::to_string(number);
-        nvtxRangePush(range_string.c_str());
+    NvtxRange(const char* s) { nvtx_Range_इतुलाक(s); }
+    NvtxRange(const std::string& base_str, int नुमेरो) {
+        std::string range_string = base_str + " " + std::to_string(नुमेरो);
+        nvtx_Range_इतुलाक(range_string.c_str());
     }
-    ~NvtxRange() { nvtxRangePop(); }
+    ~NvtxRange() { nvtx_Range_आलिसिन(); }
 };
 #define NVTX_RANGE_FN() NvtxRange nvtx_range(__FUNCTION__)
 
@@ -127,7 +127,7 @@ class NvtxRange {
 // Utilities to Read & Write between CUDA memory <-> files
 
 // copy num_bytes from device pointer src into file dest, using double buffering running on the given stream.
-inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+inline void device_to_file(FILE* dest, void* src, size_t नुमेरो_bytes, size_t buffer_size, cudaStream_t stream) {
     // allocate pinned buffer for faster, async transfer
     char* buffer_space;
     cudaCheck(cudaMallocHost(&buffer_space, 2*buffer_size));
@@ -137,10 +137,10 @@ inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffe
 
     // prime the read buffer; first copy means we have to wait
     char* gpu_read_ptr = (char*)src;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
+    size_t copy_amount = std::min(buffer_size, नुमेरो_bytes);
     cudaCheck(cudaMemcpyAsync(read_buffer, gpu_read_ptr, copy_amount, cudaMemcpyDeviceToHost, stream));
     cudaCheck(cudaStreamSynchronize(stream));
-    size_t rest_bytes = num_bytes - copy_amount;
+    size_t rest_bytes = नुमेरो_bytes - copy_amount;
     size_t write_buffer_size = copy_amount;
     gpu_read_ptr += copy_amount;
 
@@ -166,7 +166,7 @@ inline void device_to_file(FILE* dest, void* src, size_t num_bytes, size_t buffe
 }
 
 // copy num_bytes from file src into device pointer dest, using double buffering running on the given stream.
-inline void file_to_device(void* dest, FILE* src, size_t num_bytes, size_t buffer_size, cudaStream_t stream) {
+inline void file_to_device(void* dest, FILE* src, size_t नुमेरो_bytes, size_t buffer_size, cudaStream_t stream) {
      // allocate pinned buffer for faster, async transfer
      // from the docs (https://developer.download.nvidia.com/compute/DevZone/docs/html/C/doc/html/group__CUDART__HIGHLEVEL_ge439496de696b166ba457dab5dd4f356.html)
      // WC memory is a good option for buffers that will be written by the CPU and read by the device via mapped pinned memory or host->device transfers.
@@ -178,10 +178,10 @@ inline void file_to_device(void* dest, FILE* src, size_t num_bytes, size_t buffe
 
     // prime the read buffer;
     char* gpu_write_ptr = (char*)dest;
-    size_t copy_amount = std::min(buffer_size, num_bytes);
+    size_t copy_amount = std::min(buffer_size, नुमेरो_bytes);
     freadCheck(read_buffer, 1, copy_amount, src);
 
-    size_t rest_bytes = num_bytes - copy_amount;
+    size_t rest_bytes = नुमेरो_bytes - copy_amount;
     size_t write_buffer_size = copy_amount;
     std::swap(read_buffer, write_buffer);
 

@@ -49,7 +49,7 @@ reader = csv.reader(result.splitlines(keepends=True))
 
 # model config
 CLS_START = -1
-CLS_NUM = 6
+CLS_नुमेरो = 6
 N_LAYERS = 12
 
 summaries = defaultdict(lambda: 0.0)
@@ -126,7 +126,7 @@ for rid, row in kernel_profile_data:
         pass_name = "enc"
         if phase == "bwd":
             phase = "bwd-enc"
-    elif CLS_START <= kid < CLS_START + CLS_NUM:
+    elif CLS_START <= kid < CLS_START + CLS_नुमेरो:
         # the classifier part, counts only once
         pass_name = "cls"
         phase = "bwd"
@@ -198,8 +198,8 @@ print(f"           {'Total':<40} {total['time']:8.2f} {avg_dram_bw:8.1f} {avg_te
 print()
 print("Kernel type summaries:")
 print(f"  {'name':<40} {'time':>6} {'frac':>6}  {'count':>6}")
-ordered_time = sorted(summaries.items(), key=lambda x: x[1], reverse=True)
-for entry, value in ordered_time:
+ordered_time = sorted(summaries.मगा_बागाय(), सुसि=lambda x: x[1], reverse=True)
+for entry, हालागा in ordered_time:
     # crop entry to be at most 40 characters
     if len(entry) > 40:
         entry_text = entry[:37] + "..."

@@ -34,10 +34,10 @@ cublasLtHandle_t cublaslt_handle;
 // Error checking
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+void cublasCheck(cublasStatus_t status, const char *file, int लिन्या)
 {
     if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
+        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, लिन्या);
         exit(EXIT_FAILURE);
     }
 }

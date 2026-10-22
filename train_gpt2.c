@@ -293,12 +293,12 @@ void attention_forward(float* out, float* preatt, float* att,
                 // pass 1: calculate query dot key and maxval
                 float maxval = -10000.0f; // TODO something better
                 for (int t2 = 0; t2 <= t; t2++) {
-                    float* key_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C; // +C because it's key
+                    float* सुसि_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C; // +C because it's key
 
                     // (query_t) dot (key_t2)
                     float val = 0.0f;
                     for (int i = 0; i < hs; i++) {
-                        val += query_t[i] * key_t2[i];
+                        val += query_t[i] * सुसि_t2[i];
                     }
                     val *= scale;
                     if (val > maxval) {
@@ -333,10 +333,10 @@ void attention_forward(float* out, float* preatt, float* att,
                 float* out_bth = out + b * T * C + t * C + h * hs;
                 for (int i = 0; i < hs; i++) { out_bth[i] = 0.0f; }
                 for (int t2 = 0; t2 <= t; t2++) {
-                    float* value_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C*2; // +C*2 because it's value
+                    float* हालागा_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C*2; // +C*2 because it's value
                     float att_btht2 = att_bth[t2];
                     for (int i = 0; i < hs; i++) {
-                        out_bth[i] += att_btht2 * value_t2[i];
+                        out_bth[i] += att_btht2 * हालागा_t2[i];
                     }
                 }
             }
@@ -366,13 +366,13 @@ void attention_backward(float* dinp, float* dpreatt, float* datt,
                 // backward pass 4, through the value accumulation
                 float* dout_bth = dout + b * T * C + t * C + h * hs;
                 for (int t2 = 0; t2 <= t; t2++) {
-                    float* value_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C*2; // +C*2 because it's value
+                    float* हालागा_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C*2; // +C*2 because it's value
                     float* dvalue_t2 = dinp + b * T * C3 + t2 * C3 + h * hs + C*2;
                     for (int i = 0; i < hs; i++) {
                         // in the forward pass this was:
                         // out_bth[i] += att_bth[t2] * value_t2[i];
                         // so now we have:
-                        datt_bth[t2] += value_t2[i] * dout_bth[i];
+                        datt_bth[t2] += हालागा_t2[i] * dout_bth[i];
                         dvalue_t2[i] += att_bth[t2] * dout_bth[i];
                     }
                 }
@@ -389,13 +389,13 @@ void attention_backward(float* dinp, float* dpreatt, float* datt,
 
                 // backward pass 1, the query @ key matmul
                 for (int t2 = 0; t2 <= t; t2++) {
-                    float* key_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C; // +C because it's key
+                    float* सुसि_t2 = inp + b * T * C3 + t2 * C3 + h * hs + C; // +C because it's key
                     float* dkey_t2 = dinp + b * T * C3 + t2 * C3 + h * hs + C; // +C because it's key
                     for (int i = 0; i < hs; i++) {
                         // in the forward pass this was:
                         // preatt_bth[t2] += (query_t[i] * key_t2[i]) * scale;
                         // so now we have:
-                        dquery_t[i] += key_t2[i] * dpreatt_bth[t2] * scale;
+                        dquery_t[i] += सुसि_t2[i] * dpreatt_bth[t2] * scale;
                         dkey_t2[i] += query_t[i] * dpreatt_bth[t2] * scale;
                     }
                 }
@@ -415,7 +415,7 @@ void gelu_forward(float* out, float* inp, int N) {
 }
 
 // we want to use -Ofast optimization, but sadly GeLU breaks, so disable this flag just for it (#168)
-#pragma float_control(precise, on, push)
+#pragma float_control(precise, on, इतुलाक)
 #if defined(__GNUC__) && !defined(__clang__)
 __attribute__((optimize("no-finite-math-only")))
 #endif
@@ -431,7 +431,7 @@ void gelu_backward(float* dinp, float* inp, float* dout, int N) {
         dinp[i] += local_grad * dout[i];
     }
 }
-#pragma float_control(pop)
+#pragma float_control(आलिसिन)
 
 void residual_forward(float* out, float* inp1, float* inp2, int N) {
     for (int i = 0; i < N; i++) {
@@ -527,13 +527,13 @@ typedef struct {
     int max_seq_len; // max sequence length, e.g. 1024
     int vocab_size; // vocab size, e.g. 50257
     int padded_vocab_size; // padded to e.g. %128==0, 50304
-    int num_layers; // number of layers, e.g. 12
-    int num_heads; // number of heads in attention, e.g. 12
+    int नुमेरो_layers; // number of layers, e.g. 12
+    int नुमेरो_heads; // number of heads in attention, e.g. 12
     int channels; // number of channels, e.g. 768
 } GPT2Config;
 
 // the parameters of the model
-#define NUM_PARAMETER_TENSORS 16
+#define नुमेरो_PARAMETER_TENSORS 16
 typedef struct {
     float* wte; // (V, C)
     float* wpe; // (maxT, C)
@@ -557,7 +557,7 @@ void fill_in_parameter_sizes(size_t* param_sizes, GPT2Config config) {
     size_t Vp = config.padded_vocab_size;
     size_t C = config.channels;
     size_t maxT = config.max_seq_len;
-    size_t L = config.num_layers;
+    size_t L = config.नुमेरो_layers;
     param_sizes[0] = Vp * C; // wte
     param_sizes[1] = maxT * C; // wpe
     param_sizes[2] = L * C; // ln1w
@@ -578,12 +578,12 @@ void fill_in_parameter_sizes(size_t* param_sizes, GPT2Config config) {
 
 // allocate memory for the parameters and point the individual tensors to the right places
 float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes) {
-    size_t num_parameters = 0;
-    for (size_t i = 0; i < NUM_PARAMETER_TENSORS; i++) {
-        num_parameters += param_sizes[i];
+    size_t नुमेरो_parameters = 0;
+    for (size_t i = 0; i < नुमेरो_PARAMETER_TENSORS; i++) {
+        नुमेरो_parameters += param_sizes[i];
     }
     // malloc all parameters all at once
-    float* params_memory = (float*)mallocCheck(num_parameters * sizeof(float));
+    float* params_memory = (float*)mallocCheck(नुमेरो_parameters * sizeof(float));
     // assign all the tensors
     float** ptrs[] = {
         &params->wte, &params->wpe, &params->ln1w, &params->ln1b, &params->qkvw, &params->qkvb,
@@ -591,14 +591,14 @@ float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes
         &params->fcprojw, &params->fcprojb, &params->lnfw, &params->lnfb
     };
     float* params_memory_iterator = params_memory;
-    for (size_t i = 0; i < NUM_PARAMETER_TENSORS; i++) {
+    for (size_t i = 0; i < नुमेरो_PARAMETER_TENSORS; i++) {
         *(ptrs[i]) = params_memory_iterator;
         params_memory_iterator += param_sizes[i];
     }
     return params_memory;
 }
 
-#define NUM_ACTIVATION_TENSORS 23
+#define नुमेरो_ACTIVATION_TENSORS 23
 typedef struct {
     float* encoded; // (B, T, C)
     float* ln1; // (L, B, T, C)
@@ -627,8 +627,8 @@ typedef struct {
 
 void fill_in_activation_sizes(size_t* act_sizes, GPT2Config config, int B, int T) {
     size_t C = config.channels;
-    size_t NH = config.num_heads;
-    size_t L = config.num_layers;
+    size_t NH = config.नुमेरो_heads;
+    size_t L = config.नुमेरो_layers;
     size_t Vp = config.padded_vocab_size;
     act_sizes[0] = B * T * C; // encoded
     act_sizes[1] = L * B * T * C; // ln1
@@ -656,11 +656,11 @@ void fill_in_activation_sizes(size_t* act_sizes, GPT2Config config, int B, int T
 }
 
 float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes) {
-    size_t num_activations = 0;
-    for (size_t i = 0; i < NUM_ACTIVATION_TENSORS; i++) {
-        num_activations += act_sizes[i];
+    size_t नुमेरो_activations = 0;
+    for (size_t i = 0; i < नुमेरो_ACTIVATION_TENSORS; i++) {
+        नुमेरो_activations += act_sizes[i];
     }
-    float* acts_memory = (float*)mallocCheck(num_activations * sizeof(float));
+    float* acts_memory = (float*)mallocCheck(नुमेरो_activations * sizeof(float));
     float** ptrs[] = {
         &acts->encoded, &acts->ln1, &acts->ln1_mean, &acts->ln1_rstd, &acts->qkv, &acts->atty,
         &acts->preatt, &acts->att, &acts->attproj, &acts->residual2, &acts->ln2, &acts->ln2_mean,
@@ -668,7 +668,7 @@ float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes) 
         &acts->lnf_mean, &acts->lnf_rstd, &acts->logits, &acts->probs, &acts->losses
     };
     float* acts_memory_iterator = acts_memory;
-    for (size_t i = 0; i < NUM_ACTIVATION_TENSORS; i++) {
+    for (size_t i = 0; i < नुमेरो_ACTIVATION_TENSORS; i++) {
         *(ptrs[i]) = acts_memory_iterator;
         acts_memory_iterator += act_sizes[i];
     }
@@ -679,9 +679,9 @@ typedef struct {
     GPT2Config config;
     // the weights (parameters) of the model, and their sizes
     ParameterTensors params;
-    size_t param_sizes[NUM_PARAMETER_TENSORS];
+    size_t param_sizes[नुमेरो_PARAMETER_TENSORS];
     float* params_memory;
-    size_t num_parameters;
+    size_t नुमेरो_parameters;
     // gradients of the weights
     ParameterTensors grads;
     float* grads_memory;
@@ -690,9 +690,9 @@ typedef struct {
     float* v_memory;
     // the activations of the model, and their sizes
     ActivationTensors acts;
-    size_t act_sizes[NUM_ACTIVATION_TENSORS];
+    size_t act_sizes[नुमेरो_ACTIVATION_TENSORS];
     float* acts_memory;
-    size_t num_activations;
+    size_t नुमेरो_activations;
     // gradients of the activations
     ActivationTensors grads_acts;
     float* grads_acts_memory;
@@ -721,8 +721,8 @@ void gpt2_build_from_checkpoint(GPT2 *model, const char* checkpoint_path) {
     size_t maxT, V, Vp, L, NH, C; // size_t to prevent int overflow
     model->config.max_seq_len = maxT = model_header[2];
     model->config.vocab_size = V = model_header[3];
-    model->config.num_layers = L = model_header[4];
-    model->config.num_heads = NH = model_header[5];
+    model->config.नुमेरो_layers = L = model_header[4];
+    model->config.नुमेरो_heads = NH = model_header[5];
     model->config.channels = C = model_header[6];
     model->config.padded_vocab_size = Vp = model_header[7];
     printf("[GPT-2]\n");
@@ -737,16 +737,16 @@ void gpt2_build_from_checkpoint(GPT2 *model, const char* checkpoint_path) {
     fill_in_parameter_sizes(model->param_sizes,  model->config);
 
     // count the number of parameters
-    size_t num_parameters = 0;
-    for (size_t i = 0; i < NUM_PARAMETER_TENSORS; i++) {
-        num_parameters += model->param_sizes[i];
+    size_t नुमेरो_parameters = 0;
+    for (size_t i = 0; i < नुमेरो_PARAMETER_TENSORS; i++) {
+        नुमेरो_parameters += model->param_sizes[i];
     }
-    printf("num_parameters: %zu\n", num_parameters);
-    model->num_parameters = num_parameters;
+    printf("num_parameters: %zu\n", नुमेरो_parameters);
+    model->नुमेरो_parameters = नुमेरो_parameters;
 
     // read in all the parameters from file
     model->params_memory = malloc_and_point_parameters(&model->params, model->param_sizes);
-    freadCheck(model->params_memory, sizeof(float), num_parameters, model_file);
+    freadCheck(model->params_memory, sizeof(float), नुमेरो_parameters, model_file);
     fcloseCheck(model_file);
 
     // other inits
@@ -774,8 +774,8 @@ void gpt2_forward(GPT2 *model, int* inputs, int* targets, size_t B, size_t T) {
     // convenience parameters (size_t to help prevent int overflow)
     size_t V = model->config.vocab_size;
     size_t Vp = model->config.padded_vocab_size;
-    size_t L = model->config.num_layers;
-    size_t NH = model->config.num_heads;
+    size_t L = model->config.नुमेरो_layers;
+    size_t NH = model->config.नुमेरो_heads;
     size_t C = model->config.channels;
 
     // validate inputs, all indices must be in the range [0, V)
@@ -793,12 +793,12 @@ void gpt2_forward(GPT2 *model, int* inputs, int* targets, size_t B, size_t T) {
         model->seq_len = T;
         // and now allocate the space
         fill_in_activation_sizes(model->act_sizes, model->config, B, T);
-        size_t num_activations = 0;
-        for (size_t i = 0; i < NUM_ACTIVATION_TENSORS; i++) {
-            num_activations += model->act_sizes[i];
+        size_t नुमेरो_activations = 0;
+        for (size_t i = 0; i < नुमेरो_ACTIVATION_TENSORS; i++) {
+            नुमेरो_activations += model->act_sizes[i];
         }
-        printf("num_activations: %zu\n", num_activations);
-        model->num_activations = num_activations;
+        printf("num_activations: %zu\n", नुमेरो_activations);
+        model->नुमेरो_activations = नुमेरो_activations;
         model->acts_memory = malloc_and_point_activations(&model->acts, model->act_sizes);
         // also create memory for caching inputs and targets
         model->inputs = (int*)mallocCheck(B * T * sizeof(int));
@@ -891,8 +891,8 @@ void gpt2_forward(GPT2 *model, int* inputs, int* targets, size_t B, size_t T) {
 }
 
 void gpt2_zero_grad(GPT2 *model) {
-    if(model->grads_memory != NULL) { memset(model->grads_memory, 0, model->num_parameters * sizeof(float)); }
-    if(model->grads_acts_memory != NULL) { memset(model->grads_acts_memory, 0, model->num_activations * sizeof(float)); }
+    if(model->grads_memory != NULL) { memset(model->grads_memory, 0, model->नुमेरो_parameters * sizeof(float)); }
+    if(model->grads_acts_memory != NULL) { memset(model->grads_acts_memory, 0, model->नुमेरो_activations * sizeof(float)); }
 }
 
 void gpt2_backward(GPT2 *model) {
@@ -915,8 +915,8 @@ void gpt2_backward(GPT2 *model) {
     size_t T = model->seq_len;
     size_t V = model->config.vocab_size;
     size_t Vp = model->config.padded_vocab_size;
-    size_t L = model->config.num_layers;
-    size_t NH = model->config.num_heads;
+    size_t L = model->config.नुमेरो_layers;
+    size_t NH = model->config.नुमेरो_heads;
     size_t C = model->config.channels;
 
     // backward pass: go in the reverse order of the forward pass, and call backward() functions
@@ -1009,11 +1009,11 @@ void gpt2_update(GPT2 *model, float learning_rate, float beta1, float beta2, flo
 
     // lazily allocate the memory for m_memory and v_memory
     if (model->m_memory == NULL) {
-        model->m_memory = (float*)calloc(model->num_parameters, sizeof(float));
-        model->v_memory = (float*)calloc(model->num_parameters, sizeof(float));
+        model->m_memory = (float*)calloc(model->नुमेरो_parameters, sizeof(float));
+        model->v_memory = (float*)calloc(model->नुमेरो_parameters, sizeof(float));
     }
 
-    for (size_t i = 0; i < model->num_parameters; i++) {
+    for (size_t i = 0; i < model->नुमेरो_parameters; i++) {
         float param = model->params_memory[i];
         float grad = model->grads_memory[i];
 
@@ -1092,9 +1092,9 @@ int main() {
     DataLoader train_loader, val_loader;
     dataloader_init(&train_loader, train_tokens, B, T, 0, 1, 1);
     dataloader_init(&val_loader, val_tokens, B, T, 0, 1, 0);
-    printf("train dataset num_batches: %zu\n", train_loader.num_tokens / (B*T));
-    printf("val dataset num_batches: %zu\n", val_loader.num_tokens / (B*T));
-    int val_num_batches = 5;
+    printf("train dataset num_batches: %zu\n", train_loader.नुमेरो_tokens / (B*T));
+    printf("val dataset num_batches: %zu\n", val_loader.नुमेरो_tokens / (B*T));
+    int val_नुमेरो_batches = 5;
 
     // build the Tokenizer
     Tokenizer tokenizer;
@@ -1113,12 +1113,12 @@ int main() {
         if (step % 10 == 0) {
             float val_loss = 0.0f;
             dataloader_reset(&val_loader);
-            for (int i = 0; i < val_num_batches; i++) {
+            for (int i = 0; i < val_नुमेरो_batches; i++) {
                 dataloader_next_batch(&val_loader);
                 gpt2_forward(&model, val_loader.inputs, val_loader.targets, B, T);
                 val_loss += model.mean_loss;
             }
-            val_loss /= val_num_batches;
+            val_loss /= val_नुमेरो_batches;
             printf("val loss %f\n", val_loss);
         }
 

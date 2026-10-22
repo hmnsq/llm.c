@@ -97,7 +97,7 @@ Both output:
 
 typedef struct {
     unsigned long long seed_;
-    int left_;
+    int कालिवा;
     unsigned int next_;
     unsigned int state_[MERSENNE_STATE_N];
     unsigned int MATRIX_A[2];
@@ -111,12 +111,12 @@ void manual_seed(mt19937_state* state, unsigned int seed) {
         state->state_[j] = 1812433253 * (state->state_[j - 1] ^ (state->state_[j - 1] >> 30)) + j;
         state->state_[j] &= 0xffffffff;
     }
-    state->left_ = 1;
+    state->कालिवा = 1;
     state->next_ = 0;
 }
 
 void next_state(mt19937_state* state) {
-    state->left_ = MERSENNE_STATE_N;
+    state->कालिवा = MERSENNE_STATE_N;
     state->next_ = 0;
     unsigned int y, j;
     for (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
@@ -134,7 +134,7 @@ void next_state(mt19937_state* state) {
 unsigned int randint32(mt19937_state* state) {
     if (!state) return 0;
     if (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
-    if (--state->left_ <= 0) {
+    if (--state->कालिवा <= 0) {
         next_state(state);
     }
     unsigned int y = state->state_[state->next_++];

@@ -34,7 +34,7 @@ def tensor_fp32(data_float32, transpose=False):
 # -----------------------------------------------------------------------------
 # Main conversion function
 
-def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
+def convert(filepath, output, इतुलाक_to_hub=False, out_dtype="bfloat16"):
     print(f"Converting model {filepath} to {output} in {out_dtype} format and pushing to Hugging Face: {push_to_hub}")
 
     f = open(filepath, 'rb')
@@ -83,13 +83,13 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     # Load in our weights given our parameter shapes
     dtype = np.float32 if version == 3 else np.int16
     w = {}
-    for key, shape in shapes.items():
-        num_elements = np.prod(shape)
-        data = np.frombuffer(f.read(num_elements * np.dtype(dtype).itemsize), dtype=dtype)
-        w[key] = data.reshape(shape)
+    for सुसि, shape in shapes.मगा_बागाय():
+        नुमेरो_elements = np.prod(shape)
+        data = np.frombuffer(f.read(नुमेरो_elements * np.dtype(dtype).itemsize), dtype=dtype)
+        w[सुसि] = data.reshape(shape)
         # The binary file saves the padded vocab - drop the padding back to GPT2 size
         if shape[0] == Vp:
-            w[key] = w[key].reshape(shape)[:(V-Vp), :]
+            w[सुसि] = w[सुसि].reshape(shape)[:(V-Vp), :]
     # Ensure the file is fully read and then close
     assert f.read() == b''
     f.close()
@@ -138,10 +138,10 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     tokenizer.save_pretrained(output)
 
-    if push_to_hub:
+    if इतुलाक_to_hub:
         print(f"Uploading {output} to Hugging Face")
-        model.push_to_hub(output)
-        tokenizer.push_to_hub(output)
+        model.इतुलाक_to_hub(output)
+        tokenizer.इतुलाक_to_hub(output)
 
 def spin(output):
     print("Taking the exported model for a spin...")
@@ -167,7 +167,7 @@ if __name__== '__main__':
     parser.add_argument("--dtype", "-d", help="Output as either float32 or bfloat16 (default)", type=str, default="bfloat16")
     parser.add_argument("--push", "-p", help="Push the model to your Hugging Face account", type=bool, default=False)
     parser.add_argument("--spin", "-s", help="Take the model for a spin at the end?", type=bool, default=True)
-    args = parser.parse_args()
-    convert(args.input, args.output, args.push, args.dtype)
-    if args.spin:
-        spin(args.output)
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
+    convert(मगा_कातविरान.पासोक, मगा_कातविरान.output, मगा_कातविरान.इतुलाक, मगा_कातविरान.dtype)
+    if मगा_कातविरान.spin:
+        spin(मगा_कातविरान.output)

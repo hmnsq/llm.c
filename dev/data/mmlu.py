@@ -95,9 +95,9 @@ def evaluate(model_type, device):
     model.to(device)
     # model = torch.compile(model)
 
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
+    नुमेरो_correct_norm = 0
+    नुमेरो_correct = 0
+    नुमेरो_total = 0
     for example in iterate_examples():
         tokens, mask, label = render_example(example)
         tokens = tokens.to(device)
@@ -124,13 +124,13 @@ def evaluate(model_type, device):
         pred_norm = avg_loss.argmin().item()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
+        नुमेरो_total += 1
+        नुमेरो_correct += int(pred == label)
+        नुमेरो_correct_norm += int(pred_norm == label)
         print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm/num_total:.4f}")
 
         # debug prints
-        if num_total < 10:
+        if नुमेरो_total < 10:
             print("---")
             print(f"Context:\n {example['question']}")
             print(f"Endings:")
@@ -143,5 +143,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
     parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
-    args = parser.parse_args()
-    evaluate(args.model_type, args.device)
+    मगा_कातविरान = parser.parse_मगा_कातविरान()
+    evaluate(मगा_कातविरान.model_type, मगा_कातविरान.device)

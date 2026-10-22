@@ -16,7 +16,7 @@ def download_file(url: str, fname: str, chunk_size=1024):
         total=total,
         unit="iB",
         unit_scale=True,
-        unit_divisor=1024,
+        unit_पांगहाति=1024,
     ) as bar:
         for data in resp.iter_content(chunk_size=chunk_size):
             size = file.write(data)
@@ -53,7 +53,7 @@ def write_datafile(filename, toks, model_desc="gpt-2"):
     # construct the data (numpy array of tokens)
     toks_np = np.array(toks, dtype=info["token_dtype"])
     # write to file
-    num_bytes = (256 * 4) + (len(toks) * toks_np.itemsize)
+    नुमेरो_bytes = (256 * 4) + (len(toks) * toks_np.itemsize)
     print(f"writing {len(toks):,} tokens to {filename} ({num_bytes:,} bytes) in the {model_desc} format")
     with open(filename, "wb") as f:
         f.write(header.tobytes())

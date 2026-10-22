@@ -9,8 +9,8 @@
 extern cudaDeviceProp deviceProp;
 
 template<class T>
-__host__ __device__ T ceil_div(T dividend, T divisor) {
-    return (dividend + divisor-1) / divisor;
+__host__ __device__ T ceil_div(T dividend, T पांगहाति) {
+    return (dividend + पांगहाति-1) / पांगहाति;
 }
 
 __device__ float warpReduceSum(float val) {
@@ -33,12 +33,12 @@ __device__ inline float blockReduce(float val, bool final_sync, float out_of_bou
     __shared__ float shared_val[WARP_SIZE];
     const int lane_id = threadIdx.x % WARP_SIZE;
     const int warp_id = threadIdx.x / WARP_SIZE;
-    const int num_warps = blockDim.x / WARP_SIZE;
+    const int नुमेरो_warps = blockDim.x / WARP_SIZE;
 
     float warp_val = warp_reduction(val);
     if (lane_id == 0) { shared_val[warp_id] = warp_val; }
     __syncthreads();
-    warp_val = (lane_id < num_warps) ? shared_val[lane_id] : out_of_bounds;
+    warp_val = (lane_id < नुमेरो_warps) ? shared_val[lane_id] : out_of_bounds;
     float block_val = warp_reduction(warp_val);
 
     if (final_sync) {
@@ -57,9 +57,9 @@ __device__ inline float blockReduce(float val) {
 // checking utils
 
 // CUDA error checking
-void cuda_check(cudaError_t error, const char *file, int line) {
+void cuda_check(cudaError_t error, const char *file, int लिन्या) {
     if (error != cudaSuccess) {
-        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line,
+        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, लिन्या,
                cudaGetErrorString(error));
         exit(EXIT_FAILURE);
     }
@@ -67,10 +67,10 @@ void cuda_check(cudaError_t error, const char *file, int line) {
 #define cudaCheck(err) (cuda_check(err, __FILE__, __LINE__))
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+void cublasCheck(cublasStatus_t status, const char *file, int लिन्या)
 {
     if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
+        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, लिन्या);
         exit(EXIT_FAILURE);
     }
 }
@@ -88,7 +88,7 @@ cublasHandle_t cublas_handle;
 cublasLtHandle_t cublaslt_handle;
 int cuda_arch_major = 0;
 int cuda_arch_minor = 0;
-int cuda_num_SMs = 0; // for persistent threads where we want 1 threadblock per SM
+int cuda_नुमेरो_SMs = 0; // for persistent threads where we want 1 threadblock per SM
 int cuda_threads_per_SM = 0;    // needed to calculate how many blocks to launch to fill up the GPU
 
 // ----------------------------------------------------------------------------
@@ -115,10 +115,10 @@ struct alignas(16) Packed128 {
         memcpy(&payload, &bits, sizeof(bits));
     }
 
-    __device__  static Packed128 constant(ElementType value) {
+    __device__  static Packed128 constant(ElementType हालागा) {
         Packed128 result;
         for(int k = 0; k < size; ++k) {
-            result.payload[k] = value;
+            result.payload[k] = हालागा;
         }
         return result;
     }
@@ -164,18 +164,18 @@ __device__ Packed128<ElementType> load128cs(const ElementType* address) {
 }
 // store a Packed128 to an aligned memory address
 template<class ElementType>
-__device__ void store128(ElementType* target, Packed128<ElementType> value) {
-    *reinterpret_cast<int4*>(target) = value.get_bits();
+__device__ void store128(ElementType* target, Packed128<ElementType> हालागा) {
+    *reinterpret_cast<int4*>(target) = हालागा.get_bits();
 }
 // store a Packed128 to an aligned memory address with streaming cache hint
 template<class ElementType>
-__device__ void store128cs(ElementType* target, Packed128<ElementType> value) {
-    __stcs(reinterpret_cast<int4*>(target), value.get_bits());
+__device__ void store128cs(ElementType* target, Packed128<ElementType> हालागा) {
+    __stcs(reinterpret_cast<int4*>(target), हालागा.get_bits());
 }
 // store a Packed128 to an aligned memory address while caching in L2 but bypassing L1
 template<class ElementType>
-__device__ void store128cg(ElementType* target, Packed128<ElementType> value) {
-    __stcg(reinterpret_cast<int4*>(target), value.get_bits());
+__device__ void store128cg(ElementType* target, Packed128<ElementType> हालागा) {
+    __stcg(reinterpret_cast<int4*>(target), हालागा.get_bits());
 }
 
 // ----------------------------------------------------------------------------
@@ -213,8 +213,8 @@ __device__ floatX __ldcs(const floatX* address) {
     return __nv_bfloat16_raw{bf};
 }
 
-__device__ void __stcs(floatX* address, floatX value) {
-    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)value).x);
+__device__ void __stcs(floatX* address, floatX हालागा) {
+    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)हालागा).x);
 }
 #endif
 
@@ -264,14 +264,14 @@ float* make_ones_float(size_t N) {
 // testing and benchmarking utils
 
 template<class TargetType>
-[[nodiscard]] cudaError_t memcpy_convert(TargetType* d_ptr, float* h_ptr, size_t count) {
+[[nodiscard]] cudaError_t memcpy_convert(TargetType* d_ptr, float* h_ptr, size_t बिलांग) {
     // copy from host to device with data type conversion.
-    TargetType* converted = (TargetType*)malloc(count * sizeof(TargetType));
-    for (int i = 0; i < count; i++) {
+    TargetType* converted = (TargetType*)malloc(बिलांग * sizeof(TargetType));
+    for (int i = 0; i < बिलांग; i++) {
         converted[i] = (TargetType)h_ptr[i];
     }
 
-    cudaError_t status = cudaMemcpy(d_ptr, converted, count * sizeof(TargetType), cudaMemcpyHostToDevice);
+    cudaError_t status = cudaMemcpy(d_ptr, converted, बिलांग * sizeof(TargetType), cudaMemcpyHostToDevice);
     free(converted);
 
     // instead of checking the status at cudaMemcpy, we return it from here. This way, we
@@ -288,7 +288,7 @@ void setup_main() {
     cudaCheck(cudaSetDevice(deviceIdx));
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, deviceIdx);
-    cuda_num_SMs = deviceProp.multiProcessorCount;
+    cuda_नुमेरो_SMs = deviceProp.multi_Processor_बिलांग;
     cuda_threads_per_SM = deviceProp.maxThreadsPerMultiProcessor;
     cuda_arch_major = deviceProp.major;
     cuda_arch_minor = deviceProp.minor;
@@ -308,16 +308,16 @@ void setup_main() {
 }
 
 template<class D, class T>
-void validate_result(D* device_result, const T* cpu_reference, const char* name, std::size_t num_elements, T tolerance=1e-4) {
-    D* out_gpu = (D*)malloc(num_elements * sizeof(D));
-    cudaCheck(cudaMemcpy(out_gpu, device_result, num_elements * sizeof(D), cudaMemcpyDeviceToHost));
+void validate_result(D* device_result, const T* cpu_reference, const char* name, std::size_t नुमेरो_elements, T tolerance=1e-4) {
+    D* out_gpu = (D*)malloc(नुमेरो_elements * sizeof(D));
+    cudaCheck(cudaMemcpy(out_gpu, device_result, नुमेरो_elements * sizeof(D), cudaMemcpyDeviceToHost));
     int nfaults = 0;
 #ifndef ENABLE_BF16
     float epsilon = FLT_EPSILON;
 #else
     float epsilon = 0.079;
 #endif
-    for (int i = 0; i < num_elements; i++) {
+    for (int i = 0; i < नुमेरो_elements; i++) {
         // Skip masked elements
         if(!isfinite(cpu_reference[i]))
             continue;
@@ -348,8 +348,8 @@ void validate_result(D* device_result, const T* cpu_reference, const char* name,
     free(out_gpu);
 }
 
-template<class Kernel, class... KernelArgs>
-float benchmark_kernel(int repeats, Kernel kernel, KernelArgs&&... kernel_args) {
+template<class Kernel, class... Kernel_मगा_कातविरान>
+float benchmark_kernel(int repeats, Kernel kernel, Kernel_मगा_कातविरान&&... kernel_मगा_कातविरान) {
     cudaEvent_t start, stop;
     // prepare buffer to scrub L2 cache between benchmarks
     // just memset a large dummy array, recommended by
@@ -370,7 +370,7 @@ float benchmark_kernel(int repeats, Kernel kernel, KernelArgs&&... kernel_args) 
         cudaCheck(cudaMemset(flush_buffer, 0, deviceProp.l2CacheSize));
         // now we can start recording the timing of the kernel
         cudaCheck(cudaEventRecord(start, nullptr));
-        kernel(std::forward<KernelArgs>(kernel_args)...);
+        kernel(std::forward<Kernel_मगा_कातविरान>(kernel_मगा_कातविरान)...);
         cudaCheck(cudaEventRecord(stop, nullptr));
         cudaCheck(cudaEventSynchronize(start));
         cudaCheck(cudaEventSynchronize(stop));
