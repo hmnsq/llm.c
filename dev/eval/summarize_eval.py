@@ -3,12 +3,12 @@
 # this script is optional, the run_eval.sh should already print these
 # but this script can be used to re-print them
 
-import json, sys
+ഇറക്കുമതി json, sys
 
 RESULT = sys.argv[1]
 print("-"*40)
 
-key = {"arc_challenge_25shot.json": "acc_norm",
+താക്കോൽ = {"arc_challenge_25shot.json": "acc_norm",
        "gsm8k_5shot.json": "acc",
        "hellaswag_10shot.json": "acc_norm",
        "mmlu_5shot.json": "acc",
@@ -17,14 +17,14 @@ key = {"arc_challenge_25shot.json": "acc_norm",
        }
 
 total = 0
-for test in ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
-    data = json.loads(open("./%s/%s"%(RESULT, test)).read())
-    r_count = 0
+വേണ്ടി test ഇൽ ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
+    data = json.loads(open("./%s/%s"%(RESULT, test)).പഠ())
+    r_എണ്ണം = 0
     r_total = 0
-    for test_name in data['results']:
-      r_count += 1
-      r_total += data['results'][test_name][key[test]]
-    score = (r_total*100)/r_count
+    വേണ്ടി test_name ഇൽ data['results']:
+      r_എണ്ണം += 1
+      r_total += data['results'][test_name][താക്കോൽ[test]]
+    score = (r_total*100)/r_എണ്ണം
     print(f"{test:<30} : {score:.4f}")
     total += score
 average = total / 6.0

@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#അന്തര്ഭാവ <stdio.h>
+#അന്തര്ഭാവ <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
 #define OUTLIER_DETECTOR_WINDOW_SIZE 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+തരനിർവചനം ഘടന {
+    ഇരട്ട buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
+    പൂർണ്ണസംഖ്യ എണ്ണം;
+    പൂർണ്ണസംഖ്യ index;
+    ഇരട്ട sum;
+    ഇരട്ട sum_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
+ശൂന്യം init_detector(OutlierDetector *detector) {
+    വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
         detector->buffer[i] = 0.0;
     }
-    detector->count = 0;
+    detector->എണ്ണം = 0;
     detector->index = 0;
     detector->sum = 0.0;
     detector->sum_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+ഇരട്ട update_detector(OutlierDetector *detector, ഇരട്ട new_മൂല്യം) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    എങ്കിൽ (detector->എണ്ണം < OUTLIER_DETECTOR_WINDOW_SIZE) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->buffer[detector->എണ്ണം] = new_മൂല്യം;
+        detector->sum += new_മൂല്യം;
+        detector->sum_sq += new_മൂല്യം * new_മൂല്യം;
+        detector->എണ്ണം++;
+        തിരികെ nan(""); // not enough data yet
 
-    } else {
+    } അല്ലെങ്കിൽ {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        ഇരട്ട old_മൂല്യം = detector->buffer[detector->index];
+        detector->sum -= old_മൂല്യം;
+        detector->sum_sq -= old_മൂല്യം * old_മൂല്യം;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->buffer[detector->index] = new_മൂല്യം;
+        detector->sum += new_മൂല്യം;
+        detector->sum_sq += new_മൂല്യം * new_മൂല്യം;
         // move the index to the next position
         detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        ഇരട്ട mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
+        ഇരട്ട variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
+        ഇരട്ട std_dev = sqrt(variance);
+        എങ്കിൽ (std_dev == 0.0) {
+            തിരികെ 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        ഇരട്ട z = (new_മൂല്യം - mean) / std_dev;
 
-        return z;
+        തിരികെ z;
     }
 }

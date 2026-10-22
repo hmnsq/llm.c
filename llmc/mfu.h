@@ -1,13 +1,13 @@
 #ifndef MFU_H
 #define MFU_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#if __has_include(<nvml.h>)
+#അന്തര്ഭാവ <stdio.h>
+#അന്തര്ഭാവ <stdlib.h>
+#അന്തര്ഭാവ <string.h>
+#എങ്കിൽ __has_include(<nvml.h>)
 #define USE_NVML 1
-#include <nvml.h>
-#else
+#അന്തര്ഭാവ <nvml.h>
+#അല്ലെങ്കിൽ
 #define USE_NVML 0
 #endif
 
@@ -16,10 +16,10 @@
 #define MFUH_PRECISION_FP16 1
 #define MFUH_PRECISION_BF16 2
 
-#if USE_NVML
-inline void nvml_check(nvmlReturn_t status, const char *file, int line) {
-    if (status != NVML_SUCCESS) {
-        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, line, nvmlErrorString(status));
+#എങ്കിൽ USE_NVML
+വരിയിൽ ശൂന്യം nvml_check(nvmlReturn_t status, സ്ഥിരം അക്ഷരം *file, പൂർണ്ണസംഖ്യ വരി) {
+    എങ്കിൽ (status != NVML_SUCCESS) {
+        printf("[NVML ERROR] at file %s:%d:\n%s\n", file, വരി, nvmlErrorString(status));
         exit(EXIT_FAILURE);
     }
 };
@@ -27,33 +27,33 @@ inline void nvml_check(nvmlReturn_t status, const char *file, int line) {
 #endif
 
 
-typedef struct {
-    float TF_32;       // tensor-core performance 32 bit
-    float BF_16_32;    // bf16 with 32 bit accumulate
-    float FP_16_32;    // fp16 with 32 bit accumulate
-    float FP_16_16;    // fp16 with 16 bit accumulate
-    float FP_8_32;     // and so on
-    float FP_8_16;
-    float CLOCK;        // clock frequency from the spec sheet
-    float CORES;        // #TCs from the spec sheet
+തരനിർവചനം ഘടന {
+    ദശാംശം TF_32;       // tensor-core performance 32 bit
+    ദശാംശം BF_16_32;    // bf16 with 32 bit accumulate
+    ദശാംശം FP_16_32;    // fp16 with 32 bit accumulate
+    ദശാംശം FP_16_16;    // fp16 with 16 bit accumulate
+    ദശാംശം FP_8_32;     // and so on
+    ദശാംശം FP_8_16;
+    ദശാംശം CLOCK;        // clock frequency from the spec sheet
+    ദശാംശം CORES;        // #TCs from the spec sheet
 } PerfData;
 
 // basic default data from the nvidia whitepapers
-static const PerfData VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
-static const PerfData AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
-static const PerfData AMPERE_CONSUMER = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
-static const PerfData HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
-static const PerfData ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
+സ്ഥിതം സ്ഥിരം PerfData VOLTA = {125.0f, -1.f, 125.f, -1.f, -1.f, -1.f, 1530.f, 640.f};
+സ്ഥിതം സ്ഥിരം PerfData AMPERE_DATACENTER = {156.f, 312.f, 312.f, 312.f, -1.f, -1.f, 1410.f, 432.f};
+സ്ഥിതം സ്ഥിരം PerfData AMPERE_CONSUMER = {40.f, 80.f, 80.f, 160.f, -1.f, -1.f, 1860.f, 336.f};
+സ്ഥിതം സ്ഥിരം PerfData HOPPER = {378.f, 756.f, 756.f, 756.f, 1513.f, 1513.f, 1620.f, 456.f};
+സ്ഥിതം സ്ഥിരം PerfData ADA = {82.6f, 165.2f, 165.2f, 330.3f, 330.3f, 660.6f, 2520.f, 512.f};
 
-typedef struct {
-    const char* name;
-    const PerfData* perf_data;
-    float new_cores;
-    float new_mhz;
+തരനിർവചനം ഘടന {
+    സ്ഥിരം അക്ഷരം* name;
+    സ്ഥിരം PerfData* perf_data;
+    ദശാംശം new_cores;
+    ദശാംശം new_mhz;
 } GPUEntry;
 
 // the overrides for each specific GPU
-static GPUEntry gpu_db[] = {
+സ്ഥിതം GPUEntry gpu_db[] = {
     {"Tesla V100-SXM2-16GB", &VOLTA, 640, 1530},
     {"Tesla V100-PCIE-32GB", &VOLTA, 640, 1530},
     {"NVIDIA A100-PCIE-40GB", &AMPERE_DATACENTER, 432, 1410},
@@ -94,7 +94,7 @@ static GPUEntry gpu_db[] = {
     {"NVIDIA H100 80GB HBM3", &HOPPER, 528, 1830}, // HBM3 = SXM5
 };
 
-float get_flops_promised(const char* device, int precision_mode) {
+ദശാംശം get_flops_promised(സ്ഥിരം അക്ഷരം* device, പൂർണ്ണസംഖ്യ precision_mode) {
     /*
     This function is used to estimate the Model Flops Utilization (MFU)
     basically we have to figure out how many flops the GPU can do per second.
@@ -117,78 +117,78 @@ float get_flops_promised(const char* device, int precision_mode) {
     */
 
    // validate the precision mode as one of the three possible values
-    if (!(precision_mode == MFUH_PRECISION_FP32 || precision_mode == MFUH_PRECISION_FP16 || precision_mode == MFUH_PRECISION_BF16)) {
+    എങ്കിൽ (!(precision_mode == MFUH_PRECISION_FP32 || precision_mode == MFUH_PRECISION_FP16 || precision_mode == MFUH_PRECISION_BF16)) {
         fprintf(stderr, "Invalid precision mode: %d\n", precision_mode);
-        return -1.0f;
+        തിരികെ -1.0f;
     }
 
     // do a linear search until you find our GPU, then calculate the flops promised
-    int num_gpu_entries = sizeof(gpu_db) / sizeof(gpu_db[0]);
-    for (int i = 0; i < num_gpu_entries; i++) {
-        if (strcmp(gpu_db[i].name, device) == 0) {
-            const PerfData* perf_data = gpu_db[i].perf_data;
+    പൂർണ്ണസംഖ്യ അക്കം_gpu_entries = വലുപ്പം(gpu_db) / വലുപ്പം(gpu_db[0]);
+    വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < അക്കം_gpu_entries; i++) {
+        എങ്കിൽ (strcmp(gpu_db[i].name, device) == 0) {
+            സ്ഥിരം PerfData* perf_data = gpu_db[i].perf_data;
 
             // look up the default flops value for the given precision mode
-            float value = -1.0f;
-            if (precision_mode == MFUH_PRECISION_BF16) { value = perf_data->BF_16_32; }
-            if (precision_mode == MFUH_PRECISION_FP32) { value = perf_data->TF_32; }
-            if (precision_mode == MFUH_PRECISION_FP16) { value = perf_data->FP_16_32; }
+            ദശാംശം മൂല്യം = -1.0f;
+            എങ്കിൽ (precision_mode == MFUH_PRECISION_BF16) { മൂല്യം = perf_data->BF_16_32; }
+            എങ്കിൽ (precision_mode == MFUH_PRECISION_FP32) { മൂല്യം = perf_data->TF_32; }
+            എങ്കിൽ (precision_mode == MFUH_PRECISION_FP16) { മൂല്യം = perf_data->FP_16_32; }
 
             // we'd get here if we're e.g. trying to use BF16 on Volta GPU or something...
-            if (value < 0.0f) {
+            എങ്കിൽ (മൂല്യം < 0.0f) {
                 fprintf(stderr, "No data for GPU %s and precision mode %d\n", device, precision_mode);
-                return -1.0f;
+                തിരികെ -1.0f;
             }
 
             // adjust flops based on the specific core count and clock frequency of this GPU
-            float new_cores = gpu_db[i].new_cores;
-            float new_mhz = gpu_db[i].new_mhz;
-            float adjusted = value * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
-            return adjusted;
+            ദശാംശം new_cores = gpu_db[i].new_cores;
+            ദശാംശം new_mhz = gpu_db[i].new_mhz;
+            ദശാംശം adjusted = മൂല്യം * (new_cores / perf_data->CORES) * (new_mhz / perf_data->CLOCK);
+            തിരികെ adjusted;
         }
     }
 
-    return -1.0f; // ¯\_(ツ)_/¯
+    തിരികെ -1.0f; // ¯\_(ツ)_/¯
 }
 
-struct GPUUtilInfo {
-    unsigned int clock;
-    unsigned int max_clock;
-    unsigned int power;
-    unsigned int power_limit;
-    unsigned int fan;
-    unsigned int temperature;
-    unsigned int temp_slowdown;
+ഘടന GPUUtilInfo {
+    unsigned പൂർണ്ണസംഖ്യ clock;
+    unsigned പൂർണ്ണസംഖ്യ max_clock;
+    unsigned പൂർണ്ണസംഖ്യ power;
+    unsigned പൂർണ്ണസംഖ്യ power_limit;
+    unsigned പൂർണ്ണസംഖ്യ fan;
+    unsigned പൂർണ്ണസംഖ്യ temperature;
+    unsigned പൂർണ്ണസംഖ്യ temp_slowdown;
 
-    float gpu_utilization;
-    float mem_utilization;
-    const char* throttle_reason;
+    ദശാംശം gpu_utilization;
+    ദശാംശം mem_utilization;
+    സ്ഥിരം അക്ഷരം* throttle_reason;
 };
 
 // lazily initialize nvml and generate a handle to the GPU
-#if USE_NVML
+#എങ്കിൽ USE_NVML
 nvmlDevice_t nvml_get_device() {
-    static bool needs_init = true;
-    static nvmlDevice_t device;
-    if(needs_init) {
+    സ്ഥിതം bool needs_init = true;
+    സ്ഥിതം nvmlDevice_t device;
+    എങ്കിൽ(needs_init) {
         needs_init = false;
         nvmlCheck(nvmlInit());
         nvmlCheck(nvmlDeviceGetHandleByIndex_v2(0, &device));
     }
-    return device;
+    തിരികെ device;
 }
 
 // convert throttle reason bitfield into a text reason.
 // this is a lossy conversion; we just want to give some idea of what is happening
-const char* get_throttle_reason(unsigned long long bits) {
-    if(bits & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
-        return "power cap";
-    } else if (bits & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
-        return "thermal cap";
-    } else if (bits & (nvmlClocksThrottleReasonAll)) {
-        return "other cap";
-    } else {
-        return "no cap";
+സ്ഥിരം അക്ഷരം* get_throttle_reason(unsigned long long bits) {
+    എങ്കിൽ(bits & (nvmlClocksThrottleReasonSwPowerCap | nvmlClocksThrottleReasonHwPowerBrakeSlowdown)) {
+        തിരികെ "power cap";
+    } അല്ലെങ്കിൽ എങ്കിൽ (bits & (nvmlClocksThrottleReasonSwThermalSlowdown | nvmlClocksThrottleReasonHwThermalSlowdown)) {
+        തിരികെ "thermal cap";
+    } അല്ലെങ്കിൽ എങ്കിൽ (bits & (nvmlClocksThrottleReasonAll)) {
+        തിരികെ "other cap";
+    } അല്ലെങ്കിൽ {
+        തിരികെ "no cap";
     }
 }
 
@@ -211,31 +211,31 @@ GPUUtilInfo get_gpu_utilization_info() {
     // for "utilization", we look at recorded samples. In principle, we could query the driver for how many samples
     // to request, but then we'd need to dynamically allocate sufficient space. Let's just hard-code a limit of 128,
     // and have no memory management required
-    constexpr const int BUFFER_LIMIT = 128;
+    constexpr സ്ഥിരം പൂർണ്ണസംഖ്യ BUFFER_LIMIT = 128;
     nvmlSample_t buffer[BUFFER_LIMIT];
-    nvmlValueType_t v_type;
-    unsigned int sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float gpu_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        gpu_utilization += (float)buffer[i].sampleValue.uiVal;
+    nvml_മൂല്യം_Type_t v_type;
+    unsigned പൂർണ്ണസംഖ്യ sample_എണ്ണം = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_GPU_UTILIZATION_SAMPLES, 0, &v_type, &sample_എണ്ണം, buffer));
+    ദശാംശം gpu_utilization = 0.f;
+    വേണ്ടി(unsigned i = 0; i < sample_എണ്ണം; ++i) {
+        gpu_utilization += (ദശാംശം)buffer[i].sample_മൂല്യം.uiVal;
     }
-    gpu_utilization /= (float)sample_count;
+    gpu_utilization /= (ദശാംശം)sample_എണ്ണം;
 
     // sample count may have been modified by the query above; reset back to buffer size
-    sample_count = BUFFER_LIMIT;
-    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_count, buffer));
-    float mem_utilization = 0.f;
-    for(unsigned i = 0; i < sample_count; ++i) {
-        mem_utilization += (float)buffer[i].sampleValue.uiVal;
+    sample_എണ്ണം = BUFFER_LIMIT;
+    nvmlCheck(nvmlDeviceGetSamples(device, NVML_MEMORY_UTILIZATION_SAMPLES, 0, &v_type, &sample_എണ്ണം, buffer));
+    ദശാംശം mem_utilization = 0.f;
+    വേണ്ടി(unsigned i = 0; i < sample_എണ്ണം; ++i) {
+        mem_utilization += (ദശാംശം)buffer[i].sample_മൂല്യം.uiVal;
     }
-    mem_utilization /= (float)sample_count;
+    mem_utilization /= (ദശാംശം)sample_എണ്ണം;
 
     info.gpu_utilization = gpu_utilization;
     info.mem_utilization = mem_utilization;
-    return info;
+    തിരികെ info;
 }
-#else
+#അല്ലെങ്കിൽ
 GPUUtilInfo get_gpu_utilization_info() {
     fprintf(stderr, "Error: Compiled without nvml support. Cannot perform additional GPU state tracking.");
     exit(EXIT_FAILURE);

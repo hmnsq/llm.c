@@ -2,38 +2,38 @@
 // then compile for example as `gcc layernorm.c -o layernorm -lm`
 // and then run as `./layernorm` to see the output
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#അന്തര്ഭാവ <stdio.h>
+#അന്തര്ഭാവ <stdlib.h>
+#അന്തര്ഭാവ <math.h>
 
-void layernorm_forward(float* out, float* mean, float* rstd,
-                       float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
-    float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+ശൂന്യം layernorm_forward(ദശാംശം* out, ദശാംശം* mean, ദശാംശം* rstd,
+                       ദശാംശം* inp, ദശാംശം* weight, ദശാംശം* bias,
+                       പൂർണ്ണസംഖ്യ B, പൂർണ്ണസംഖ്യ T, പൂർണ്ണസംഖ്യ C) {
+    ദശാംശം eps = 1e-5f;
+    വേണ്ടി (പൂർണ്ണസംഖ്യ b = 0; b < B; b++) {
+        വേണ്ടി (പൂർണ്ണസംഖ്യ t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
-            float* x = inp + b * T * C + t * C;
+            ദശാംശം* x = inp + b * T * C + t * C;
             // calculate the mean
-            float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            ദശാംശം m = 0.0f;
+            വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
-            float v = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float xshift = x[i] - m;
+            ദശാംശം v = 0.0f;
+            വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < C; i++) {
+                ദശാംശം xshift = x[i] - m;
                 v += xshift * xshift;
             }
             v = v/C;
             // calculate the rstd
-            float s = 1.0f / sqrtf(v + eps);
+            ദശാംശം s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
-            float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
-                float n = (s * (x[i] - m)); // normalized output
-                float o = n * weight[i] + bias[i]; // scale and shift it
+            ദശാംശം* out_bt = out + b * T * C + t * C;
+            വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < C; i++) {
+                ദശാംശം n = (s * (x[i] - m)); // normalized output
+                ദശാംശം o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
             }
             // cache the mean and rstd for the backward pass later
@@ -43,23 +43,23 @@ void layernorm_forward(float* out, float* mean, float* rstd,
     }
 }
 
-void layernorm_backward(float* dinp, float* dweight, float* dbias,
-                        float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
-            float* dout_bt = dout + b * T * C + t * C;
-            float* inp_bt = inp + b * T * C + t * C;
-            float* dinp_bt = dinp + b * T * C + t * C;
-            float mean_bt = mean[b * T + t];
-            float rstd_bt = rstd[b * T + t];
+ശൂന്യം layernorm_backward(ദശാംശം* dinp, ദശാംശം* dweight, ദശാംശം* dbias,
+                        ദശാംശം* dout, ദശാംശം* inp, ദശാംശം* weight, ദശാംശം* mean, ദശാംശം* rstd,
+                        പൂർണ്ണസംഖ്യ B, പൂർണ്ണസംഖ്യ T, പൂർണ്ണസംഖ്യ C) {
+    വേണ്ടി (പൂർണ്ണസംഖ്യ b = 0; b < B; b++) {
+        വേണ്ടി (പൂർണ്ണസംഖ്യ t = 0; t < T; t++) {
+            ദശാംശം* dout_bt = dout + b * T * C + t * C;
+            ദശാംശം* inp_bt = inp + b * T * C + t * C;
+            ദശാംശം* dinp_bt = dinp + b * T * C + t * C;
+            ദശാംശം mean_bt = mean[b * T + t];
+            ദശാംശം rstd_bt = rstd[b * T + t];
 
             // first: two reduce operations
-            float dnorm_mean = 0.0f;
-            float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            ദശാംശം dnorm_mean = 0.0f;
+            ദശാംശം dnorm_norm_mean = 0.0f;
+            വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < C; i++) {
+                ദശാംശം norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ദശാംശം dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
                 dnorm_norm_mean += dnorm_i * norm_bti;
             }
@@ -67,15 +67,15 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
-                float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
-                float dnorm_i = weight[i] * dout_bt[i];
+            വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < C; i++) {
+                ദശാംശം norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
+                ദശാംശം dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
                 dbias[i] += dout_bt[i];
                 // gradient contribution to weight
                 dweight[i] += norm_bti * dout_bt[i];
                 // gradient contribution to input
-                float dval = 0.0f;
+                ദശാംശം dval = 0.0f;
                 dval += dnorm_i; // term 1
                 dval -= dnorm_mean; // term 2
                 dval -= norm_bti * dnorm_norm_mean; // term 3
@@ -87,62 +87,62 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+പൂർണ്ണസംഖ്യ check_tensor(ദശാംശം *a, ദശാംശം *b, പൂർണ്ണസംഖ്യ n, അക്ഷരം* label) {
+    പൂർണ്ണസംഖ്യ ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    വേണ്ടി (പൂർണ്ണസംഖ്യ i = 0; i < n; i++) {
+        എങ്കിൽ (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } അല്ലെങ്കിൽ {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    തിരികെ ok;
 }
 
-int main() {
+പൂർണ്ണസംഖ്യ പ്രധാന() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    പൂർണ്ണസംഖ്യ B = 2; // batch
+    പൂർണ്ണസംഖ്യ T = 3; // time / sequence length
+    പൂർണ്ണസംഖ്യ C = 4; // number of channels
 
-    float* x = (float*) malloc(B * T * C * sizeof(float));
-    float* w = (float*) malloc(C * sizeof(float));
-    float* b = (float*) malloc(C * sizeof(float));
-    float* out = (float*) malloc(B * T * C * sizeof(float));
-    float* mean = (float*) malloc(B * T * sizeof(float));
-    float* rstd = (float*) malloc(B * T * sizeof(float));
-    float* dout = (float*) malloc(B * T * C * sizeof(float));
-    float* dx = (float*) malloc(B * T * C * sizeof(float));
-    float* dw = (float*) malloc(C * sizeof(float));
-    float* db = (float*) malloc(C * sizeof(float));
+    ദശാംശം* x = (ദശാംശം*) malloc(B * T * C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* w = (ദശാംശം*) malloc(C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* b = (ദശാംശം*) malloc(C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* out = (ദശാംശം*) malloc(B * T * C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* mean = (ദശാംശം*) malloc(B * T * വലുപ്പം(ദശാംശം));
+    ദശാംശം* rstd = (ദശാംശം*) malloc(B * T * വലുപ്പം(ദശാംശം));
+    ദശാംശം* dout = (ദശാംശം*) malloc(B * T * C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* dx = (ദശാംശം*) malloc(B * T * C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* dw = (ദശാംശം*) malloc(C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* db = (ദശാംശം*) malloc(C * വലുപ്പം(ദശാംശം));
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    എങ്കിൽ (file == ശൂന്യ) {
         printf("Error opening file\n");
-        return 1;
+        തിരികെ 1;
     }
-    fread(x, sizeof(float), B * T * C, file);
-    fread(w, sizeof(float), C, file);
-    fread(b, sizeof(float), C, file);
-    fread(out, sizeof(float), B * T * C, file);
-    fread(mean, sizeof(float), B * T, file);
-    fread(rstd, sizeof(float), B * T, file);
-    fread(dout, sizeof(float), B * T * C, file);
-    fread(dx, sizeof(float), B * T * C, file);
-    fread(dw, sizeof(float), C, file);
-    fread(db, sizeof(float), C, file);
+    fread(x, വലുപ്പം(ദശാംശം), B * T * C, file);
+    fread(w, വലുപ്പം(ദശാംശം), C, file);
+    fread(b, വലുപ്പം(ദശാംശം), C, file);
+    fread(out, വലുപ്പം(ദശാംശം), B * T * C, file);
+    fread(mean, വലുപ്പം(ദശാംശം), B * T, file);
+    fread(rstd, വലുപ്പം(ദശാംശം), B * T, file);
+    fread(dout, വലുപ്പം(ദശാംശം), B * T * C, file);
+    fread(dx, വലുപ്പം(ദശാംശം), B * T * C, file);
+    fread(dw, വലുപ്പം(ദശാംശം), C, file);
+    fread(db, വലുപ്പം(ദശാംശം), C, file);
     fclose(file);
 
     // now let's calculate everything ourselves
 
     // forward pass
-    float* c_out = (float*) malloc(B * T * C * sizeof(float));
-    float* c_mean = (float*) malloc(B * T * sizeof(float));
-    float* c_rstd = (float*) malloc(B * T * sizeof(float));
+    ദശാംശം* c_out = (ദശാംശം*) malloc(B * T * C * വലുപ്പം(ദശാംശം));
+    ദശാംശം* c_mean = (ദശാംശം*) malloc(B * T * വലുപ്പം(ദശാംശം));
+    ദശാംശം* c_rstd = (ദശാംശം*) malloc(B * T * വലുപ്പം(ദശാംശം));
     layernorm_forward(c_out, c_mean, c_rstd, x, w, b, B, T, C);
 
     // check correctness of forward pass
@@ -151,9 +151,9 @@ int main() {
     check_tensor(rstd, c_rstd, B*T, "rstd");
 
     // backward pass (note calloc inits grads to zero)
-    float* c_dx = (float*) calloc(B * T * C, sizeof(float));
-    float* c_dw = (float*) calloc(B * T, sizeof(float));
-    float* c_db = (float*) calloc(B * T, sizeof(float));
+    ദശാംശം* c_dx = (ദശാംശം*) calloc(B * T * C, വലുപ്പം(ദശാംശം));
+    ദശാംശം* c_dw = (ദശാംശം*) calloc(B * T, വലുപ്പം(ദശാംശം));
+    ദശാംശം* c_db = (ദശാംശം*) calloc(B * T, വലുപ്പം(ദശാംശം));
     layernorm_backward(c_dx, c_dw, c_db, dout, x, w, c_mean, c_rstd, B, T, C);
 
     // check correctness of backward pass
@@ -161,15 +161,15 @@ int main() {
     check_tensor(c_dw, dw, C, "dw");
     check_tensor(c_db, db, C, "db");
 
-    free(x);
-    free(w);
-    free(b);
-    free(out);
-    free(mean);
-    free(rstd);
-    free(dout);
-    free(dx);
-    free(dw);
-    free(db);
-    return 0;
+    സ്വതന്ത്രം(x);
+    സ്വതന്ത്രം(w);
+    സ്വതന്ത്രം(b);
+    സ്വതന്ത്രം(out);
+    സ്വതന്ത്രം(mean);
+    സ്വതന്ത്രം(rstd);
+    സ്വതന്ത്രം(dout);
+    സ്വതന്ത്രം(dx);
+    സ്വതന്ത്രം(dw);
+    സ്വതന്ത്രം(db);
+    തിരികെ 0;
 }

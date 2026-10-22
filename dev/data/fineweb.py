@@ -19,31 +19,31 @@ Example of downloading the 100B dataset of FineWebEDU, from root directory:
 python dev/data/fineweb.py -t edu -v 100B
 100B runs for small few hours, depending on your internet and computer.
 """
-import os
-import argparse
-import multiprocessing as mp
+ഇറക്കുമതി os
+ഇറക്കുമതി argparse
+ഇറക്കുമതി multiprocessing ഇവ mp
 
-import numpy as np
-import tiktoken
-from datasets import load_dataset
-from tqdm import tqdm
+ഇറക്കുമതി numpy ഇവ np
+ഇറക്കുമതി tiktoken
+തഃ datasets ഇറക്കുമതി load_dataset
+തഃ tqdm ഇറക്കുമതി tqdm
 
-from transformers import AutoTokenizer
+തഃ transformers ഇറക്കുമതി AutoTokenizer
 
 
-from data_common import write_datafile
+തഃ data_common ഇറക്കുമതി write_datafile
 # ------------------------------------------
 
 parser = argparse.ArgumentParser(description="FineWeb and Edu-FineWeb dataset preprocessing")
-parser.add_argument("-t", "--type", type=str, default="classic", help="Fineweb type, edu|classic")
-parser.add_argument("-v", "--version", type=str, default="10B", help="Fineweb data sample size, 10B|100B")
-parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", help="Model descriptor, gpt-2|llama-3")
-parser.add_argument("-s", "--shard_size", type=int, default=10**8, help="Size of each data shard in the output .bin files, in tokens")
+parser.add_argument("-t", "--type", type=str, സ്ഥിരസ്ഥിതി="classic", help="Fineweb type, edu|classic")
+parser.add_argument("-v", "--version", type=str, സ്ഥിരസ്ഥിതി="10B", help="Fineweb data sample size, 10B|100B")
+parser.add_argument("-m", "--model_desc", type=str, സ്ഥിരസ്ഥിതി="gpt-2", help="Model descriptor, gpt-2|llama-3")
+parser.add_argument("-s", "--shard_size", type=പൂർണ്ണസംഖ്യ, സ്ഥിരസ്ഥിതി=10**8, help="Size of each data shard in the output .bin files, in tokens")
 args = parser.parse_args()
 
 # FineWeb has a few possible subsamples available
-assert args.version in {"10B", "100B"}, "version must be one of: 10B, 100B"
-assert args.type in {"edu", "classic"}, "type must be one of: edu, classic"
+പ്രതിജ്ഞാ args.version ഇൽ {"10B", "100B"}, "version must be one of: 10B, 100B"
+പ്രതിജ്ഞാ args.type ഇൽ {"edu", "classic"}, "type must be one of: edu, classic"
 directories = {
     ("classic", "10B"): ("fineweb10B", "sample-10BT"),
     ("classic", "100B"): ("fineweb100B", "sample-100BT"),
@@ -54,39 +54,39 @@ local_dir, remote_name = directories[(args.type, args.version)]
 
 # create the cache the local directory if it doesn't exist yet
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), local_dir)
-os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+os.makedirs(DATA_CACHE_DIR, exist_ok=സത്യം)
 
 # download the dataset
-if args.type == "classic":
+എങ്കിൽ args.type == "classic":
     fw = load_dataset("HuggingFaceFW/fineweb", name=remote_name, split="train")
     name = "fineweb"
-elif args.type =="edu":
+അല്ലെങ്കിലെങ്കിൽ args.type =="edu":
     fw = load_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, split="train")
     name = "edu_fineweb"
 
 def tokenize_llama(doc):
     # tokenizes a single document and returns a numpy array of uint32 tokens
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-    encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+    encode = അജ്ഞാത s: tokenizer.encode(s, add_special_tokens=അസത്യം, verbose=അസത്യം, split_special_tokens=സത്യം)
     eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
     tokens = [eot] # the special <|endoftext|> token delimits all documents
     tokens.extend(encode(doc["text"]))
     tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**32).all(), "token dictionary too large for uint32"
+    പ്രതിജ്ഞാ (0 <= tokens_np).all() ഒപ്പം (tokens_np < 2**32).all(), "token dictionary too large for uint32"
     tokens_np_uint = tokens_np.astype(np.uint32)
-    return tokens_np_uint
+    തിരികെ tokens_np_uint
 
 def tokenize_gpt2(doc):
     # tokenizes a single document and returns a numpy array of uint16 tokens
     enc = tiktoken.get_encoding("gpt2")
-    encode = lambda s: enc.encode_ordinary(s)
+    encode = അജ്ഞാത s: enc.encode_ordinary(s)
     eot = enc._special_tokens['<|endoftext|>'] # end of text token
     tokens = [eot] # the special <|endoftext|> token delimits all documents
     tokens.extend(encode(doc["text"]))
     tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**16).all(), "token dictionary too large for uint16"
+    പ്രതിജ്ഞാ (0 <= tokens_np).all() ഒപ്പം (tokens_np < 2**16).all(), "token dictionary too large for uint16"
     tokens_np_uint = tokens_np.astype(np.uint16)
-    return tokens_np_uint
+    തിരികെ tokens_np_uint
 
 token_dtype = {
     "gpt-2": np.uint16,
@@ -94,50 +94,50 @@ token_dtype = {
 }[args.model_desc]
 
 # tokenize all documents and write output shards, each of shard_size tokens (last shard has remainder)
-nprocs = max(1, os.cpu_count() - 2) # don't hog the entire system
-with mp.Pool(nprocs) as pool:
+nprocs = max(1, os.cpu_എണ്ണം() - 2) # don't hog the entire system
+with mp.Pool(nprocs) ഇവ pool:
     shard_index = 0
     # preallocate buffer to hold current shard
     all_tokens_np = np.empty((args.shard_size,), dtype=token_dtype)
-    token_count = 0
+    token_എണ്ണം = 0
     progress_bar = None
 
-    tokenize = lambda x: None
-    if args.model_desc == "gpt-2":
+    tokenize = അജ്ഞാത x: None
+    എങ്കിൽ args.model_desc == "gpt-2":
         tokenize = tokenize_gpt2
-    elif args.model_desc == "llama-3":
+    അല്ലെങ്കിലെങ്കിൽ args.model_desc == "llama-3":
         tokenize = tokenize_llama
-    else:
-        raise ValueError(f"unknown model {args.model_desc}")
+    അല്ലെങ്കിൽ:
+        ഉയർത്തുക മൂല്യം_Error(f"unknown model {args.model_desc}")
 
-    for tokens in pool.imap(tokenize, fw, chunksize=16):
+    വേണ്ടി tokens ഇൽ pool.imap(tokenize, fw, chunksize=16):
 
         # is there enough space in the current shard for the new tokens?
-        if token_count + len(tokens) < args.shard_size:
+        എങ്കിൽ token_എണ്ണം + len(tokens) < args.shard_size:
             # simply append tokens to current shard
-            all_tokens_np[token_count:token_count+len(tokens)] = tokens
-            token_count += len(tokens)
+            all_tokens_np[token_എണ്ണം:token_എണ്ണം+len(tokens)] = tokens
+            token_എണ്ണം += len(tokens)
             # update progress bar
-            if progress_bar is None:
+            എങ്കിൽ progress_bar is None:
                 progress_bar = tqdm(total=args.shard_size, unit="tokens", desc=f"Shard {shard_index}")
             progress_bar.update(len(tokens))
-        else:
+        അല്ലെങ്കിൽ:
             # write the current shard and start a new one
-            split = "val" if shard_index == 0 else "train"
+            split = "val" എങ്കിൽ shard_index == 0 അല്ലെങ്കിൽ "train"
             filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
             # split the document into whatever fits in this shard; the remainder goes to next one
-            remainder = args.shard_size - token_count
+            remainder = args.shard_size - token_എണ്ണം
             progress_bar.update(remainder)
-            all_tokens_np[token_count:token_count+remainder] = tokens[:remainder]
+            all_tokens_np[token_എണ്ണം:token_എണ്ണം+remainder] = tokens[:remainder]
             write_datafile(filename, all_tokens_np.tolist(), args.model_desc)
             shard_index += 1
             progress_bar = None
             # populate the next shard with the leftovers of the current doc
             all_tokens_np[0:len(tokens)-remainder] = tokens[remainder:]
-            token_count = len(tokens)-remainder
+            token_എണ്ണം = len(tokens)-remainder
 
     # write any remaining tokens as the last shard
-    if token_count != 0:
-        split = "val" if shard_index == 0 else "train"
+    എങ്കിൽ token_എണ്ണം != 0:
+        split = "val" എങ്കിൽ shard_index == 0 അല്ലെങ്കിൽ "train"
         filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
-        write_datafile(filename, (all_tokens_np[:token_count]).tolist(), args.model_desc)
+        write_datafile(filename, (all_tokens_np[:token_എണ്ണം]).tolist(), args.model_desc)
