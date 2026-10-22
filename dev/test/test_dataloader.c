@@ -12,15 +12,15 @@ TODOs:
 
 #define SHARD_NAME_LEN 64
 char shard_name[SHARD_NAME_LEN];
-const int num_tokens = 140;
-int num_shards = 4;
+const 整数 num_tokens = 140;
+整数 num_shards = 4;
 
-void check_range(const int *tokens, const int start, const int end, const char *file, int line) {
+void check_range(const 整数 *tokens, const 整数 start, const 整数 end, const char *file, 整数 line) {
     // checks that the tokens[0, ... end-start] are the range [start, end)
-    int n = end - start;
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != start + i) {
+    整数 n = end - start;
+    ために (整数 i = 0; i < n; i++) {
+        整数 token = tokens[i];
+        もし (token != start + i) {
             fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, start + i);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
@@ -32,11 +32,11 @@ void check_range(const int *tokens, const int start, const int end, const char *
 }
 #define checkRange(tokens, start, end) check_range(tokens, start, end, __FILE__, __LINE__)
 
-void check_equals(const int *tokens, const int n, const int expected, const char *file, int line) {
+void check_equals(const 整数 *tokens, const 整数 n, const 整数 expected, const char *file, 整数 line) {
     // checks that the tokens[0, ... n] are all equal to expected
-    for (int i = 0; i < n; i++) {
-        int token = tokens[i];
-        if (token != expected) {
+    ために (整数 i = 0; i < n; i++) {
+        整数 token = tokens[i];
+        もし (token != expected) {
             fprintf(stderr, "Error: tokens[%d] = %d, expected %d\n", i, token, expected);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
@@ -57,22 +57,22 @@ void test_simple(void) {
     DataLoader should just return all the tokens in order
     */
     printf("test_simple... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 0;
+    整数 B = 4;
+    整数 T = 8;
+    整数 process_rank = 0;
+    整数 num_processes = 1;
+    整数 should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
     DataLoader loader;
     dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    整数 batches_fit = num_tokens / (B * T); // number of batches that fit per shard
+    整数 BT = B * T;
+    整数 num_epochs = 4;
+    ために (整数 e = 0; e < num_epochs; e++) { // epoch
+        ために (整数 s = 0; s < num_shards; s++) { // shard
+            整数 start = s * num_tokens;
+            ために (整数 b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader);
                 checkRange(loader.inputs, start, start + BT);
                 checkRange(loader.targets, start + 1, start + BT + 1);
@@ -92,22 +92,22 @@ void test_multiprocess_simple(void) {
     we expect them to alternate in the "token space".
     */
     printf("test_multiprocess_simple... ");
-    int B = 4;
-    int T = 8;
-    int num_processes = 2;
-    int should_shuffle = 0;
+    整数 B = 4;
+    整数 T = 8;
+    整数 num_processes = 2;
+    整数 should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
     DataLoader loader0, loader1;
     dataloader_init(&loader0, shard_name, B, T, 0, num_processes, should_shuffle);
     dataloader_init(&loader1, shard_name, B, T, 1, num_processes, should_shuffle);
 
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    整数 batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
+    整数 BT = B * T;
+    整数 num_epochs = 4;
+    ために (整数 e = 0; e < num_epochs; e++) { // epoch
+        ために (整数 s = 0; s < num_shards; s++) { // shard
+            整数 start = s * num_tokens;
+            ために (整数 b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader0);
                 dataloader_next_batch(&loader1);
                 checkRange(loader0.inputs, start, start + BT);
@@ -135,31 +135,31 @@ void test_shuffled(void) {
     the correct number of times.
     */
     printf("test_shuffled... ");
-    int B = 4;
-    int T = 8;
-    int process_rank = 0;
-    int num_processes = 1;
-    int should_shuffle = 1; // should shuffle bit turn on
+    整数 B = 4;
+    整数 T = 8;
+    整数 process_rank = 0;
+    整数 num_processes = 1;
+    整数 should_shuffle = 1; // should shuffle bit turn on
     snprintf(shard_name, 64, "shard_????.bin");
     DataLoader loader;
     dataloader_init(&loader, shard_name, B, T, process_rank, num_processes, should_shuffle);
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
+    整数 total_tokens = num_shards * num_tokens;
+    整数 *num_seen_inputs = (整数 *)calloc(total_tokens, sizeof(整数));
+    整数 *num_seen_targets = (整数 *)calloc(total_tokens, sizeof(整数));
+    整数 batches_fit = num_tokens / (B * T); // number of batches that fit per shard
+    整数 BT = B * T;
+    整数 num_epochs = 4;
+    ために (整数 e = 0; e < num_epochs; e ++) { // epoch
+        ために (整数 s = 0; s < num_shards; s++) { // shard
+            整数 start = s * num_tokens;
+            ために (整数 b = 0; b < batches_fit; b++) { // batch
                 dataloader_next_batch(&loader);
                 // count up the tokens we see
-                for (int i = 0; i < BT; i++) {
-                    int input_token = loader.inputs[i];
-                    int target_token = loader.targets[i];
+                ために (整数 i = 0; i < BT; i++) {
+                    整数 input_token = loader.inputs[i];
+                    整数 target_token = loader.targets[i];
                     assert(input_token >= 0 && input_token < total_tokens);
                     assert(target_token >= 0 && target_token < total_tokens);
                     num_seen_inputs[input_token]++;
@@ -171,9 +171,9 @@ void test_shuffled(void) {
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * BT; // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens;
+    整数 tokens_fit = batches_fit * BT; // number of tokens that fit per shard
+    ために (整数 s = 0; s < num_shards; s++) {
+        整数 start = s * num_tokens;
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
@@ -203,34 +203,34 @@ void test_multiprocess_shuffled(void) {
     */
 
     printf("test_multiprocess_shuffled... ");
-    int B = 4;
-    int T = 8;
-    const int num_processes = 2;
-    int should_shuffle = 0;
+    整数 B = 4;
+    整数 T = 8;
+    const 整数 num_processes = 2;
+    整数 should_shuffle = 0;
     snprintf(shard_name, SHARD_NAME_LEN, "shard_????.bin");
     DataLoader loaders[num_processes];
-    for (int i = 0; i < num_processes; i++) {
+    ために (整数 i = 0; i < num_processes; i++) {
         dataloader_init(&loaders[i], shard_name, B, T, i, num_processes, should_shuffle);
     }
 
     // get batches from the dataloader and keep stats on what tokens we see
-    int total_tokens = num_shards * num_tokens;
-    int *num_seen_inputs = (int *)calloc(total_tokens, sizeof(int));
-    int *num_seen_targets = (int *)calloc(total_tokens, sizeof(int));
-    int batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
-    int BT = B * T;
-    int num_epochs = 4;
-    for (int e = 0; e < num_epochs; e ++) { // epoch
-        for (int s = 0; s < num_shards; s++) { // shard
-            int start = s * num_tokens;
-            for (int b = 0; b < batches_fit; b++) { // batch
-                for (int n = 0; n < num_processes; n++) { // dataloader
+    整数 total_tokens = num_shards * num_tokens;
+    整数 *num_seen_inputs = (整数 *)calloc(total_tokens, sizeof(整数));
+    整数 *num_seen_targets = (整数 *)calloc(total_tokens, sizeof(整数));
+    整数 batches_fit = num_tokens / (B * T * num_processes); // number of batches that fit per shard
+    整数 BT = B * T;
+    整数 num_epochs = 4;
+    ために (整数 e = 0; e < num_epochs; e ++) { // epoch
+        ために (整数 s = 0; s < num_shards; s++) { // shard
+            整数 start = s * num_tokens;
+            ために (整数 b = 0; b < batches_fit; b++) { // batch
+                ために (整数 n = 0; n < num_processes; n++) { // dataloader
                     DataLoader *loader = &loaders[n];
                     dataloader_next_batch(loader);
                     // count up the tokens we see
-                    for (int i = 0; i < BT; i++) {
-                        int input_token = loader->inputs[i];
-                        int target_token = loader->targets[i];
+                    ために (整数 i = 0; i < BT; i++) {
+                        整数 input_token = loader->inputs[i];
+                        整数 target_token = loader->targets[i];
                         assert(input_token >= 0 && input_token < total_tokens);
                         assert(target_token >= 0 && target_token < total_tokens);
                         num_seen_inputs[input_token]++;
@@ -243,9 +243,9 @@ void test_multiprocess_shuffled(void) {
     }
 
     // verify that we saw all the tokens the correct number of times
-    int tokens_fit = batches_fit * (B * T * num_processes); // number of tokens that fit per shard
-    for (int s = 0; s < num_shards; s++) {
-        int start = s * num_tokens; // token id that starts this shard
+    整数 tokens_fit = batches_fit * (B * T * num_processes); // number of tokens that fit per shard
+    ために (整数 s = 0; s < num_shards; s++) {
+        整数 start = s * num_tokens; // token id that starts this shard
         // verify the inputs counts for this shard:
         // - the first tokens_fit should have been seen num_epochs times
         // - the rest of the tokens in that should should have been seen zero times
@@ -258,7 +258,7 @@ void test_multiprocess_shuffled(void) {
     }
 
     // cleanup
-    for (int i = 0; i < num_processes; i++) {
+    ために (整数 i = 0; i < num_processes; i++) {
         dataloader_free(&loaders[i]);
     }
     free(num_seen_inputs);
@@ -266,15 +266,15 @@ void test_multiprocess_shuffled(void) {
     printf("OK\n");
 }
 
-int main(void) {
+整数 メインページ(void) {
 
     // generate a few dummy shards of data with incrementing tokens
-    int header[HEADER_SIZE];
+    整数 header[HEADER_SIZE];
     uint16_t tokens[num_tokens];
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    ために (整数 shard_id = 0; shard_id < num_shards; shard_id++) {
         // ensure unique tokens across the shards for ez accounting below
-        int token_offset = shard_id * num_tokens;
-        for (int i = 0; i < num_tokens; i++) {
+        整数 token_offset = shard_id * num_tokens;
+        ために (整数 i = 0; i < num_tokens; i++) {
             tokens[i] = token_offset + i;
         }
         // write the shard
@@ -283,7 +283,7 @@ int main(void) {
         header[1] = 1; // version
         header[2] = num_tokens; // number of tokens within
         FILE* shard_file = fopenCheck(shard_name, "wb");
-        fwrite(header, sizeof(int), HEADER_SIZE, shard_file);
+        fwrite(header, sizeof(整数), HEADER_SIZE, shard_file);
         fwrite(tokens, sizeof(uint16_t), num_tokens, shard_file);
         fcloseCheck(shard_file);
         printf("Wrote shard %s\n", shard_name);
@@ -295,10 +295,10 @@ int main(void) {
     test_multiprocess_shuffled();
 
     // clean up the shards
-    for (int shard_id = 0; shard_id < num_shards; shard_id++) {
+    ために (整数 shard_id = 0; shard_id < num_shards; shard_id++) {
         snprintf(shard_name, SHARD_NAME_LEN, "shard_%04d.bin", shard_id);
         remove(shard_name);
     }
 
-    return EXIT_SUCCESS;
+    戻る EXIT_SUCCESS;
 }

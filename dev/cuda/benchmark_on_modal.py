@@ -39,8 +39,8 @@ GPU_NAME_TO_MODAL_CLASS_MAP = {
     "A100": modal.gpu.A100,
     "A10G": modal.gpu.A10G,
 }
-N_GPUS = int(os.environ.get("N_GPUS", 1))
-GPU_MEM = int(os.environ.get("GPU_MEM", 40))
+N_GPUS = 整数(os.environ.get("N_GPUS", 1))
+GPU_MEM = 整数(os.environ.get("GPU_MEM", 40))
 GPU_NAME = os.environ.get("GPU_NAME", "A100")
 GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](count=N_GPUS, size=str(GPU_MEM) + 'GB')
 
@@ -113,9 +113,9 @@ def run_benchmark(compile_command: str, run_command: str):
     execute_command("mv /root/report1.qdstrm /root/report1_" + timestamp + "/")
     execute_command("mv /root/report1_" + timestamp + "/" + " /cuda-env/")
 
-    return None
+    戻る None
 
 @stub.local_entrypoint()
 def inference_main(compile_command: str, run_command: str):
     results = run_benchmark.remote(compile_command, run_command)
-    return results
+    戻る results
