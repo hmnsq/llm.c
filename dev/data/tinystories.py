@@ -47,19 +47,19 @@ def download():
     # download the TinyStories dataset, unless it's already downloaded
     data_url = "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories_all_data.tar.gz"
     data_filename = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data.tar.gz")
-    if not os.path.exists(data_filename):
+    якщо not os.path.exists(data_filename):
         print(f"Downloading {data_url} to {data_filename}...")
         download_file(data_url, data_filename)
-    else:
+    інакше:
         print(f"{data_filename} already exists, skipping download...")
 
     # unpack the tar.gz file into all the data shards (json files)
     data_dir = os.path.join(DATA_CACHE_DIR, "TinyStories_all_data")
-    if not os.path.exists(data_dir):
+    якщо not os.path.exists(data_dir):
         os.makedirs(data_dir, exist_ok=True)
         print(f"Unpacking {data_filename}...")
         os.system(f"tar -xzf {data_filename} -C {data_dir}")
-    else:
+    інакше:
         print(f"{data_dir} already exists, skipping unpacking...")
 
     # print a single example just for debugging and such
@@ -71,7 +71,7 @@ def download():
     # print(f"Example story:\n{data[0]}")
 
 def process_shard(shard_index, shard_filename, model_desc):
-    if model_desc == "gpt-2":
+    якщо model_desc == "gpt-2":
         enc = tiktoken.get_encoding("gpt2")
         encode = lambda s: enc.encode_ordinary(s)
         eot = enc._special_tokens['<|endoftext|>'] # end of text token
@@ -79,7 +79,7 @@ def process_shard(shard_index, shard_filename, model_desc):
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
         encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
         eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    else:
+    інакше:
         raise ValueError(f"unknown model descriptor {model_desc}")
 
     with open(shard_filename, "r") as f:
@@ -87,13 +87,13 @@ def process_shard(shard_index, shard_filename, model_desc):
     rng = random.Random(1337 + shard_index)
     rng.shuffle(data)
     all_tokens = []
-    for example in data:
+    для example in data:
         text = example["story"]
         text = text.strip()  # get rid of leading/trailing whitespace
         tokens = encode(text)
         all_tokens.append(eot)
         all_tokens.extend(tokens)
-    return all_tokens
+    повернути all_tokens
 
 def tokenize(model_desc):
     # shard 0 will be the val split, rest is train
@@ -101,20 +101,20 @@ def tokenize(model_desc):
     shard_filenames = sorted(glob.glob(os.path.join(data_dir, "*.json")))
     val_shards = [shard_filenames[0]]
     train_shards = shard_filenames[1:]
-    for split_name, split_shards in [("val", val_shards), ("train", train_shards)]:
+    для split_name, split_shards in [("val", val_shards), ("train", train_shards)]:
 
         print(f"Tokenizing {split_name} split...")
         all_tokens = []
         with ProcessPoolExecutor() as executor:
             futures = [executor.submit(process_shard, shard_index, shard_filename, model_desc)
-                       for shard_index, shard_filename in enumerate(split_shards)]
-            for future in as_completed(futures):
+                       для shard_index, shard_filename in enumerate(split_shards)]
+            для future in as_completed(futures):
                 all_tokens.extend(future.result())
 
         split_filename = os.path.join(DATA_CACHE_DIR, f"TinyStories_{split_name}.bin")
         write_datafile(split_filename, all_tokens, model_desc)
 
-if __name__ == "__main__":
+якщо __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tiny Stories dataset preprocessing")
     parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", choices=["gpt-2", "llama-3"], help="Model type, gpt-2|llama-3")
     args = parser.parse_args()

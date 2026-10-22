@@ -56,12 +56,12 @@ from tiktoken.load import load_tiktoken_bpe
 # PyTorch nn.Module definitions for the LLaMA 3.x model
 
 # Used in Grouped Query Attention (GQA), broadcasts the key and value tensors
-def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
+def repeat_kv(x: torch.Tensor, n_rep: ціле) -> torch.Tensor:
     """torch.repeat_interleave(x, dim=2, repeats=n_rep)"""
     bs, slen, n_kv_heads, head_dim = x.shape
-    if n_rep == 1:
-        return x
-    return (
+    якщо n_rep == 1:
+        повернути x
+    повернути (
         x[:, :, :, None, :]
         .expand(bs, slen, n_kv_heads, n_rep, head_dim)
         .reshape(bs, slen, n_kv_heads * n_rep, head_dim)
@@ -74,8 +74,8 @@ def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
     ndim = x.ndim
     assert 0 <= 1 < ndim
     assert freqs_cis.shape == (x.shape[1], x.shape[-1])
-    shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
-    return freqs_cis.view(*shape)
+    shape = [d якщо i == 1 or i == ndim - 1 інакше 1 для i, d in enumerate(x.shape)]
+    повернути freqs_cis.view(*shape)
 
 def apply_scaling(freqs: torch.Tensor):
     # Values obtained from grid search
@@ -87,19 +87,19 @@ def apply_scaling(freqs: torch.Tensor):
     low_freq_wavelen = old_context_len / low_freq_factor
     high_freq_wavelen = old_context_len / high_freq_factor
     new_freqs = []
-    for freq in freqs:
+    для freq in freqs:
         wavelen = 2 * math.pi / freq
-        if wavelen < high_freq_wavelen:
+        якщо wavelen < high_freq_wavelen:
             new_freqs.append(freq)
         elif wavelen > low_freq_wavelen:
             new_freqs.append(freq / scale_factor)
-        else:
+        інакше:
             assert low_freq_wavelen != high_freq_wavelen
             smooth = (old_context_len / wavelen - low_freq_factor) / (
                 high_freq_factor - low_freq_factor
             )
             new_freqs.append((1 - smooth) * freq / scale_factor + smooth * freq)
-    return torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
+    повернути torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
 
 def apply_rotary_emb(
     xq: torch.Tensor,
@@ -111,18 +111,18 @@ def apply_rotary_emb(
     freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
-    return xq_out.type_as(xq), xk_out.type_as(xk)
+    повернути xq_out.type_as(xq), xk_out.type_as(xk)
 
 def precompute_freqs_cis(
-    dim: int, end: int, theta: float = 10000.0, use_scaled: bool = False
+    dim: ціле, end: ціле, theta: float = 10000.0, use_scaled: bool = False
 ):
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
     t = torch.arange(end, device=freqs.device, dtype=torch.float32)
-    if use_scaled:
+    якщо use_scaled:
         freqs = apply_scaling(freqs)
     freqs = torch.outer(t, freqs)
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
-    return freqs_cis
+    повернути freqs_cis
 
 # -----------------------------------------------------------------------------
 # LLaMA building blocks
@@ -131,17 +131,17 @@ def precompute_freqs_cis(
 # (https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/api/model.py)
 # we could also use nn.RMSNorm, it has slightly different numeric properties, but equivalent
 class RMSNorm(torch.nn.Module):
-    def __init__(self, dim: int, eps: float = 1e-6):
+    def __init__(self, dim: ціле, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
         self.weight = nn.Parameter(torch.ones(dim))
 
     def _norm(self, x):
-        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        повернути x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x):
         output = self._norm(x.float()).type_as(x)
-        return output * self.weight
+        повернути output * self.weight
 
 class CausalSelfAttention(nn.Module):
 
@@ -160,7 +160,7 @@ class CausalSelfAttention(nn.Module):
         self.c_proj = nn.Linear(config.n_embd, config.n_embd, bias=False)  # output projection
 
         # static KV cache - we could alternatively allocate it outside of the model and just pass it in when needed
-        if self.use_kv:
+        якщо self.use_kv:
             self.cache_k = torch.zeros((config.max_gen_batch_size, config.block_size, config.n_kv_head, self.hd))
             self.cache_v = torch.zeros((config.max_gen_batch_size, config.block_size, config.n_kv_head, self.hd))
 
@@ -173,7 +173,7 @@ class CausalSelfAttention(nn.Module):
 
         q, k = apply_rotary_emb(q, k, freqs_cis=freqs_cis)  # rotate QK (rope)  <-- 1. difference compared to GPT-2
 
-        if self.use_kv and not self.training and start_pos >= 0:  # use kv-caching during inference
+        якщо self.use_kv and not self.training and start_pos >= 0:  # use kv-caching during inference
             self.cache_k[:B, start_pos : start_pos + T] = k
             self.cache_v[:B, start_pos : start_pos + T] = v
             k = self.cache_k[:B, : start_pos + T]
@@ -184,33 +184,33 @@ class CausalSelfAttention(nn.Module):
 
         q, k, v = map(lambda t: t.transpose(1, 2), (q, k, v))  # (B, NH, T, HD)
 
-        if self.flash:
+        якщо self.flash:
             # flashattention
             # if T == 1 no need to mask, otherwise the function complains
             # scaled_dot_product_attention expects a mask where value of True indicates that the element should take part in attention
             # our mask is the opposite, so we need to invert it
-            y = F.scaled_dot_product_attention(q, k, v, mask == 0 if T > 1 else None)
-        else:
+            y = F.scaled_dot_product_attention(q, k, v, mask == 0 якщо T > 1 інакше None)
+        інакше:
             # manual implementation of attention
             # this materializes the large (T,T) matrix for all the queries and keys
             scores = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(self.hd))
-            if mask is not None:
+            якщо mask is not None:
                 scores.masked_fill_(mask, torch.finfo(scores.dtype).min)
             att = F.softmax(scores.float(), dim=-1).type_as(q)
             y = att @ v # (B, NH, T, T) x (B, NH, T, HD) -> (B, NH, T, HD)
         y = y.transpose(1, 2).contiguous().view(B, T, C)
         y = self.c_proj(y)
-        return y
+        повернути y
 
 class MLP(nn.Module):
 
     def __init__(self, config):
         super().__init__()
         hidden_dim = 4 * config.n_embd
-        hidden_dim = int(2 * hidden_dim / 3)
+        hidden_dim = ціле(2 * hidden_dim / 3)
         # custom dim factor multiplier
-        if config.ffn_dim_multiplier is not None:
-            hidden_dim = int(config.ffn_dim_multiplier * hidden_dim)
+        якщо config.ffn_dim_multiplier is not None:
+            hidden_dim = ціле(config.ffn_dim_multiplier * hidden_dim)
         hidden_dim = config.multiple_of * ((hidden_dim + config.multiple_of - 1) // config.multiple_of)
         self.c_fc = nn.Linear(config.n_embd, hidden_dim, bias=False)
         self.c_fc2 = nn.Linear(config.n_embd, hidden_dim, bias=False)
@@ -223,7 +223,7 @@ class MLP(nn.Module):
         x2 = F.silu(x2)
         x = x1 * x2
         x = self.c_proj(x)
-        return x
+        повернути x
 
 class Block(nn.Module):
 
@@ -237,7 +237,7 @@ class Block(nn.Module):
     def forward(self, x, freqs_cis=None, start_pos=None, mask=None):
         x = x + self.attn(self.ln_1(x), freqs_cis, start_pos, mask)
         x = x + self.mlp(self.ln_2(x))
-        return x
+        повернути x
 
 # -----------------------------------------------------------------------------
 # The main LLaMA 3.1 model
@@ -245,24 +245,24 @@ class Block(nn.Module):
 @dataclass
 class LlamaConfig:
     version: str = "3.1"
-    block_size: int = 8192
-    vocab_size: int = 128256
-    n_layer: int = 32
-    n_head: int = 32
-    n_kv_head: int = 8
-    n_embd: int = 4096
+    block_size: ціле = 8192
+    vocab_size: ціле = 128256
+    n_layer: ціле = 32
+    n_head: ціле = 32
+    n_kv_head: ціле = 8
+    n_embd: ціле = 4096
     ffn_dim_multiplier: float = 1.3
-    multiple_of: int = 1024
+    multiple_of: ціле = 1024
     norm_eps: float = 1e-5
     rope_theta: float = 500000.0
     use_scaled_rope: bool = True
-    max_gen_batch_size: int = 4
+    max_gen_batch_size: ціле = 4
     use_kv: bool = True
     flash: bool = False  # use flashattention?
 
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            if hasattr(self, k):
+        для k, v in kwargs.items():
+            якщо hasattr(self, k):
                 setattr(self, k, v)
         assert self.n_kv_head <= self.n_head
         assert self.n_head % self.n_kv_head == 0
@@ -276,7 +276,7 @@ class LLaMA(nn.Module):
 
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
-            h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+            h = nn.ModuleList([Block(config) для _ in range(config.n_layer)]),
             ln_f = RMSNorm(config.n_embd, config.norm_eps),
         ))
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
@@ -302,24 +302,24 @@ class LLaMA(nn.Module):
 
         mask = torch.triu(torch.ones((t, t), device=next(self.parameters()).device, dtype=torch.bool), diagonal=1)
 
-        for i, block in enumerate(self.transformer.h):
+        для i, block in enumerate(self.transformer.h):
             x = block(x, freqs_cis, start_pos, mask)
         x = self.transformer.ln_f(x)
 
-        if targets is not None:
+        якщо targets is not None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x).float()
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-        else:
+        інакше:
             # inference-time mini-optimization: only forward the lm_head on the very last position
             logits = self.lm_head(x[:, [-1], :]).float() # note: using list [-1] to preserve the time dim
             loss = None
 
         # there are performance reasons why not returning logits is prudent, if not needed
-        if not return_logits:
+        якщо not return_logits:
             logits = None
 
-        return logits, loss
+        повернути logits, loss
 
     @staticmethod
     def adapt_llama_state_dict_keys(checkpoint, config: LlamaConfig):
@@ -327,27 +327,27 @@ class LLaMA(nn.Module):
         # our key names are derived from GPT-2's key names
         checkpoint['transformer.wte.weight'] = checkpoint.pop('tok_embeddings.weight')
 
-        for i in range(config.n_layer):
-            for name in ['attention_norm', 'ffn_norm']:
+        для i in range(config.n_layer):
+            для name in ['attention_norm', 'ffn_norm']:
                 old_key = f'layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
                 new_key = f'transformer.h.{i}.ln_{1 if name == "attention_norm" else 2}.weight'
                 checkpoint[new_key] = checkpoint.pop(old_key)
 
-        for i in range(config.n_layer):
-            for name in ['attention.wq', 'attention.wk', 'attention.wv']:
+        для i in range(config.n_layer):
+            для name in ['attention.wq', 'attention.wk', 'attention.wv']:
                 old_key = f'layers.{i}.{name}.weight'
                 new_key = f'transformer.h.{i}.attn.c_attn.weight'
-                if name == 'attention.wq':
+                якщо name == 'attention.wq':
                     checkpoint[new_key] = checkpoint.pop(old_key)
-                else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
+                інакше:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
                     checkpoint[new_key] = torch.cat((checkpoint[new_key], checkpoint.pop(old_key)), dim=0)
             old_key = f'layers.{i}.attention.wo.weight'
             new_key = f'transformer.h.{i}.attn.c_proj.weight'
             checkpoint[new_key] = checkpoint.pop(old_key)
 
         ffn_map = {'w1': 'c_fc2', 'w2': 'c_proj', 'w3': 'c_fc'}
-        for i in range(config.n_layer):
-            for name in ['feed_forward.w1', 'feed_forward.w2', 'feed_forward.w3']:
+        для i in range(config.n_layer):
+            для name in ['feed_forward.w1', 'feed_forward.w2', 'feed_forward.w3']:
                 old_key = f'layers.{i}.{name}.weight'
                 new_key = f'transformer.h.{i}.mlp.{ffn_map[name.split(".")[-1]]}.weight'
                 checkpoint[new_key] = checkpoint.pop(old_key)
@@ -355,7 +355,7 @@ class LLaMA(nn.Module):
         checkpoint['transformer.ln_f.weight'] = checkpoint.pop('norm.weight')
         checkpoint['lm_head.weight'] = checkpoint.pop('output.weight')
 
-        return checkpoint
+        повернути checkpoint
 
     @staticmethod
     def adapt_llama_state_dict_keys_hf(checkpoint, config: LlamaConfig):
@@ -366,23 +366,23 @@ class LLaMA(nn.Module):
         # We need to unpermute K and V because HF script permuted the original Meta-LLaMA weights
         # see: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/convert_llama_weights_to_hf.py
         def unpermute(w, n_heads, dim1, dim2):
-            return w.view(n_heads, 2, dim1 // n_heads // 2, dim2).transpose(1, 2).reshape(dim1, dim2)
+            повернути w.view(n_heads, 2, dim1 // n_heads // 2, dim2).transpose(1, 2).reshape(dim1, dim2)
 
-        for i in range(config.n_layer):
-            for name in ['input_layernorm', 'post_attention_layernorm']:
+        для i in range(config.n_layer):
+            для name in ['input_layernorm', 'post_attention_layernorm']:
                 old_key = f'model.layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
                 new_key = f'transformer.h.{i}.ln_{1 if name == "input_layernorm" else 2}.weight'
                 checkpoint[new_key] = checkpoint.pop(old_key)
 
-        for i in range(config.n_layer):
-            for name in ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj']:
+        для i in range(config.n_layer):
+            для name in ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj']:
                 old_key = f'model.layers.{i}.{name}.weight'
                 new_key = f'transformer.h.{i}.attn.c_attn.weight'
-                if name == 'self_attn.q_proj':
+                якщо name == 'self_attn.q_proj':
                     checkpoint[new_key] = unpermute(checkpoint.pop(old_key), config.n_head, config.n_embd, config.n_embd)
-                else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
+                інакше:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
                     tensor = checkpoint.pop(old_key)
-                    if name == 'self_attn.k_proj':
+                    якщо name == 'self_attn.k_proj':
                         tensor = unpermute(tensor, config.n_kv_head, config.n_kv_head * (config.n_embd // config.n_head), config.n_embd)
                     checkpoint[new_key] = torch.cat((checkpoint[new_key], tensor), dim=0)
             old_key = f'model.layers.{i}.self_attn.o_proj.weight'
@@ -390,15 +390,15 @@ class LLaMA(nn.Module):
             checkpoint[new_key] = checkpoint.pop(old_key)
 
         ffn_map = {'gate_proj': 'c_fc2', 'down_proj': 'c_proj', 'up_proj': 'c_fc'}
-        for i in range(config.n_layer):
-            for name in ['gate_proj', 'down_proj', 'up_proj']:
+        для i in range(config.n_layer):
+            для name in ['gate_proj', 'down_proj', 'up_proj']:
                 old_key = f'model.layers.{i}.mlp.{name}.weight'
                 new_key = f'transformer.h.{i}.mlp.{ffn_map[name]}.weight'
                 checkpoint[new_key] = checkpoint.pop(old_key)
 
         checkpoint['transformer.ln_f.weight'] = checkpoint.pop('model.norm.weight')
 
-        return checkpoint
+        повернути checkpoint
 
     @classmethod
     def from_pretrained_llama3_hf(cls, model_id):
@@ -420,7 +420,7 @@ class LLaMA(nn.Module):
         tokenizer.pad_id = 128004  # this is the pad token id for LLaMA 3.1 base, we need to set this explicitly as our generate func expects it
         tokenizer.stop_tokens = [tokenizer.eos_token_id]
         model.tokenizer = tokenizer
-        return model
+        повернути model
 
     @classmethod
     def from_pretrained_llama3_meta(cls, ckpt_dir, tokenizer_path):
@@ -439,48 +439,48 @@ class LLaMA(nn.Module):
 
         tokenizer = Tokenizer(model_path=tokenizer_path)
         model.tokenizer = tokenizer
-        return model
+        повернути model
 
     def configure_optimizers(self, weight_decay, learning_rate, betas, device_type, zero_stage):
         # start with all of the candidate parameters
-        param_dict = {pn: p for pn, p in self.named_parameters()}
+        param_dict = {pn: p для pn, p in self.named_parameters()}
         # filter out those that do not require grad
-        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+        param_dict = {pn: p для pn, p in param_dict.items() якщо p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p для n, p in param_dict.items() якщо p.dim() >= 2]
+        nodecay_params = [p для n, p in param_dict.items() якщо p.dim() < 2]
         optim_groups = [
             {'params': decay_params, 'weight_decay': weight_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
         ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        num_decay_params = sum(p.numel() для p in decay_params)
+        num_nodecay_params = sum(p.numel() для p in nodecay_params)
         print0(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
         print0(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and device_type == 'cuda'
         print0(f"using fused AdamW: {use_fused}")
-        if zero_stage == 1:
+        якщо zero_stage == 1:
             print0("using ZeroRedundancyOptimizer")
             optimizer = ZeroRedundancyOptimizer(**optim_groups[0], optimizer_class=torch.optim.AdamW,
                                                 lr=learning_rate, betas=betas, fused=use_fused)
             optimizer.add_param_group(optim_groups[1])
-        else:
+        інакше:
             print0("using regular AdamW")
             optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, fused=use_fused)
-        return optimizer
+        повернути optimizer
 
     @torch.inference_mode()
     def generate(
         self,
-        prompt_tokens: List[List[int]],
-        max_gen_len: int,
+        prompt_tokens: List[List[ціле]],
+        max_gen_len: ціле,
         temperature: float = 0.6,
         top_p: float = 0.9,
         echo: bool = False,
-    ) -> Tuple[List[List[int]], Optional[List[List[float]]]]:
+    ) -> Tuple[List[List[ціле]], Optional[List[List[float]]]]:
         """
         Generate text sequences based on provided prompts using the language generation model.
 
@@ -502,31 +502,31 @@ class LLaMA(nn.Module):
         assert bsz <= self.config.max_gen_batch_size, f"Batch size {bsz} exceeds the maximum generation batch size {self.config.max_gen_batch_size}"
         device = next(self.parameters()).device
 
-        min_prompt_len = min(len(t) for t in prompt_tokens)
-        max_prompt_len = max(len(t) for t in prompt_tokens)
+        min_prompt_len = min(len(t) для t in prompt_tokens)
+        max_prompt_len = max(len(t) для t in prompt_tokens)
         assert max_prompt_len <= self.config.block_size, f"Prompt length {max_prompt_len} exceeds the maximum block size {self.config.block_size}"
         total_len = min(self.config.block_size, max_gen_len + max_prompt_len)
 
         pad_id = self.tokenizer.pad_id
         tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device=device)
-        for idx, t in enumerate(prompt_tokens):
+        для idx, t in enumerate(prompt_tokens):
             tokens[idx, : len(t)] = torch.tensor(t, dtype=torch.long, device=device)
 
         prev_pos = 0
         eos_reached = torch.tensor([False] * bsz, device=device)
         input_text_mask = tokens != pad_id
 
-        if min_prompt_len == total_len:
+        якщо min_prompt_len == total_len:
             logits, _ = self.forward(tokens, start_pos=prev_pos)
 
         stop_tokens = torch.tensor(list(self.tokenizer.stop_tokens)).to(device)
 
-        for cur_pos in range(min_prompt_len, total_len):
+        для cur_pos in range(min_prompt_len, total_len):
             logits, _ = self.forward(tokens[:, prev_pos:cur_pos], start_pos=prev_pos)
-            if temperature > 0:
+            якщо temperature > 0:
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
                 next_token = sample_top_p(probs, top_p)
-            else:
+            інакше:
                 next_token = torch.argmax(logits[:, -1], dim=-1)
 
             next_token = next_token.reshape(-1)
@@ -535,23 +535,23 @@ class LLaMA(nn.Module):
             tokens[:, cur_pos] = next_token
             eos_reached |= ~input_text_mask[:, cur_pos] & torch.isin(next_token, stop_tokens)
             prev_pos = cur_pos
-            if all(eos_reached):
+            якщо all(eos_reached):
                 break
 
         out_tokens = []
-        for i, toks in enumerate(tokens.tolist()):
+        для i, toks in enumerate(tokens.tolist()):
             # cut to max gen len
-            start = 0 if echo else len(prompt_tokens[i])
+            start = 0 якщо echo інакше len(prompt_tokens[i])
             toks = toks[start : len(prompt_tokens[i]) + max_gen_len]
             # cut to after eos tok if any
-            for stop_token in self.tokenizer.stop_tokens:
+            для stop_token in self.tokenizer.stop_tokens:
                 try:
                     eos_idx = toks.index(stop_token)
                     toks = toks[:eos_idx]
                 except ValueError:
                     pass
             out_tokens.append(toks)
-        return out_tokens
+        повернути out_tokens
 
 # -----------------------------------------------------------------------------
 # sampling utils
@@ -578,7 +578,7 @@ def sample_top_p(probs, p):
     probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
     next_token = torch.multinomial(probs_sort, num_samples=1)
     next_token = torch.gather(probs_idx, -1, next_token)
-    return next_token
+    повернути next_token
 
 # -----------------------------------------------------------------------------
 # Llama 3.1 Tokenizer
@@ -598,7 +598,7 @@ class Tokenizer:
     Tokenizing and encoding/decoding text using the Tiktoken tokenizer.
     """
 
-    special_tokens: Dict[str, int]
+    special_tokens: Dict[str, ціле]
 
     num_reserved_special_tokens = 256
 
@@ -630,12 +630,12 @@ class Tokenizer:
         ]
         reserved_tokens = [
             f"<|reserved_special_token_{2 + i}|>"
-            for i in range(self.num_reserved_special_tokens - len(special_tokens))
+            для i in range(self.num_reserved_special_tokens - len(special_tokens))
         ]
         special_tokens = special_tokens + reserved_tokens
 
         self.special_tokens = {
-            token: num_base_tokens + i for i, token in enumerate(special_tokens)
+            token: num_base_tokens + i для i, token in enumerate(special_tokens)
         }
         self.model = tiktoken.Encoding(
             name=Path(model_path).name,
@@ -644,14 +644,14 @@ class Tokenizer:
             special_tokens=self.special_tokens,
         )
 
-        self.n_words: int = num_base_tokens + len(special_tokens)
+        self.n_words: ціле = num_base_tokens + len(special_tokens)
         # BOS / EOS token IDs
-        self.bos_id: int = self.special_tokens["<|begin_of_text|>"]
-        self.eos_id: int = self.special_tokens["<|end_of_text|>"]
-        self.eot_id: int = self.special_tokens["<|eot_id|>"]
-        self.eom_id: int = self.special_tokens["<|eom_id|>"]
+        self.bos_id: ціле = self.special_tokens["<|begin_of_text|>"]
+        self.eos_id: ціле = self.special_tokens["<|end_of_text|>"]
+        self.eot_id: ціле = self.special_tokens["<|eot_id|>"]
+        self.eom_id: ціле = self.special_tokens["<|eom_id|>"]
         self.python_tag_id = self.special_tokens["<|python_tag|>"]
-        self.pad_id: int = self.special_tokens["<|finetune_right_pad_id|>"]
+        self.pad_id: ціле = self.special_tokens["<|finetune_right_pad_id|>"]
         # hardcoded stop tokens for the base model
         self.stop_tokens = [
             self.special_tokens["<|begin_of_text|>"],
@@ -666,7 +666,7 @@ class Tokenizer:
         eos: bool,
         allowed_special: Optional[Union[Literal["all"], AbstractSet[str]]] = None,
         disallowed_special: Union[Literal["all"], Collection[str]] = (),
-    ) -> List[int]:
+    ) -> List[ціле]:
         """
         Encodes a string into a list of token IDs.
 
@@ -688,19 +688,19 @@ class Tokenizer:
         - Setting `allowed_special` to "all" will treat all text corresponding
           to special tokens to be encoded as special tokens.
         """
-        if allowed_special is None:
+        якщо allowed_special is None:
             allowed_special = set()
         assert type(s) is str
 
         substrs = (
             substr
-            for i in range(0, len(s), TIKTOKEN_MAX_ENCODE_CHARS)
-            for substr in self._split_whitespaces_or_nonwhitespaces(
+            для i in range(0, len(s), TIKTOKEN_MAX_ENCODE_CHARS)
+            для substr in self._split_whitespaces_or_nonwhitespaces(
                 s[i : i + TIKTOKEN_MAX_ENCODE_CHARS], MAX_NO_WHITESPACES_CHARS
             )
         )
-        t: List[int] = []
-        for substr in substrs:
+        t: List[ціле] = []
+        для substr in substrs:
             t.extend(
                 self.model.encode(
                     substr,
@@ -708,37 +708,37 @@ class Tokenizer:
                     disallowed_special=disallowed_special,
                 )
             )
-        if bos:
+        якщо bos:
             t.insert(0, self.bos_id)
-        if eos:
+        якщо eos:
             t.append(self.eos_id)
-        return t
+        повернути t
 
-    def decode(self, t: Sequence[int]) -> str:
+    def decode(self, t: Sequence[ціле]) -> str:
         # Typecast is safe here. Tiktoken doesn't do anything list-related with the sequence.
-        return self.model.decode(cast(List[int], t))
+        повернути self.model.decode(cast(List[ціле], t))
 
     @staticmethod
     def _split_whitespaces_or_nonwhitespaces(
-        s: str, max_consecutive_slice_len: int
+        s: str, max_consecutive_slice_len: ціле
     ) -> Iterator[str]:
         """
         Splits the string `s` so that each substring contains no more than `max_consecutive_slice_len`
         consecutive whitespaces or consecutive non-whitespaces.
         """
         current_slice_len = 0
-        current_slice_is_space = s[0].isspace() if len(s) > 0 else False
+        current_slice_is_space = s[0].isspace() якщо len(s) > 0 інакше False
         slice_start = 0
 
-        for i in range(len(s)):
+        для i in range(len(s)):
             is_now_space = s[i].isspace()
 
-            if current_slice_is_space ^ is_now_space:
+            якщо current_slice_is_space ^ is_now_space:
                 current_slice_len = 1
                 current_slice_is_space = is_now_space
-            else:
+            інакше:
                 current_slice_len += 1
-                if current_slice_len > max_consecutive_slice_len:
+                якщо current_slice_len > max_consecutive_slice_len:
                     yield s[slice_start:i]
                     slice_start = i
                     current_slice_len = 1
@@ -752,12 +752,12 @@ def _peek_data_shard(filename):
     with open(filename, "rb") as f:
         # first read the header, which is 256 int32 integers (4 bytes each)
         header = np.frombuffer(f.read(256*4), dtype=np.int32)
-    if header[0] != 20240801:
+    якщо header[0] != 20240801:
         print("ERROR: magic number mismatch in the data .bin file!")
         exit(1)
     assert header[1] == 7, "unsupported version"
     ntok = header[2] # number of tokens (claimed)
-    return ntok # for now just return the number of tokens
+    повернути ntok # for now just return the number of tokens
 
 def _load_data_shard(filename):
     with open(filename, "rb") as f:
@@ -769,7 +769,7 @@ def _load_data_shard(filename):
         # the rest of it are tokens, stored as uint16
         tokens = np.frombuffer(f.read(), dtype=np.uint32)
     assert len(tokens) == ntok, "number of tokens read does not match header?"
-    return tokens
+    повернути tokens
 
 class DistributedShardedDataLoader:
     """
@@ -792,7 +792,7 @@ class DistributedShardedDataLoader:
 
         # load and validate all data shards, count number of tokens in total
         ntok_total = 0
-        for fname in self.files:
+        для fname in self.files:
             shard_ntok = _peek_data_shard(fname)
             assert shard_ntok >= num_processes * B * T + 1
             ntok_total += shard_ntok
@@ -806,7 +806,7 @@ class DistributedShardedDataLoader:
     def reset(self):
         # we're being a bit clever here: if we already had shard 0 loaded,
         # then don't do the work to reload it, just reset the pointer
-        if self.current_shard != 0:
+        якщо self.current_shard != 0:
             self.current_shard = 0
             self.tokens = _load_data_shard(self.files[self.current_shard])
         self.current_position = self.process_rank * self.B * self.T
@@ -826,9 +826,9 @@ class DistributedShardedDataLoader:
         # advance the start pointer in current shard
         self.current_position += B * T * self.num_processes
         # if loading the next batch would be out of bounds advance the shard
-        if self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
+        якщо self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
             self.advance()
-        return x, y
+        повернути x, y
 
 # -----------------------------------------------------------------------------
 # Python -> C bridge utilities for saving params/grads/activations to .bin files
@@ -848,21 +848,21 @@ def write_bf16(tensor, file):
 def write_tensors(model_tensors, L, file, dtype):
     # writes LLaMA 3 model's weights to a binary file
     assert dtype in {"float32", "bfloat16"}
-    write_fun = write_fp32 if dtype == "float32" else write_bf16
+    write_fun = write_fp32 якщо dtype == "float32" інакше write_bf16
     write_fun(model_tensors["transformer.wte.weight"], file) # (V, C)
-    for i in range(L): # (L, C)
+    для i in range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.weight"], file)
-    for i in range(L): # (L, 3C, C)
+    для i in range(L): # (L, 3C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.weight"], file)
-    for i in range(L): # (L, C, C)
+    для i in range(L): # (L, C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    для i in range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.weight"], file)
-    for i in range(L): # (L, 4C, C)
+    для i in range(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.weight"], file)
-    for i in range(L): # (L, 4C, C)
+    для i in range(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc2.weight"], file)
-    for i in range(L): # (L, C, 4C)
+    для i in range(L): # (L, C, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.weight"], file)
     write_fun(model_tensors["transformer.ln_f.weight"], file) # (C, )
     write_fun(model_tensors["lm_head.weight"], file) # (V, C)
@@ -890,10 +890,10 @@ def write_model(model, filename, dtype):
     header[11] = model.config.rope_theta
     header[12] = model.config.use_scaled_rope
     header[13] = model.config.max_gen_batch_size
-    header[14] = int(model.config.version.split('.')[0]) # major version
-    header[15] = int(model.config.version.split('.')[1]) # minor version
+    header[14] = ціле(model.config.version.split('.')[0]) # major version
+    header[15] = ціле(model.config.version.split('.')[1]) # minor version
     # 2) the parameters follow the header
-    params = {name: param.cpu() for name, param in model.named_parameters()}
+    params = {name: param.cpu() для name, param in model.named_parameters()}
     # now write to file
     with open(filename, "wb") as file:
         file.write(header.numpy().tobytes()) # header
@@ -908,7 +908,7 @@ def write_state(model, x, y, logits, loss, filename):
     header[0] = 20240803 # magic
     header[1] = x.size(0) # batch size of the batch, B
     header[2] = x.size(1) # temporal extent of the batch, T
-    grads = {name: param.grad.cpu() for name, param in model.named_parameters()}
+    grads = {name: param.grad.cpu() для name, param in model.named_parameters()}
     with open(filename, "wb") as file:
         # header
         file.write(header.numpy().tobytes())
@@ -930,16 +930,16 @@ def write_state(model, x, y, logits, loss, filename):
 def print0(*args, **kwargs):
     # modified print that only prints from the master process
     # if this is not a distributed run, it's just a print
-    if int(os.environ.get("RANK", 0)) == 0:
+    якщо ціле(os.environ.get("RANK", 0)) == 0:
         print(*args, **kwargs)
 
-if __name__ == "__main__":
+якщо __name__ == "__main__":
     print0(f"Running pytorch {torch.version.__version__}")
 
     # default settings will overfit a tiny batch of data
     # and save model weights and debug state to disk on the first iteration
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use_hf", type=int, default=1, help="use HuggingFace (default) or use Meta's model")
+    parser.add_argument("--use_hf", type=ціле, default=1, help="use HuggingFace (default) or use Meta's model")
     parser.add_argument("--ckpt_dir", type=str, default=None, help="path to llama3 model checkpoint (needed if use_hf=0)")
     parser.add_argument("--tokenizer_path", type=str, default=None, help="path to llama3 tokenizer (needed if use_hf=0)")
     # file system input / output
@@ -948,33 +948,33 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="", help="output directory to which to write logs and checkpoints")
     parser.add_argument("--model", type=str, default="meta-llama/Meta-Llama-3.1-8B", help="chose the llama model")
     # token layout for each step of the optimization
-    parser.add_argument("--batch_size", type=int, default=4, help="batch size, in units of #batch dimensions")
-    parser.add_argument("--sequence_length", type=int, default=64, help="sequence length")
-    parser.add_argument("--total_batch_size", type=int, default=256, help="total desired batch size, in units of #tokens")
+    parser.add_argument("--batch_size", type=ціле, default=4, help="batch size, in units of #batch dimensions")
+    parser.add_argument("--sequence_length", type=ціле, default=64, help="sequence length")
+    parser.add_argument("--total_batch_size", type=ціле, default=256, help="total desired batch size, in units of #tokens")
     # workload (number of steps)
-    parser.add_argument("--num_iterations", type=int, default=10, help="number of iterations to run")
-    parser.add_argument("--inference_only", type=int, default=0, help="only run inference")
+    parser.add_argument("--num_iterations", type=ціле, default=10, help="number of iterations to run")
+    parser.add_argument("--inference_only", type=ціле, default=0, help="only run inference")
     # optimization
     parser.add_argument("--learning_rate", type=float, default=1e-5, help="learning rate warmup iterations")
-    parser.add_argument("--warmup_iters", type=int, default=0, help="learning rate warmup iterations")
+    parser.add_argument("--warmup_iters", type=ціле, default=0, help="learning rate warmup iterations")
     parser.add_argument("--learning_rate_decay_frac", type=float, default=1.0, help="learning rate warmup iterations")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="weight decay")
     parser.add_argument("--grad_clip", type=float, default=1.0, help="maximum gradient magnitude")
     # evaluation
-    parser.add_argument("--val_loss_every", type=int, default=0, help="every how mant steps to evaluate val loss?")
-    parser.add_argument("--val_max_steps", type=int, default=20, help="how many batches of val to average?")
-    parser.add_argument("--sample_every", type=int, default=0, help="how often to sample from the model?")
+    parser.add_argument("--val_loss_every", type=ціле, default=0, help="every how mant steps to evaluate val loss?")
+    parser.add_argument("--val_max_steps", type=ціле, default=20, help="how many batches of val to average?")
+    parser.add_argument("--sample_every", type=ціле, default=0, help="how often to sample from the model?")
     # debugging
-    parser.add_argument("--overfit_single_batch", type=int, default=1, help="overfit just one batch of data")
+    parser.add_argument("--overfit_single_batch", type=ціле, default=1, help="overfit just one batch of data")
     # numerics
-    parser.add_argument("--tensorcores", type=int, default=0, help="use tensorcores")
+    parser.add_argument("--tensorcores", type=ціле, default=0, help="use tensorcores")
     # memory management
     parser.add_argument("--device", type=str, default="", help="by default we autodetect, or set it here")
-    parser.add_argument("--compile", type=int, default=0, help="torch.compile the model")
+    parser.add_argument("--compile", type=ціле, default=0, help="torch.compile the model")
     parser.add_argument("--dtype", type=str, default="bfloat16", help="float32|float16|bfloat16")
-    parser.add_argument("--zero_stage", type=int, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
+    parser.add_argument("--zero_stage", type=ціле, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
     # python -> C bridge
-    parser.add_argument("--write_tensors", type=int, default=0, help="write tensors to disk")
+    parser.add_argument("--write_tensors", type=ціле, default=0, help="write tensors to disk")
     args = parser.parse_args()
 
     # args error checking and convenience variables
@@ -985,7 +985,7 @@ if __name__ == "__main__":
 
     # create the logging directory if it does not exist
     logfile = None
-    if args.output_dir:
+    якщо args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
         logfile = os.path.join(args.output_dir, "main.log")
         # create the log file "main.log" inside it, and wipe it clean
@@ -993,20 +993,20 @@ if __name__ == "__main__":
             pass
 
     # set up DDP (distributed data parallel). torchrun sets this env variable
-    ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
-    if ddp:
+    ddp = ціле(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+    якщо ddp:
         # use of DDP atm demands CUDA, we set the device appropriately according to rank
         assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
         init_process_group(backend='nccl')
-        ddp_rank = int(os.environ['RANK'])
-        ddp_local_rank = int(os.environ['LOCAL_RANK'])
-        ddp_world_size = int(os.environ['WORLD_SIZE'])
+        ddp_rank = ціле(os.environ['RANK'])
+        ddp_local_rank = ціле(os.environ['LOCAL_RANK'])
+        ddp_world_size = ціле(os.environ['WORLD_SIZE'])
         device = f'cuda:{ddp_local_rank}'
         torch.cuda.set_device(device)
         master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
         seed_offset = 0 # each process gets the exact same seed
         zero_stage = args.zero_stage
-    else:
+    інакше:
         ddp_rank = 0
         ddp_local_rank = 0
         zero_stage = 0
@@ -1014,17 +1014,17 @@ if __name__ == "__main__":
         master_process = True
         seed_offset = 0
         # select the device
-        if args.device:
+        якщо args.device:
             # provided explicitly by the user
             device = args.device
-        else:
+        інакше:
             # attempt to autodetect the device
             device = "cpu"
-            if torch.cuda.is_available():
+            якщо torch.cuda.is_available():
                 device = "cuda"
             elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
                 device = "mps"
-    device_type = 'cuda' if 'cuda' in device else 'cpu'
+    device_type = 'cuda' якщо 'cuda' in device інакше 'cpu'
     assert device_type in {'cuda'}, "GPU required to run LLaMA 3"  # we need to load LLaMA as bf16 on CUDA
     print(f"using device: {device}")
 
@@ -1037,29 +1037,29 @@ if __name__ == "__main__":
 
     # set up a context manager following the desired dtype and device
     ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[args.dtype]
-    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if (device_type == "cuda") else nullcontext()
+    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) якщо (device_type == "cuda") інакше nullcontext()
 
     # rng / reproducibility
     torch.manual_seed(42)
-    if torch.cuda.is_available():
+    якщо torch.cuda.is_available():
         torch.cuda.manual_seed(42)
 
     # set the torch precision mode to use TensorFloat32 (TF32) for matmuls
     # docs https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
-    if args.tensorcores:
+    якщо args.tensorcores:
         torch.set_float32_matmul_precision('high')
 
     # init the model
-    if args.use_hf:
+    якщо args.use_hf:
         model = LLaMA.from_pretrained_llama3_hf(args.model)
-    else:  # use Meta's checkpoint
+    інакше:  # use Meta's checkpoint
         assert args.ckpt_dir is not None and os.path.exists(args.ckpt_dir), f"llama3 ckpt dir {args.ckpt_dir} does not exist"
         assert args.tokenizer_path is not None and os.path.exists(args.tokenizer_path), f"llama3 tokenizer path {args.tokenizer_path} does not exist"
         model = LLaMA.from_pretrained_llama3_meta(args.ckpt_dir, args.tokenizer_path)
 
     model.train()
-    if args.compile:
-        if hasattr(config, "coordinate_descent_tuning"):
+    якщо args.compile:
+        якщо hasattr(config, "coordinate_descent_tuning"):
             config.coordinate_descent_tuning = True # suggested by @Chillee
         print0("compiling the model...")
         model = torch.compile(model)
@@ -1070,14 +1070,14 @@ if __name__ == "__main__":
     # load tokens
     train_loader = DistributedShardedDataLoader(args.input_bin, B, T, ddp_rank, ddp_world_size)
     val_loader = None
-    if args.input_val_bin:
+    якщо args.input_val_bin:
         val_loader = DistributedShardedDataLoader(args.input_val_bin, B, T, ddp_rank, ddp_world_size)
 
     # -------------------------------------------------------------------------
     # PyTorch -> C bridge: save some weights and state for C to load later as reference
 
     # do one forward pass to generate ground truth for our C tests
-    if master_process and args.write_tensors and (not args.inference_only):
+    якщо master_process and args.write_tensors and (not args.inference_only):
         x, y = train_loader.next_batch()
         x, y = x.to(device), y.to(device)
         logits, loss = model(x, y)
@@ -1096,9 +1096,9 @@ if __name__ == "__main__":
     # main training loop
 
     # here we wrap model into DDP container
-    if ddp:
+    якщо ddp:
         model = DDP(model, device_ids=[ddp_local_rank])
-    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    raw_model = model.module якщо ddp інакше model # always contains the "raw" unwrapped model
 
     # init the optimizer
     optimizer = raw_model.configure_optimizers(weight_decay=args.weight_decay,
@@ -1109,34 +1109,34 @@ if __name__ == "__main__":
     def get_lr(it):
         min_lr = args.learning_rate * args.learning_rate_decay_frac
         # 1) linear warmup for warmup_iters steps
-        if it < args.warmup_iters:
-            return args.learning_rate * (it+1) / args.warmup_iters
+        якщо it < args.warmup_iters:
+            повернути args.learning_rate * (it+1) / args.warmup_iters
         # 2) if it > lr_decay_iters, return min learning rate
-        if it > args.num_iterations:
-            return min_lr
+        якщо it > args.num_iterations:
+            повернути min_lr
         # 3) in between, use cosine decay down to min learning rate
         decay_ratio = (it - args.warmup_iters) / (args.num_iterations - args.warmup_iters)
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
-        return min_lr + coeff * (args.learning_rate - min_lr)
+        повернути min_lr + coeff * (args.learning_rate - min_lr)
 
-    if device == "cuda":
+    якщо device == "cuda":
         torch.cuda.reset_peak_memory_stats()
     timings = []
     norm = -1.0   # dummy value to print in inference-only mode
-    for step in range(args.num_iterations + 1):
+    для step in range(args.num_iterations + 1):
         t0 = time.time()
         last_step = (step == args.num_iterations)
 
         # once in a while evaluate the validation dataset
-        if (args.val_loss_every > 0 \
+        якщо (args.val_loss_every > 0 \
             and (step % args.val_loss_every == 0 or last_step)) \
             and (val_loader is not None):
             model.eval()
             val_loader.reset()
             with torch.no_grad():
                 val_loss = 0.0
-                for _ in range(args.val_max_steps):
+                для _ in range(args.val_max_steps):
                     x, y = val_loader.next_batch()
                     x, y = x.to(device), y.to(device)
                     _, loss = model(x, y, return_logits=False)
@@ -1144,12 +1144,12 @@ if __name__ == "__main__":
                 val_loss /= args.val_max_steps
             # log to console and to file
             print0(f"val loss {val_loss}")
-            if master_process and logfile is not None:
+            якщо master_process and logfile is not None:
                 with open(logfile, "a") as f:
                     f.write("s:%d tel:%f\n" % (step, val_loss))
 
         # once in a while perform model inference on the master process
-        if (args.sample_every > 0 \
+        якщо (args.sample_every > 0 \
             and (step % args.sample_every == 0 or last_step)) \
             and master_process:
             model.eval()
@@ -1164,14 +1164,14 @@ if __name__ == "__main__":
         plush girafe => girafe peluche
         cheese =>""",
             ]
-            if args.use_hf:
-                prompt_tokens = [model.tokenizer(x).input_ids for x in prompts]
-            else:  # Meta
-                prompt_tokens = [model.tokenizer.encode(x, bos=True, eos=False) for x in prompts]
+            якщо args.use_hf:
+                prompt_tokens = [model.tokenizer(x).input_ids для x in prompts]
+            інакше:  # Meta
+                prompt_tokens = [model.tokenizer.encode(x, bos=True, eos=False) для x in prompts]
 
             generation_tokens = model.generate(prompt_tokens, max_gen_len=64, temperature=0.6, top_p=0.9, echo=False)
-            results = [{"generation": model.tokenizer.decode(t)} for t in generation_tokens]
-            for prompt, result in zip(prompts, results):
+            results = [{"generation": model.tokenizer.decode(t)} для t in generation_tokens]
+            для prompt, result in zip(prompts, results):
                 print(prompt, end="")
                 print(f"{result['generation']}")
                 print("\n==================================\n")
@@ -1180,22 +1180,22 @@ if __name__ == "__main__":
         # but also after the very last iteration. so we loop for step <= num_iterations
         # instead of just < num_iterations (one extra due to <=), only to do
         # the validation/sampling one last time, and then we break right here as we're done.
-        if last_step:
+        якщо last_step:
             break
 
         # --------------- TRAINING SECTION BEGIN -----------------
         model.train()
         optimizer.zero_grad(set_to_none=True)
         # if we are trying to overfit a single batch, we reset the loader here
-        if args.overfit_single_batch:
+        якщо args.overfit_single_batch:
             train_loader.reset()
         # micro-batch loop where we do gradient accumulation to reach desired total batch size
         lossf = 0.0 # for getting the mean loss (as simple float) over the accumulation steps
-        for micro_step in range(grad_accum_steps):
+        для micro_step in range(grad_accum_steps):
             # fetch a batch
             x, y = train_loader.next_batch()
             x, y = x.to(device), y.to(device)
-            if ddp:
+            якщо ddp:
                 # we want only the last micro-step to sync grads in a DDP model
                 # the official way to do this is with model.no_sync(), but that is a
                 # context manager that bloats the code, so we just toggle this variable
@@ -1210,15 +1210,15 @@ if __name__ == "__main__":
                 loss = loss / grad_accum_steps
                 lossf += loss.detach() # keep track of the mean loss
             # backward pass
-            if not args.inference_only:
+            якщо not args.inference_only:
                 loss.backward()
-        if ddp:
+        якщо ddp:
             dist.all_reduce(lossf, op=dist.ReduceOp.AVG)
         lossf = lossf.item()
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         # determine and set the learning rate for this iteration
         lr = get_lr(step)
-        for param_group in optimizer.param_groups:
+        для param_group in optimizer.param_groups:
             param_group['lr'] = lr
         # step the optimizer
         optimizer.step()
@@ -1226,7 +1226,7 @@ if __name__ == "__main__":
         # everything that follows now is just diagnostics, prints, logging, etc.
 
         # wait on the CPU for all device work to end so we get accurate per-iteration timings below
-        if device == "mps":
+        якщо device == "mps":
             torch.mps.synchronize()
         elif device == "cuda":
             torch.cuda.synchronize()
@@ -1236,12 +1236,12 @@ if __name__ == "__main__":
         tokens_per_second = grad_accum_steps * ddp_world_size * B * T / (t1-t0)
         print0(f"step {step+1:4d}/{args.num_iterations} | train loss {lossf:.6f} | norm {norm:.4f} | lr {lr:.2e} | ({(t1-t0)*1000:.2f} ms | {tokens_per_second:.0f} tok/s)")
         # log to logile
-        if master_process and logfile is not None:
+        якщо master_process and logfile is not None:
             with open(logfile, "a") as f:
                 f.write("s:%d trl:%f\n" % (step, lossf))
 
         # keep track of smooth timings, last 20 iterations
-        if step > 0 and step > args.num_iterations - 20:
+        якщо step > 0 and step > args.num_iterations - 20:
             timings.append(t1-t0)
 
     # print the average of the last 20 timings, to get something smooth-ish
@@ -1251,5 +1251,5 @@ if __name__ == "__main__":
 
     # -------------------------------------------------------------------------
     # clean up nice
-    if ddp:
+    якщо ddp:
         destroy_process_group()
