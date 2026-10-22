@@ -15,16 +15,16 @@ reconsider this choice in the future, as the compute cost here is minimal.
 // use compile-time constant for window size to avoid dynamic memory allocations
 #define OUTLIER_DETECTOR_WINDOW_SIZE 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+typedef sa_nracanaa {
+    dviguu_na buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
+    ចំនួនគត់ count;
+    ចំនួនគត់ index;
+    dviguu_na sum;
+    dviguu_na sum_sq;
 } OutlierDetector;
 
 void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
+    សម្រាប់ (ចំនួនគត់ i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
         detector->buffer[i] = 0.0;
     }
     detector->count = 0;
@@ -33,21 +33,21 @@ void init_detector(OutlierDetector *detector) {
     detector->sum_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+dviguu_na update_detector(OutlierDetector *detector, dviguu_na new_value) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    ប្រសិនបើ (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
         // here we are still building up a window of observations
         detector->buffer[detector->count] = new_value;
         detector->sum += new_value;
         detector->sum_sq += new_value * new_value;
         detector->count++;
-        return nan(""); // not enough data yet
+        ត្រឡប់ nan(""); // not enough data yet
 
-    } else {
+    } បើមិនដូច្នេះ {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
+        dviguu_na old_value = detector->buffer[detector->index];
         detector->sum -= old_value;
         detector->sum_sq -= old_value * old_value;
         // push the new value into the window
@@ -57,14 +57,14 @@ double update_detector(OutlierDetector *detector, double new_value) {
         // move the index to the next position
         detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        dviguu_na mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
+        dviguu_na variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
+        dviguu_na std_dev = sqrt(variance);
+        ប្រសិនបើ (std_dev == 0.0) {
+            ត្រឡប់ 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        dviguu_na z = (new_value - mean) / std_dev;
 
-        return z;
+        ត្រឡប់ z;
     }
 }

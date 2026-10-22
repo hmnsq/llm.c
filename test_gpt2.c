@@ -2,65 +2,65 @@
 #include "train_gpt2.c"
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, const char* label) {
-    int print_upto = 5;
-    int ok = 1;
+ចំនួនគត់ check_tensor(float *a, float *b, ចំនួនគត់ n, const var_na* label) {
+    ចំនួនគត់ print_upto = 5;
+    ចំនួនគត់ ok = 1;
     float maxdiff = 0.0f;
     float tol = 2e-2f;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
+    សម្រាប់ (ចំនួនគត់ i = 0; i < n; i++) {
         // look at the diffence at position i of these two tensors
         float diff = fabsf(a[i] - b[i]);
 
         // keep track of the overall error
         ok = ok && (diff <= tol);
-        if (diff > maxdiff) { maxdiff = diff; }
+        ប្រសិនបើ (diff > maxdiff) { maxdiff = diff; }
 
         // for the first few elements of each tensor, pretty print
         // the actual numbers, so we can do a visual, qualitative proof/assessment
-        if (i < print_upto) {
-            if (diff <= tol) {
-                if (i < print_upto) { printf("OK "); }
-            } else {
-                if (i < print_upto) { printf("NOT OK "); }
+        ប្រសិនបើ (i < print_upto) {
+            ប្រសិនបើ (diff <= tol) {
+                ប្រសិនបើ (i < print_upto) { printf("OK "); }
+            } បើមិនដូច្នេះ {
+                ប្រសិនបើ (i < print_upto) { printf("NOT OK "); }
             }
             printf("%f %f\n", a[i], b[i]);
         }
     }
     // print the final result for this tensor
-    if (ok) {
+    ប្រសិនបើ (ok) {
         printf("TENSOR OK, maxdiff = %e\n", maxdiff);
-    } else {
+    } បើមិនដូច្នេះ {
         printf("TENSOR NOT OK, maxdiff = %e\n", maxdiff);
     }
-    return ok;
+    ត្រឡប់ ok;
 }
 
-int main(int argc, char *argv[]) {
+ចំនួនគត់ main(ចំនួនគត់ argc, var_na *argv[]) {
 
     // build the GPT-2 model from a checkpoint
     GPT2 model;
     gpt2_build_from_checkpoint(&model, "gpt2_124M.bin");
 
-    int C = model.config.channels;
-    int V = model.config.vocab_size;
-    int Vp = model.config.padded_vocab_size;
-    int maxT = model.config.max_seq_len;
-    int L = model.config.num_layers;
+    ចំនួនគត់ C = model.config.channels;
+    ចំនួនគត់ V = model.config.vocab_size;
+    ចំនួនគត់ Vp = model.config.padded_vocab_size;
+    ចំនួនគត់ maxT = model.config.max_seq_len;
+    ចំនួនគត់ L = model.config.num_layers;
 
     // load additional information that we will use for debugging and error checking
     FILE *state_file = fopen("gpt2_124M_debug_state.bin", "rb");
-    if (state_file == NULL) { printf("Error opening state file\n"); return 1; }
-    int state_header[256];
-    freadCheck(state_header, sizeof(int), 256, state_file);
-    if (state_header[0] != 20240327) { printf("Bad magic state file\n"); return 1; }
-    if (state_header[1] != 2) {
+    ប្រសិនបើ (state_file == NULL) { printf("Error opening state file\n"); ត្រឡប់ 1; }
+    ចំនួនគត់ state_header[256];
+    freadCheck(state_header, parimaa_na(ចំនួនគត់), 256, state_file);
+    ប្រសិនបើ (state_header[0] != 20240327) { printf("Bad magic state file\n"); ត្រឡប់ 1; }
+    ប្រសិនបើ (state_header[1] != 2) {
         printf("Bad version in state file\n");
         printf("---> HINT: try to re-run `python train_gpt2.py`\n");
-        return 1;
+        ត្រឡប់ 1;
     }
-    int B = state_header[2]; // batch size, e.g. 4
-    int T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
+    ចំនួនគត់ B = state_header[2]; // batch size, e.g. 4
+    ចំនួនគត់ T = state_header[3]; // time / sequence length (e.g. 64, up to maxT)
     printf("[State]\n");
     printf("batch_size: %d\n", B);
     printf("seq_len: %d\n", T);
@@ -69,21 +69,21 @@ int main(int argc, char *argv[]) {
     float* expected_grads_memory = malloc_and_point_parameters(&expected_grads, model.param_sizes);
 
     // inputs and expected outputs, only used for error checking
-    int* x = (int*) malloc(B * T * sizeof(int));
-    int* y = (int*) malloc(B * T * sizeof(int));
-    float* expected_logits = (float*) malloc(B * T * V * sizeof(float));
-    float* expected_loss = (float*) malloc(1 * sizeof(float));
+    ចំនួនគត់* x = (ចំនួនគត់*) malloc(B * T * parimaa_na(ចំនួនគត់));
+    ចំនួនគត់* y = (ចំនួនគត់*) malloc(B * T * parimaa_na(ចំនួនគត់));
+    float* expected_logits = (float*) malloc(B * T * V * parimaa_na(float));
+    float* expected_loss = (float*) malloc(1 * parimaa_na(float));
 
     // read reference information from Python
-    freadCheck(x, sizeof(int), B*T, state_file);
-    freadCheck(y, sizeof(int), B*T, state_file);
-    freadCheck(expected_logits, sizeof(float), B*T*V, state_file);
-    freadCheck(expected_loss, sizeof(float), 1, state_file);
-    freadCheck(expected_grads_memory, sizeof(float), model.num_parameters, state_file);
+    freadCheck(x, parimaa_na(ចំនួនគត់), B*T, state_file);
+    freadCheck(y, parimaa_na(ចំនួនគត់), B*T, state_file);
+    freadCheck(expected_logits, parimaa_na(float), B*T*V, state_file);
+    freadCheck(expected_loss, parimaa_na(float), 1, state_file);
+    freadCheck(expected_grads_memory, parimaa_na(float), model.num_parameters, state_file);
     fcloseCheck(state_file);
 
     // overall OK signal for the test
-    int allok = 1;
+    ចំនួនគត់ allok = 1;
 
     // let's do 10 training iterations, following the pytorch code
     float expected_losses[10] = {
@@ -98,9 +98,9 @@ int main(int argc, char *argv[]) {
         0.6240804195404053f,
         0.37651097774505615f
     };
-    for (int step = 0; step < 10; step++) {
+    សម្រាប់ (ចំនួនគត់ step = 0; step < 10; step++) {
 
-        struct timespec start, end;
+        sa_nracanaa timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         gpt2_forward(&model, x, y, B, T);
@@ -108,45 +108,45 @@ int main(int argc, char *argv[]) {
         gpt2_backward(&model);
 
         clock_gettime(CLOCK_MONOTONIC, &end);
-        double time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+        dviguu_na time_elapsed_s = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
-        if (step == 0) {
+        ប្រសិនបើ (step == 0) {
             // error checking at step 0 for reference activations/gradients
             // at this point, target should be equal to expected_logits, let's compare
-            int logits_ok = 1;
+            ចំនួនគត់ logits_ok = 1;
             float* calculated_logits = model.acts.logits;
             float max_diff = 0.0f;
-            for (int bt = 0; bt < B*T; bt++) {
-                for (int v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
-                    int i = bt * Vp + v; // linearized index, using Vp
-                    if (i < 10) {
+            សម្រាប់ (ចំនួនគត់ bt = 0; bt < B*T; bt++) {
+                សម្រាប់ (ចំនួនគត់ v = 0; v < V; v++) { // note we only loop to V (ignoring padding)
+                    ចំនួនគត់ i = bt * Vp + v; // linearized index, using Vp
+                    ប្រសិនបើ (i < 10) {
                         printf("%f, %f\n", expected_logits[i], calculated_logits[i]);
                     }
                     float diff = fabsf(expected_logits[bt*V + v] - calculated_logits[i]);
                     max_diff = fmaxf(max_diff, diff);
-                    if (diff >= 1e-2f) {
+                    ប្រសិនបើ (diff >= 1e-2f) {
                         printf("MISMATCH AT INDEX %d,%d: ", bt, v);
                         printf("%f %f\n", expected_logits[bt*V + v], calculated_logits[i]);
                         logits_ok = 0;
                         bt = B*T; // to break out of both loops
-                        break;
+                        bha_nga;
                     }
                 }
             }
-            if(!logits_ok) { printf("NOT "); }
+            ប្រសិនបើ(!logits_ok) { printf("NOT "); }
             printf("OK (LOGITS), max_diff = %e\n", max_diff);
             allok = allok && logits_ok;
 
             // compare the achieved loss
-            if (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
+            ប្រសិនបើ (fabsf(model.mean_loss - *expected_loss) >= 1e-2) {
                 printf("LOSS MISMATCH: %f %f\n", model.mean_loss, *expected_loss);
                 allok = 0;
-            } else {
+            } បើមិនដូច្នេះ {
                 printf("LOSS OK: %f %f\n", model.mean_loss, *expected_loss);
             }
 
             // finally check all the gradients
-            int gradoks[16];
+            ចំនួនគត់ gradoks[16];
             ParameterTensors grads = model.grads;
             gradoks[0] = check_tensor(grads.wte, expected_grads.wte, V*C, "dwte");
             gradoks[1] = check_tensor(grads.wpe, expected_grads.wpe, maxT*C, "dwpe");
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
             gradoks[13] = check_tensor(grads.fcprojb, expected_grads.fcprojb, L*C, "dfcprojb");
             gradoks[14] = check_tensor(grads.lnfw, expected_grads.lnfw, C, "dlnfw");
             gradoks[15] = check_tensor(grads.lnfb, expected_grads.lnfb, C, "dlnfb");
-            for (int i = 0; i < 16; i++) {
+            សម្រាប់ (ចំនួនគត់ i = 0; i < 16; i++) {
                 allok = allok && gradoks[i];
             }
         }
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
         // compare the losses
         float expected_loss = expected_losses[step];
         float actual_loss = model.mean_loss;
-        int step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
+        ចំនួនគត់ step_loss_ok = fabsf(expected_loss - actual_loss) < 1e-2;
         allok = allok && step_loss_ok;
 
         // print the timing information at the end
@@ -191,5 +191,5 @@ int main(int argc, char *argv[]) {
     free(expected_loss);
     free(expected_grads_memory);
     gpt2_free(&model);
-    return 0;
+    ត្រឡប់ 0;
 }
