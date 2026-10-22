@@ -1,0 +1,586 @@
+# What is still missing
+
+76 languages. Each line says in how many languages it is missing.
+
+## Files in languages BURP cannot read yet
+
+- `.sh`: 11 files
+
+## Keywords with no word in a language's table
+
+- soochee:args: 75
+- soochee:join: 75
+- guru:__FILE__: 75
+- soochee:update: 75
+- soochee:init: 75
+- soochee:length: 75
+- soochee:Image: 75
+- shraeni:__FILE__: 75
+- soochee:run: 75
+- soochee:out: 74
+- soochee:start: 74
+- guru:size_t: 71
+- guru:fprintf: 71
+- guru:stderr: 71
+- guru:EXIT_FAILURE: 71
+- guru:FILE: 71
+- guru:fread: 71
+- guru:DIR: 71
+- guru:fclose: 71
+- guru:fabs: 71
+- guru:RAND_MAX: 71
+- guru:fopen: 71
+- guru:fwrite: 71
+- guru:SEEK_SET: 71
+- guru:EXIT_SUCCESS: 71
+- guru:mkdir: 71
+- guru:strrchr: 71
+- guru:opendir: 71
+- guru:readdir: 71
+- guru:closedir: 71
+- shraeni:EXIT_FAILURE: 71
+- guru:clock: 71
+- guru:feof: 71
+- guru:ferror: 71
+- guru:FLT_EPSILON: 71
+- guru:isfinite: 71
+- soochee:close: 71
+- guru:remove: 71
+- guru:strchr: 71
+- guru:strncpy: 71
+- shraeni:size_t: 71
+- guru:SEEK_END: 71
+- guru:ftell: 71
+- guru:SEEK_CUR: 71
+- guru:isprint: 71
+- guru:close: 71
+- guru:fseek: 71
+- guru:atoi: 71
+- guru:fflush: 71
+- guru:stdout: 71
+- guru:srand: 70
+- guru:rand: 70
+- guru:strcmp: 70
+- guru:memset: 70
+- soochee:def: 67
+- soochee:print: 67
+- soochee:len: 67
+- soochee:None: 67
+- soochee:range: 67
+- soochee:with: 67
+- soochee:is: 67
+- soochee:pass: 67
+- shraeni:using: 67
+- shraeni:nullptr: 67
+- guru:#define: 66
+- guru:#endif: 66
+- guru:#ifndef: 66
+- guru:#pragma: 66
+- shraeni:#define: 66
+- shraeni:#endif: 66
+- guru:#ifdef: 66
+- guru:printf: 62
+- guru:unsigned: 62
+- guru:exit: 62
+- guru:malloc: 62
+- shraeni:auto: 62
+- guru:long: 62
+- guru:template: 62
+- guru:calloc: 62
+- soochee:long: 62
+- guru:short: 62
+- guru:memcpy: 62
+- soochee:sqrt: 62
+- guru:strlen: 62
+- guru:operator: 62
+- shraeni:printf: 62
+- shraeni:exit: 62
+- guru:strncmp: 62
+- guru:sqrt: 62
+- guru:isspace: 62
+- guru:main: 54
+- soochee:main: 54
+- shraeni:true: 38
+- soochee:assert: 26
+- soochee:True: 26
+- soochee:as: 26
+- soochee:False: 26
+- soochee:elif: 26
+- soochee:lambda: 26
+- soochee:or: 26
+- soochee:yield: 26
+- shraeni:false: 26
+- soochee:raise: 26
+- soochee:except: 26
+- shraeni:namespace: 26
+- shraeni:bool: 26
+- guru:float: 25
+- guru:const: 25
+- guru:void: 25
+- soochee:import: 25
+- soochee:default: 25
+- guru:free: 25
+- guru:NULL: 25
+- soochee:write: 25
+- soochee:float: 25
+- guru:assert: 25
+- guru:typedef: 25
+- guru:static: 25
+- shraeni:void: 25
+- soochee:read: 25
+- soochee:class: 25
+- guru:extern: 25
+- soochee:super: 25
+- shraeni:static: 25
+- shraeni:float: 25
+- soochee:continue: 25
+- guru:#elif: 25
+- shraeni:const: 25
+- guru:default: 25
+- guru:continue: 25
+- soochee:try: 25
+- shraeni:NULL: 25
+- guru:switch: 25
+- guru:do: 25
+- guru:public: 25
+- shraeni:#elif: 25
+- shraeni:assert: 25
+- soochee:int: 13
+- soochee:in: 10
+- soochee:from: 10
+- soochee:not: 10
+- soochee:and: 10
+- guru:for: 9
+- soochee:for: 9
+- guru:sizeof: 9
+- guru:char: 9
+- guru:inline: 9
+- guru:struct: 9
+- guru:double: 9
+- guru:break: 9
+- soochee:break: 9
+- guru:case: 9
+- shraeni:char: 9
+- guru:enum: 9
+- shraeni:enum: 9
+- guru:int: 1
+- soochee:if: 1
+- guru:if: 1
+- guru:return: 1
+- soochee:return: 1
+- soochee:else: 1
+- guru:else: 1
+- shraeni:int: 1
+- guru:#if: 1
+- shraeni:if: 1
+- guru:#else: 1
+- guru:while: 1
+- shraeni:return: 1
+- shraeni:#if: 1
+- shraeni:#else: 1
+
+## Names with no dictionary entry (the most common first)
+
+- `i`: 76
+- `T`: 76
+- `C`: 76
+- `B`: 76
+- `model`: 76
+- `f`: 76
+- `loader`: 76
+- `torch`: 76
+- `t`: 76
+- `config`: 76
+- `x`: 76
+- `b`: 76
+- `file`: 76
+- `parser`: 76
+- `device`: 76
+- `L`: 76
+- `l`: 76
+- `type`: 76
+- `acts`: 76
+- `os`: 76
+- `y`: 76
+- `help`: 76
+- `NH`: 76
+- `dtype`: 76
+- `HS`: 76
+- `s`: 76
+- `tokenizer`: 76
+- `str`: 76
+- `params`: 76
+- `nn`: 76
+- `n_embd`: 76
+- `tensor`: 76
+- `logits`: 76
+- `scheduler`: 76
+- `inp`: 76
+- `k`: 76
+- `grads`: 76
+- `w`: 76
+- `o`: 76
+- `checkpoint`: 76
+- `np`: 76
+- `t2`: 76
+- `v`: 76
+- `targets`: 76
+- `OC`: 76
+- `Vp`: 76
+- `cudaCheck`: 76
+- `V`: 76
+- `filename`: 76
+- `bias`: 76
+- `name`: 76
+- `n`: 76
+- `p`: 76
+- `N`: 76
+- `print0`: 76
+- `act_sizes`: 76
+- `dout`: 76
+- `fe`: 76
+- `loss`: 76
+- `std`: 76
+- `detector`: 76
+- `ibt`: 76
+- `process_rank`: 76
+- `model_tensors`: 76
+- `write_fun`: 76
+- `floatX`: 76
+- `idx`: 76
+- `view`: 76
+- `dim`: 76
+- `inputs`: 76
+- `h`: 76
+- `n_layer`: 76
+- `param_sizes`: 76
+- `grads_acts`: 76
+- `val`: 76
+- `open`: 76
+- `logfile`: 76
+- `j`: 76
+- `encode`: 76
+- `label`: 76
+- `check_tensor`: 76
+- `ElementType`: 76
+- `append`: 76
+- `enc`: 76
+- `cuda`: 76
+- `should_shuffle`: 76
+- `model_desc`: 76
+- `shape`: 76
+- `model_dict`: 76
+- `rstd`: 76
+- `freadCheck`: 76
+- `C3`: 76
+- `hs`: 76
+- `probs`: 76
+- `bt`: 76
+- `numpy`: 76
+- `example`: 76
+- `BT`: 76
+- `dir`: 76
+- `state_`: 76
+- `numel`: 76
+- `lr`: 76
+- `freqs_cis`: 76
+- `arr`: 76
+- `tobytes`: 76
+- `argparse`: 76
+- `H`: 76
+- `copy_amount`: 76
+- `expected_grads`: 76
+- `gradoks`: 76
+- `wte`: 76
+- `val_loader`: 76
+- `mk_tensor`: 76
+- `m`: 76
+- `ADA`: 76
+- `att`: 76
+- `train_loader`: 76
+- `Packed128`: 76
+- `info`: 76
+- `e`: 76
+- `dout_bt`: 76
+- `ptr`: 76
+- `it`: 76
+- `mallocCheck`: 76
+- `min_lr`: 76
+- `optimizer`: 76
+- `cpu`: 76
+- `make_random_float`: 76
+- `forward`: 76
+- `tiktoken`: 76
+- `F`: 76
+- `transpose`: 76
+- `shard_name`: 76
+- `q`: 76
+- `device_type`: 76
+- `LOOP_UNROLL`: 76
+- `zeros`: 76
+- `defined`: 76
+- `enumerate`: 76
+- `output`: 76
+- `val_loss`: 76
+- `warmup_iterations`: 76
+- `nmemb`: 76
+- `fn_name`: 76
+- `_`: 76
+- `zero_stage`: 76
+- `current_shard`: 76
+- `ddp`: 76
+- `environ`: 76
+- `int32`: 76
+- `from_pretrained`: 76
+- `norm`: 76
+- `cudnn_handle`: 76
+- `checkCudnnFE`: 76
+- `mt19937_state`: 76
+- `ntok`: 76
+- `nvmlCheck`: 76
+- `master_process`: 76
+- `cpu_reference`: 76
+- `d`: 76
+- `deviceProp`: 76
+- `error`: 76
+- `toks`: 76
+- `eps`: 76
+- `dinp`: 76
+- `dval`: 76
+- `stats`: 76
+- `math`: 76
+- `betas`: 76
+- `files`: 76
+- `current_position`: 76
+- `lossf`: 76
+- `freqs`: 76
+- `download`: 76
+- `max`: 76
+- `model_type`: 76
+- `maxT`: 76
+- `zscore`: 76
+- `current_shard_idx`: 76
+- `current_sample_idx`: 76
+- `can_fit_examples`: 76
+- `temperature`: 76
+- `fp`: 76
+- `module`: 76
+- `List`: 76
+- `inp_bt`: 76
+- `obt`: 76
+- `get`: 76
+- `err`: 76
+- `kernel`: 76
+- `tqdm`: 76
+- `AutoTokenizer`: 76
+- `eot`: 76
+- `batches_fit`: 76
+- `pglob`: 76
+- `directory`: 76
+- `norm_bti`: 76
+- `dnorm_i`: 76
+- `dx`: 76
+- `intra_shard_indices`: 76
+- `losses`: 76
+- `rid`: 76
+- `wpe`: 76
+- `residual3`: 76
+- `residual`: 76
+- `param`: 76
+- `Module`: 76
+- `c_proj`: 76
+- `transformer`: 76
+- `param_dict`: 76
+- `reset`: 76
+- `buf`: 76
+- `ddp_rank`: 76
+- `Tensor`: 76
+- `hidden_dim`: 76
+- `matmul_forward`: 76
+- `execute_command`: 76
+- `cublasCheck`: 76
+- `int4`: 76
+- `download_file`: 76
+- `write_datafile`: 76
+- `extend`: 76
+- `transformers`: 76
+- `checkEquals`: 76
+- `shard_id`: 76
+- `fopenCheck`: 76
+- `xshift`: 76
+- `dw`: 76
+- `db`: 76
+- `grad`: 76
+- `cudnn_workspace`: 76
+- `shard_ntok`: 76
+- `eval_file`: 76
+- `MERSENNE_STATE_N`: 76
+- `GPT2`: 76
+- `state_file`: 76
+- `ParameterTensors`: 76
+- `allok`: 76
+- `att_bth`: 76
+- `probs_bt`: 76
+- `qkv`: 76
+- `write_tensors`: 76
+- `hd`: 76
+- `nfaults`: 76
+- `subprocess`: 76
+- `modal`: 76
+- `payload`: 76
+- `makedirs`: 76
+- `exist_ok`: 76
+- `astype`: 76
+- `tokenize`: 76
+- `GPT2LMHeadModel`: 76
+- `ctx`: 76
+- `no_grad`: 76
+- `contiguous`: 76
+- `df`: 76
+- `float32`: 76
+- `frombuffer`: 76
+- `token`: 76
+- `dataloader_init`: 76
+- `dataloader_free`: 76
+- `fcloseCheck`: 76
+- `gl_pathv`: 76
+- `rstd_bt`: 76
+- `ok`: 76
+- `min`: 76
+- `is_inference_only`: 76
+- `FLOAT`: 76
+- `theta`: 76
+- `coeff`: 76
+- `sockfd`: 76
+- `N_LAYERS`: 76
+- `diff`: 76
+- `expected_loss`: 76
+- `ix`: 76
+- `parallel`: 76
+- `maxval`: 76
+- `optim`: 76
+- `return_logits`: 76
+- `pn`: 76
+- `optim_groups`: 76
+- `write_fp32`: 76
+- `warmup_iters`: 76
+- `output_dir`: 76
+- `timings`: 76
+- `clock_gettime`: 76
+- `sys`: 76
+- `dict`: 76
+- `fname`: 76
+- `datas`: 76
+- `all`: 76
+- `exists`: 76
+- `bfloat16`: 76
+- `reshape`: 76
+- `SHARD_NAME_LEN`: 76
+- `checkRange`: 76
+- `handle`: 76
+- `dbias`: 76
+- `cache`: 76
+- `backward`: 76
+
+## Comments with no translation
+
+- magic: 76
+- batch: 76
+- number of batches that fit per shard: 76
+- epoch: 76
+- shard: 76
+- forward pass: 76
+- inputs: 76
+- first read the header, which is 256 int32 integers (4 bytes each): 76
+- number of tokens (claimed): 76
+- OC is short for "output channels": 76
+- inp is (B,T,C), weight is (OC, C), bias is (OC): 76
+- out will be (B,T,OC): 76
+- by default the tokenizer adds the EOT token (128000): 76
+- end of text token: 76
+- seek to the output position in out[b,t,:]: 76
+- coeff starts at 1 and goes to 0: 76
+- +C because it's key: 76
+- main training loop: 76
+- output projection: 76
+- most of the running time is spent here and in matmul_backward: 76
+- collapse the B and T loops into one and turn it into a strided loop.: 76
+- then we can tile the inner loop, and reuse the loaded weight LOOP_UNROLL many times: 76
+- inner loops. Because we do LOOP_UNROLL steps of inner bt, we can cache: 76
+- the value of weight[i + o * C] and reuse it.: 76
+- write back results to main memory: 76
+- range -1..1: 76
+- print the first few comparisons: 76
+- ensure correctness for all elements.: 76
+- cuBLAS error checking: 76
+- If not, you easily get "no viable overload" (for sm52) and "function already exists" (sm_80): 76
+- construct the header: 76
+- the special <|endoftext|> token delimits all documents: 76
+- note: prepending " " because GPT-2 tokenizer: 76
+- have to be careful during the collation because the number of tokens in each row can differ: 76
+- use tf32: 76
+- model = torch.compile(model): 76
+- get the logits: 76
+- evaluate the autoregressive loss at all positions: 76
+- now get the average loss just for the completion region (where mask == 1), in each row: 76
+- we must shift mask, so we start at the last prompt token: 76
+- sum and divide by the number of 1s in the mask: 76
+- now we have a loss for each of the 4 completions: 76
+- the one with the lowest loss should be the most likely: 76
+- accumulate stats: 76
+- get batches from the dataloader and keep stats on what tokens we see: 76
+- count up the tokens we see: 76
+- verify that we saw all the tokens the correct number of times: 76
+- number of tokens that fit per shard: 76
+- verify the inputs counts for this shard:: 76
+- - the first tokens_fit should have been seen num_epochs times: 76
+- - the rest of the tokens in that should should have been seen zero times: 76
+- verify the target counts. same thing but offset by 1: 76
+- freed in globfree: 76
+- seek to the input position inp[b,t,:]: 76
+- calculate the mean: 76
+- calculate the variance (without any bias correction): 76
+- write: 76
+- cache the mean and rstd for the backward pass later: 76
+- first: two reduce operations: 76
+- now iterate again and accumulate all the gradients: 76
+- gradient contribution to bias: 76
+- gradient contribution to weight: 76
+- gradient contribution to input: 76
+- term 1: 76
+- term 2: 76
+- term 3: 76
+- final scale: 76
+- poor man's tensor checker: 76
+- read reference information from Python: 76
+- Error checking: 76
+- Specific configurations based on the enabled precision: 76
+- use fp16 (note: this may require gradient scaler, currently not implemented!): 76
+- Default to bfloat16: 76
+- allocate pinned buffer for faster, async transfer: 76
+- split allocation in two: 76
+- now the main loop; as long as there are bytes left: 76
+- initiate next read: 76
+- wait for both buffers to be ready.: 76
+- Create the graph operation and get the output tensors back: 76
+- Build the operation graph and execution part (this is the VERY SLOW PART): 76
+- Reallocate the workspace if the required size is greater than the current workspace: 76
+- output: (B, T, NH, HS): 76
+- output for backward pass: (B, NH, T): 76
+- input: (B, T, 3, NH, HS) QKV: 76
+- number of features per head: 76
+- Get graph and tensors from cache (or generate it on first use): 76
+- Prepare all the tensor pointers for executing the graph: 76
+- Execute graph: 76
+- output: 76
+- variables related to distributed training: 76
+- each process/worker has to access different parts of the data: 76
+- we fread data from file into this buffer: 76
+- input tokens into transformer: 76
+- target tokens for the transformer: 76
+- validate the header: 76
+- allocate all the space we'll need: 76
+- reset the loader, to initialize it: 76
+- validate the <START_EXAMPLE> delimiter: 76
+- <START_EXAMPLE> delimiter: 76
+- validate the <EXAMPLE_INDEX>: 76
