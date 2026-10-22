@@ -21,17 +21,17 @@ import math
 import glob
 import struct
 import inspect
-from contextlib import nullcontext
-from dataclasses import dataclass
+ta_h contextlib import nullcontext
+ta_h dataclasses import dataclass
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
+ta_h torch.nn import functional as F
 import torch._inductor.config as config
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
-from torch.distributed.optim import ZeroRedundancyOptimizer
+ta_h torch.nn.parallel import DistributedDataParallel as DDP
+ta_h torch.distributed import init_process_group, destroy_process_group
+ta_h torch.distributed.optim import ZeroRedundancyOptimizer
 import torch.distributed as dist
 
 # -----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ import torch.distributed as dist
 class NewGELU(nn.Module):
     """Careful there are a few versions of GeLU, this one is the exact one used by OpenAI"""
     def forward(self, input):
-        return 0.5 * input * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (input + 0.044715 * torch.pow(input, 3.0))))
+        ལོག 0.5 * input * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (input + 0.044715 * torch.pow(input, 3.0))))
 
 # using a global to toggle flash-attention
 FLASH = 0
@@ -70,10 +70,10 @@ class CausalSelfAttention(nn.Module):
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        if FLASH:
+        གལ་སྲིད FLASH:
             # flashattention
             y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
-        else:
+        དེ་མིན:
             # manual implementation of attention
             # this materializes the large (T,T) matrix for all the queries and keys
             att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
@@ -83,7 +83,7 @@ class CausalSelfAttention(nn.Module):
         y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
         # output projection
         y = self.c_proj(y)
-        return y
+        ལོག y
 
 class MLP(nn.Module):
 
@@ -98,7 +98,7 @@ class MLP(nn.Module):
         x = self.c_fc(x)
         x = self.gelu(x)
         x = self.c_proj(x)
-        return x
+        ལོག x
 
 class Block(nn.Module):
 
@@ -112,18 +112,18 @@ class Block(nn.Module):
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
-        return x
+        ལོག x
 
 # -----------------------------------------------------------------------------
 # The main GPT-2 model
 
 @dataclass
 class GPTConfig:
-    block_size: int = 1024
-    vocab_size: int = 50257
-    n_layer: int = 12
-    n_head: int = 12
-    n_embd: int = 768
+    block_size: ཧྲིལ = 1024
+    vocab_size: ཧྲིལ = 50257
+    n_layer: ཧྲིལ = 12
+    n_head: ཧྲིལ = 12
+    n_embd: ཧྲིལ = 768
 
 class GPT(nn.Module):
 
@@ -134,7 +134,7 @@ class GPT(nn.Module):
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
             wpe = nn.Embedding(config.block_size, config.n_embd),
-            h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+            h = nn.ModuleList([Block(config) དོན་ལུ _ anta_h range(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd),
         ))
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
@@ -147,14 +147,14 @@ class GPT(nn.Module):
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
-        if isinstance(module, nn.Linear):
+        གལ་སྲིད isinstance(module, nn.Linear):
             # apply special scaled init to the residual projections, per GPT-2 paper
-            std = 0.02 if not hasattr(module, 'LLMC_RESIDUAL_SCALE_FLAG') else 0.02/math.sqrt(2 * self.config.n_layer)
+            std = 0.02 གལ་སྲིད na hasattr(module, 'LLMC_RESIDUAL_SCALE_FLAG') དེ་མིན 0.02/math.sqrt(2 * self.config.n_layer)
             # we want to skip initializing lm_head, which shares parameters with wte
             # and wte was already initialized down below during the Embedding init
-            if not hasattr(module, 'LLMC_SKIP_INIT'):
+            གལ་སྲིད na hasattr(module, 'LLMC_SKIP_INIT'):
                 torch.nn.init.normal_(module.weight, mean=0.0, std=std, generator=self.init_rng)
-            if module.bias is not None:
+            གལ་སྲིད module.bias is na None:
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02, generator=self.init_rng)
@@ -170,30 +170,30 @@ class GPT(nn.Module):
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
         x = tok_emb + pos_emb
 
-        for block in self.transformer.h:
+        དོན་ལུ block anta_h self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
 
-        if targets is not None:
+        གལ་སྲིད targets is na None:
             # if we are given some desired targets also calculate the loss
             logits = self.lm_head(x)
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-        else:
+        དེ་མིན:
             # inference-time mini-optimization: only forward the lm_head on the very last position
             logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
             loss = None
 
         # there are performance reasons why not returning logits is prudent, if not needed
-        if not return_logits:
+        གལ་སྲིད na return_logits:
             logits = None
 
-        return logits, loss
+        ལོག logits, loss
 
     @classmethod
     def from_pretrained(cls, model_type):
         """Loads pretrained GPT-2 model weights from huggingface"""
-        assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
-        from transformers import GPT2LMHeadModel
+        assert model_type anta_h {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
+        ta_h transformers import GPT2LMHeadModel
         print("loading weights from pretrained gpt: %s" % model_type)
 
         # n_layer, n_head and n_embd are determined from model_type
@@ -210,7 +210,7 @@ class GPT(nn.Module):
         model = GPT(config)
         sd = model.state_dict()
         sd_keys = sd.keys()
-        sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')] # discard this mask / buffer, not a param
+        sd_keys = [k དོན་ལུ k anta_h sd_keys གལ་སྲིད na k.endswith('.attn.bias')] # discard this mask / buffer, not a param
 
         # init a huggingface/transformers model
         model_hf = GPT2LMHeadModel.from_pretrained(model_type)
@@ -218,56 +218,56 @@ class GPT(nn.Module):
 
         # copy while ensuring all of the parameters are aligned and match in names and shapes
         sd_keys_hf = sd_hf.keys()
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.masked_bias')] # ignore these, just a buffer
-        sd_keys_hf = [k for k in sd_keys_hf if not k.endswith('.attn.bias')] # same, just the mask (buffer)
+        sd_keys_hf = [k དོན་ལུ k anta_h sd_keys_hf གལ་སྲིད na k.endswith('.attn.masked_bias')] # ignore these, just a buffer
+        sd_keys_hf = [k དོན་ལུ k anta_h sd_keys_hf གལ་སྲིད na k.endswith('.attn.bias')] # same, just the mask (buffer)
         transposed = ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
         # basically the openai checkpoints use a "Conv1D" module, but we only want to use a vanilla Linear
         # this means that we have to transpose these weights when we import them
         assert len(sd_keys_hf) == len(sd_keys), f"mismatched keys: {len(sd_keys_hf)} != {len(sd_keys)}"
-        for k in sd_keys_hf:
-            if any(k.endswith(w) for w in transposed):
+        དོན་ལུ k anta_h sd_keys_hf:
+            གལ་སྲིད any(k.endswith(w) དོན་ལུ w anta_h transposed):
                 # special treatment for the Conv1D weights we need to transpose
                 assert sd_hf[k].shape[::-1] == sd[k].shape
                 with torch.no_grad():
                     sd[k].copy_(sd_hf[k].t())
-            else:
+            དེ་མིན:
                 # vanilla copy over the other parameters
                 assert sd_hf[k].shape == sd[k].shape
                 with torch.no_grad():
                     sd[k].copy_(sd_hf[k])
 
-        return model
+        ལོག model
 
     def configure_optimizers(self, weight_decay, learning_rate, betas, device_type, zero_stage):
         # start with all of the candidate parameters
-        param_dict = {pn: p for pn, p in self.named_parameters()}
+        param_dict = {pn: p དོན་ལུ pn, p anta_h self.named_parameters()}
         # filter out those that do not require grad
-        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+        param_dict = {pn: p དོན་ལུ pn, p anta_h param_dict.items() གལ་སྲིད p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p དོན་ལུ n, p anta_h param_dict.items() གལ་སྲིད p.dim() >= 2]
+        nodecay_params = [p དོན་ལུ n, p anta_h param_dict.items() གལ་སྲིད p.dim() < 2]
         optim_groups = [
             {'params': decay_params, 'weight_decay': weight_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
         ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        num_decay_params = sum(p.numel() དོན་ལུ p anta_h decay_params)
+        num_nodecay_params = sum(p.numel() དོན་ལུ p anta_h nodecay_params)
         print0(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
         print0(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
-        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and device_type == 'cuda'
+        fused_available = 'fused' anta_h inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_available ca device_type == 'cuda'
         print0(f"using fused AdamW: {use_fused}")
-        if zero_stage == 1:
+        གལ་སྲིད zero_stage == 1:
             print0("using ZeroRedundancyOptimizer")
             optimizer = ZeroRedundancyOptimizer(**optim_groups[0], optimizer_class=torch.optim.AdamW,
                                                 lr=learning_rate, betas=betas, fused=use_fused)
             optimizer.add_param_group(optim_groups[1])
-        else:
+        དེ་མིན:
             print0("using regular AdamW")
             optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, fused=use_fused)
-        return optimizer
+        ལོག optimizer
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
@@ -276,15 +276,15 @@ class GPT(nn.Module):
         the sequence max_new_tokens times, feeding the predictions back into the model each time.
         Most likely you'll want to make sure to be in model.eval() mode of operation for this.
         """
-        for _ in range(max_new_tokens):
+        དོན་ལུ _ anta_h range(max_new_tokens):
             # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
+            idx_cond = idx གལ་སྲིད idx.size(1) <= self.config.block_size དེ་མིན idx[:, -self.config.block_size:]
             # forward the model to get the logits for the index in the sequence
             logits, _ = self(idx_cond)
             # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / temperature
             # optionally crop the logits to only the top k options
-            if top_k is not None:
+            གལ་སྲིད top_k is na None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             # apply softmax to convert logits to (normalized) probabilities
@@ -294,7 +294,7 @@ class GPT(nn.Module):
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
 
-        return idx
+        ལོག idx
 
 # -----------------------------------------------------------------------------
 # Our own simple Distributed Data Loader
@@ -304,7 +304,7 @@ def _peek_data_shard(filename):
     with open(filename, "rb") as f:
         # first read the header, which is 256 int32 integers (4 bytes each)
         header = np.frombuffer(f.read(256*4), dtype=np.int32)
-    if header[0] != 20240520:
+    གལ་སྲིད header[0] != 20240520:
         print("ERROR: magic number mismatch in the data .bin file!")
         print("---> HINT: Are you passing in a correct file with --input_bin?")
         print("---> HINT: Dataset encoding changed recently, re-run data prepro or refer again to README")
@@ -312,7 +312,7 @@ def _peek_data_shard(filename):
         exit(1)
     assert header[1] == 1, "unsupported version"
     ntok = header[2] # number of tokens (claimed)
-    return ntok # for now just return the number of tokens
+    ལོག ntok # for now just return the number of tokens
 
 def _load_data_shard(filename):
     with open(filename, "rb") as f:
@@ -324,7 +324,7 @@ def _load_data_shard(filename):
         # the rest of it are tokens, stored as uint16
         tokens = np.frombuffer(f.read(), dtype=np.uint16)
     assert len(tokens) == ntok, "number of tokens read does not match header?"
-    return tokens
+    ལོག tokens
 
 class DistributedDataLoader:
     def __init__(self, filename_pattern, B, T, process_rank, num_processes):
@@ -339,7 +339,7 @@ class DistributedDataLoader:
 
         # load and validate all data shards, count number of tokens in total
         ntok_total = 0
-        for fname in self.files:
+        དོན་ལུ fname anta_h self.files:
             shard_ntok = _peek_data_shard(fname)
             assert shard_ntok >= num_processes * B * T + 1
             ntok_total += shard_ntok
@@ -353,7 +353,7 @@ class DistributedDataLoader:
     def reset(self):
         # we're being a bit clever here: if we already had shard 0 loaded,
         # then don't do the work to reload it, just reset the pointer
-        if self.current_shard != 0:
+        གལ་སྲིད self.current_shard != 0:
             self.current_shard = 0
             self.tokens = _load_data_shard(self.files[self.current_shard])
         self.current_position = self.process_rank * self.B * self.T
@@ -373,9 +373,9 @@ class DistributedDataLoader:
         # advance the start pointer in current shard
         self.current_position += B * T * self.num_processes
         # if loading the next batch would be out of bounds advance the shard
-        if self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
+        གལ་སྲིད self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
             self.advance()
-        return x, y
+        ལོག x, y
 
 # -----------------------------------------------------------------------------
 # Python -> C bridge utilities for saving params/grads/activations to .bin files
@@ -394,33 +394,33 @@ def write_bf16(tensor, file):
 
 def write_tensors(model_tensors, L, file, dtype):
     # writes the GPT-2 model's weights to a binary file
-    assert dtype in {"float32", "bfloat16"}
-    write_fun = write_fp32 if dtype == "float32" else write_bf16
+    assert dtype anta_h {"float32", "bfloat16"}
+    write_fun = write_fp32 གལ་སྲིད dtype == "float32" དེ་མིན write_bf16
     write_fun(model_tensors["transformer.wte.weight"], file) # (V, C)
     write_fun(model_tensors["transformer.wpe.weight"], file) # (T, C)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.weight"], file)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.bias"], file)
-    for i in range(L): # (L, 3C, C)
+    དོན་ལུ i anta_h range(L): # (L, 3C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.weight"], file)
-    for i in range(L): # (L, 3C)
+    དོན་ལུ i anta_h range(L): # (L, 3C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.bias"], file)
-    for i in range(L): # (L, C, C)
+    དོན་ལུ i anta_h range(L): # (L, C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.bias"], file)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.weight"], file)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.bias"], file)
-    for i in range(L): # (L, 4C, C)
+    དོན་ལུ i anta_h range(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.weight"], file)
-    for i in range(L): # (L, 4C)
+    དོན་ལུ i anta_h range(L): # (L, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.bias"], file)
-    for i in range(L): # (L, C, 4C)
+    དོན་ལུ i anta_h range(L): # (L, C, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    དོན་ལུ i anta_h range(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.bias"], file)
     write_fun(model_tensors["transformer.ln_f.weight"], file) # (C, )
     write_fun(model_tensors["transformer.ln_f.bias"], file) # (C, )
@@ -442,14 +442,14 @@ def pad_vocab(tensor, multiple=128, value=0):
     Vp = ((V + multiple - 1) // multiple) * multiple
     # pad the tensor
     pad_rows = Vp - V
-    padded = tensor if pad_rows == 0 else F.pad(tensor, (0, 0, 0, pad_rows), value=value)
+    padded = tensor གལ་སྲིད pad_rows == 0 དེ་མིན F.pad(tensor, (0, 0, 0, pad_rows), value=value)
     assert padded.shape == (Vp, C)
-    return padded
+    ལོག padded
 
 def write_model(model, filename, dtype):
     # everything we need to instantiate the model
     # 1) header is: version int, GPTConfig ints, padding to 1024 bytes
-    assert dtype in {"float32", "bfloat16"} # float16 todo maybe later
+    assert dtype anta_h {"float32", "bfloat16"} # float16 todo maybe later
     version = {
         "float32": 3, # 3: all tensors are fp32, padded vocab
         "bfloat16": 5, # 5: all tensors are bf16, padded vocab
@@ -463,7 +463,7 @@ def write_model(model, filename, dtype):
     header[5] = model.config.n_head
     header[6] = model.config.n_embd
     # 2) the parameters follow the header
-    params = {name: param.cpu() for name, param in model.named_parameters()}
+    params = {name: param.cpu() དོན་ལུ name, param anta_h model.named_parameters()}
     # pad the vocab to a multiple of 128 here at export, for efficiency in C
     wte = params["transformer.wte.weight"] # (V, C)
     wte_padded = pad_vocab(wte) # (Vp, C)
@@ -485,7 +485,7 @@ def write_state(model, x, y, logits, loss, filename):
     header[1] = 2 # run state version = 2 (1 -> 2 for padded vocab changes)
     header[2] = x.size(0) # batch size of the batch, B
     header[3] = x.size(1) # temporal extent of the batch, T
-    grads = {name: param.grad.cpu() for name, param in model.named_parameters()}
+    grads = {name: param.grad.cpu() དོན་ལུ name, param anta_h model.named_parameters()}
     # pad the vocab grads here as well, to mirror write_model
     wte_grad = grads["transformer.wte.weight"] # (V, C)
     wte_grad_padded = pad_vocab(wte_grad, value=0) # (Vp, C) # TODO later maybe pad with nan?
@@ -515,7 +515,7 @@ def write_tokenizer(enc, filename):
     header[3] = enc.eot_token # EOT token
     with open(filename, "wb") as file:
         file.write(header.numpy().tobytes())
-        for i in range(n):
+        དོན་ལུ i anta_h range(n):
             b = enc.decode_bytes([i])
             length = len(b)
             assert length < 256, f"Token length exceeds 255: {length}"
@@ -529,10 +529,10 @@ def write_tokenizer(enc, filename):
 def print0(*args, **kwargs):
     # modified print that only prints from the master process
     # if this is not a distributed run, it's just a print
-    if int(os.environ.get("RANK", 0)) == 0:
+    གལ་སྲིད ཧྲིལ(os.environ.get("RANK", 0)) == 0:
         print(*args, **kwargs)
 
-if __name__ == "__main__":
+གལ་སྲིད __name__ == "__main__":
     import time
     import argparse
     import tiktoken
@@ -547,57 +547,57 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="", help="output directory to which to write logs and checkpoints")
     parser.add_argument("--model", type=str, default="gpt2", help="gpt2|gpt2-medium|gpt2-large|gpt2-xl|d12|d24|d36|d48")
     # token layout for each step of the optimization
-    parser.add_argument("--batch_size", type=int, default=4, help="batch size, in units of #batch dimensions")
-    parser.add_argument("--sequence_length", type=int, default=64, help="sequence length")
-    parser.add_argument("--total_batch_size", type=int, default=256, help="total desired batch size, in units of #tokens")
+    parser.add_argument("--batch_size", type=ཧྲིལ, default=4, help="batch size, in units of #batch dimensions")
+    parser.add_argument("--sequence_length", type=ཧྲིལ, default=64, help="sequence length")
+    parser.add_argument("--total_batch_size", type=ཧྲིལ, default=256, help="total desired batch size, in units of #tokens")
     # workload (number of steps)
-    parser.add_argument("--num_iterations", type=int, default=10, help="number of iterations to run")
-    parser.add_argument("--inference_only", type=int, default=0, help="only run inference")
+    parser.add_argument("--num_iterations", type=ཧྲིལ, default=10, help="number of iterations to run")
+    parser.add_argument("--inference_only", type=ཧྲིལ, default=0, help="only run inference")
     # optimization
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="learning rate warmup iterations")
-    parser.add_argument("--warmup_iters", type=int, default=0, help="learning rate warmup iterations")
+    parser.add_argument("--warmup_iters", type=ཧྲིལ, default=0, help="learning rate warmup iterations")
     parser.add_argument("--learning_rate_decay_frac", type=float, default=1.0, help="learning rate warmup iterations")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="weight decay")
     parser.add_argument("--grad_clip", type=float, default=1.0, help="maximum gradient magnitude")
     # evaluation
-    parser.add_argument("--val_loss_every", type=int, default=0, help="every how mant steps to evaluate val loss?")
-    parser.add_argument("--val_max_steps", type=int, default=20, help="how many batches of val to average?")
-    parser.add_argument("--sample_every", type=int, default=0, help="how often to sample from the model?")
+    parser.add_argument("--val_loss_every", type=ཧྲིལ, default=0, help="every how mant steps to evaluate val loss?")
+    parser.add_argument("--val_max_steps", type=ཧྲིལ, default=20, help="how many batches of val to average?")
+    parser.add_argument("--sample_every", type=ཧྲིལ, default=0, help="how often to sample from the model?")
     # debugging
-    parser.add_argument("--overfit_single_batch", type=int, default=1, help="overfit just one batch of data")
+    parser.add_argument("--overfit_single_batch", type=ཧྲིལ, default=1, help="overfit just one batch of data")
     # numerics
-    parser.add_argument("--tensorcores", type=int, default=0, help="use tensorcores")
+    parser.add_argument("--tensorcores", type=ཧྲིལ, default=0, help="use tensorcores")
     # memory management
     parser.add_argument("--device", type=str, default="", help="by default we autodetect, or set it here")
-    parser.add_argument("--compile", type=int, default=0, help="torch.compile the model")
-    parser.add_argument("--flash", type=int, default=0, help="use flash attention")
+    parser.add_argument("--compile", type=ཧྲིལ, default=0, help="torch.compile the model")
+    parser.add_argument("--flash", type=ཧྲིལ, default=0, help="use flash attention")
     parser.add_argument("--dtype", type=str, default="float32", help="float32|float16|bfloat16")
-    parser.add_argument("--zero_stage", type=int, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
+    parser.add_argument("--zero_stage", type=ཧྲིལ, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
     # python -> C bridge
-    parser.add_argument("--write_tensors", type=int, default=1, help="write tensors to disk")
+    parser.add_argument("--write_tensors", type=ཧྲིལ, default=1, help="write tensors to disk")
     args = parser.parse_args()
 
     # args error checking and convenience variables
     B, T = args.batch_size, args.sequence_length
     assert 1 <= T <= 1024
-    assert args.dtype in {"float32", "float16", "bfloat16"}
-    assert args.model in {"gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl", "d12", "d24", "d36", "d48"}
+    assert args.dtype anta_h {"float32", "float16", "bfloat16"}
+    assert args.model anta_h {"gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl", "d12", "d24", "d36", "d48"}
 
     # set up DDP (distributed data parallel). torchrun sets this env variable
-    ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
-    if ddp:
+    ddp = ཧྲིལ(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+    གལ་སྲིད ddp:
         # use of DDP atm demands CUDA, we set the device appropriately according to rank
         assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
         init_process_group(backend='nccl')
-        ddp_rank = int(os.environ['RANK'])
-        ddp_local_rank = int(os.environ['LOCAL_RANK'])
-        ddp_world_size = int(os.environ['WORLD_SIZE'])
+        ddp_rank = ཧྲིལ(os.environ['RANK'])
+        ddp_local_rank = ཧྲིལ(os.environ['LOCAL_RANK'])
+        ddp_world_size = ཧྲིལ(os.environ['WORLD_SIZE'])
         device = f'cuda:{ddp_local_rank}'
         torch.cuda.set_device(device)
         master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
         seed_offset = 0 # each process gets the exact same seed
         zero_stage = args.zero_stage
-    else:
+    དེ་མིན:
         ddp_rank = 0
         ddp_local_rank = 0
         zero_stage = 0
@@ -605,18 +605,18 @@ if __name__ == "__main__":
         master_process = True
         seed_offset = 0
         # select the device
-        if args.device:
+        གལ་སྲིད args.device:
             # provided explicitly by the user
             device = args.device
-        else:
+        དེ་མིན:
             # attempt to autodetect the device
             device = "cpu"
-            if torch.cuda.is_available():
+            གལ་སྲིད torch.cuda.is_available():
                 device = "cuda"
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            elif hasattr(torch.backends, "mps") ca torch.backends.mps.is_available():
                 device = "mps"
     print(f"using device: {device}")
-    device_type = 'cuda' if 'cuda' in device else 'cpu'
+    device_type = 'cuda' གལ་སྲིད 'cuda' anta_h device དེ་མིན 'cpu'
 
     # calculate gradient accumulation from the desired total batch size and the current run configuration
     tokens_per_fwdbwd = B * T * ddp_world_size
@@ -627,29 +627,29 @@ if __name__ == "__main__":
 
     # set up a context manager following the desired dtype and device
     ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[args.dtype]
-    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if device_type == "cuda" else nullcontext()
+    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) གལ་སྲིད device_type == "cuda" དེ་མིན nullcontext()
 
     # rng / reproducibility
     torch.manual_seed(42)
-    if torch.cuda.is_available():
+    གལ་སྲིད torch.cuda.is_available():
         torch.cuda.manual_seed(42)
 
     # set the torch precision mode to use TensorFloat32 (TF32) for matmuls
     # docs https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
-    if args.tensorcores:
+    གལ་སྲིད args.tensorcores:
         torch.set_float32_matmul_precision('high')
 
     # turn on/off flash attention
-    assert args.flash in {0, 1}
+    assert args.flash anta_h {0, 1}
     FLASH = args.flash
 
     # init (and write) the tokenizer
     enc = tiktoken.get_encoding("gpt2")
-    if master_process and args.write_tensors: # tokenizer is technically not tensors but ok
+    གལ་སྲིད master_process ca args.write_tensors: # tokenizer is technically not tensors but ok
         write_tokenizer(enc, "gpt2_tokenizer.bin")
 
     # init the model, either from scratch or from OpenAI pretrained checkpoint
-    if args.model[0] == "d":
+    གལ་སྲིད args.model[0] == "d":
         # from scratch (random weights)
         model_config = {
             "d12": GPTConfig(block_size=1024, vocab_size=50257, n_layer=12, n_head=12, n_embd=768),
@@ -658,13 +658,13 @@ if __name__ == "__main__":
             "d48": GPTConfig(block_size=1024, vocab_size=50257, n_layer=48, n_head=25, n_embd=1600),
         }[args.model]
         model = GPT(model_config)
-    else:
+    དེ་མིན:
         # load the GPT-2 model weights
         model = GPT.from_pretrained(args.model)
     model.train()
     model.to(device)
-    if args.compile:
-        if hasattr(config, "coordinate_descent_tuning"):
+    གལ་སྲིད args.compile:
+        གལ་སྲིད hasattr(config, "coordinate_descent_tuning"):
             config.coordinate_descent_tuning = True # suggested by @Chillee
         print0("compiling the model...")
         model = torch.compile(model)
@@ -675,21 +675,21 @@ if __name__ == "__main__":
     # load tokens
     train_loader = DistributedDataLoader(args.input_bin, B, T, ddp_rank, ddp_world_size)
     val_loader = None
-    if args.input_val_bin:
+    གལ་སྲིད args.input_val_bin:
         val_loader = DistributedDataLoader(args.input_val_bin, B, T, ddp_rank, ddp_world_size)
 
     # -------------------------------------------------------------------------
     # PyTorch -> C bridge: save some weights and state for C to load later as reference
 
     # do one forward pass to generate ground truth for our C tests
-    if master_process and args.write_tensors and (not args.inference_only):
+    གལ་སྲིད master_process ca args.write_tensors ca (na args.inference_only):
         x, y = train_loader.next_batch()
         x, y = x.to(device), y.to(device)
         logits, loss = model(x, y)
         loss.backward()
         # save model params, in both float32 and bfloat16
         model_to_size = {"gpt2": "124M", "gpt2-medium": "355M", "gpt2-large": "774M", "gpt2-xl": "1558M"}
-        model_to_size.update({f"d{d}": f"d{d}" for d in [12, 24, 36, 48]})
+        model_to_size.update({f"d{d}": f"d{d}" དོན་ལུ d anta_h [12, 24, 36, 48]})
         model_size_str = model_to_size[args.model] # e.g. "124M", or "d12"
         write_model(model, f"gpt2_{model_size_str}.bin", dtype="float32")
         write_model(model, f"gpt2_{model_size_str}_bf16.bin", dtype="bfloat16")
@@ -703,9 +703,9 @@ if __name__ == "__main__":
     # main training loop
 
     # here we wrap model into DDP container
-    if ddp:
+    གལ་སྲིད ddp:
         model = DDP(model, device_ids=[ddp_local_rank])
-    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    raw_model = model.module གལ་སྲིད ddp དེ་མིན model # always contains the "raw" unwrapped model
 
     # init the optimizer
     optimizer = raw_model.configure_optimizers(weight_decay=args.weight_decay,
@@ -716,43 +716,43 @@ if __name__ == "__main__":
     def get_lr(it):
         min_lr = args.learning_rate * args.learning_rate_decay_frac
         # 1) linear warmup for warmup_iters steps
-        if it < args.warmup_iters:
-            return args.learning_rate * (it+1) / args.warmup_iters
+        གལ་སྲིད it < args.warmup_iters:
+            ལོག args.learning_rate * (it+1) / args.warmup_iters
         # 2) if it > lr_decay_iters, return min learning rate
-        if it > args.num_iterations:
-            return min_lr
+        གལ་སྲིད it > args.num_iterations:
+            ལོག min_lr
         # 3) in between, use cosine decay down to min learning rate
         decay_ratio = (it - args.warmup_iters) / (args.num_iterations - args.warmup_iters)
         assert 0 <= decay_ratio <= 1
         coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
-        return min_lr + coeff * (args.learning_rate - min_lr)
+        ལོག min_lr + coeff * (args.learning_rate - min_lr)
 
     # create the logging directory if it does not exist
     logfile = None
-    if args.output_dir:
+    གལ་སྲིད args.output_dir:
         os.makedirs(args.output_dir, exist_ok=True)
         logfile = os.path.join(args.output_dir, "main.log")
         # create the log file "main.log" inside it, and wipe it clean
         with open(logfile, "w") as f:
             pass
 
-    if device == "cuda":
+    གལ་སྲིད device == "cuda":
         torch.cuda.reset_peak_memory_stats()
     timings = []
     norm = -1.0   # dummy value to print in inference-only mode
-    for step in range(args.num_iterations + 1):
+    དོན་ལུ step anta_h range(args.num_iterations + 1):
         t0 = time.time()
         last_step = (step == args.num_iterations)
 
         # once in a while evaluate the validation dataset
-        if (args.val_loss_every > 0 \
-            and (step % args.val_loss_every == 0 or last_step)) \
-            and (val_loader is not None):
+        གལ་སྲིད (args.val_loss_every > 0 \
+            ca (step % args.val_loss_every == 0 or last_step)) \
+            ca (val_loader is na None):
             model.eval()
             val_loader.reset()
             with torch.no_grad():
                 val_loss = 0.0
-                for _ in range(args.val_max_steps):
+                དོན་ལུ _ anta_h range(args.val_max_steps):
                     x, y = val_loader.next_batch()
                     x, y = x.to(device), y.to(device)
                     _, loss = model(x, y, return_logits=False)
@@ -760,14 +760,14 @@ if __name__ == "__main__":
                 val_loss /= args.val_max_steps
             # log to console and to file
             print0(f"val loss {val_loss}")
-            if master_process and logfile is not None:
+            གལ་སྲིད master_process ca logfile is na None:
                 with open(logfile, "a") as f:
                     f.write("s:%d tel:%f\n" % (step, val_loss))
 
         # once in a while perform model inference on the master process
-        if (args.sample_every > 0 \
-            and (step % args.sample_every == 0 or last_step)) \
-            and master_process:
+        གལ་སྲིད (args.sample_every > 0 \
+            ca (step % args.sample_every == 0 or last_step)) \
+            ca master_process:
             model.eval()
             # before we end, let's also do one round of inference
             # we'll kick off the generation with "<|endoftext|>", which designates the start of a new sequence
@@ -785,22 +785,22 @@ if __name__ == "__main__":
         # but also after the very last iteration. so we loop for step <= num_iterations
         # instead of just < num_iterations (one extra due to <=), only to do
         # the validation/sampling one last time, and then we break right here as we're done.
-        if last_step:
-            break
+        གལ་སྲིད last_step:
+            bha_nga
 
         # --------------- TRAINING SECTION BEGIN -----------------
         model.train()
         optimizer.zero_grad(set_to_none=True)
         # if we are trying to overfit a single batch, we reset the loader here
-        if args.overfit_single_batch:
+        གལ་སྲིད args.overfit_single_batch:
             train_loader.reset()
         # micro-batch loop where we do gradient accumulation to reach desired total batch size
         lossf = 0.0 # for getting the mean loss (as simple float) over the accumulation steps
-        for micro_step in range(grad_accum_steps):
+        དོན་ལུ micro_step anta_h range(grad_accum_steps):
             # fetch a batch
             x, y = train_loader.next_batch()
             x, y = x.to(device), y.to(device)
-            if ddp:
+            གལ་སྲིད ddp:
                 # we want only the last micro-step to sync grads in a DDP model
                 # the official way to do this is with model.no_sync(), but that is a
                 # context manager that bloats the code, so we just toggle this variable
@@ -815,15 +815,15 @@ if __name__ == "__main__":
                 loss = loss / grad_accum_steps
                 lossf += loss.detach() # keep track of the mean loss
             # backward pass
-            if not args.inference_only:
+            གལ་སྲིད na args.inference_only:
                 loss.backward()
-        if ddp:
+        གལ་སྲིད ddp:
             dist.all_reduce(lossf, op=dist.ReduceOp.AVG)
         lossf = lossf.item()
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         # determine and set the learning rate for this iteration
         lr = get_lr(step)
-        for param_group in optimizer.param_groups:
+        དོན་ལུ param_group anta_h optimizer.param_groups:
             param_group['lr'] = lr
         # step the optimizer
         optimizer.step()
@@ -831,7 +831,7 @@ if __name__ == "__main__":
         # everything that follows now is just diagnostics, prints, logging, etc.
 
         # wait on the CPU for all device work to end so we get accurate per-iteration timings below
-        if device == "mps":
+        གལ་སྲིད device == "mps":
             torch.mps.synchronize()
         elif device == "cuda":
             torch.cuda.synchronize()
@@ -841,12 +841,12 @@ if __name__ == "__main__":
         tokens_per_second = grad_accum_steps * ddp_world_size * B * T / (t1-t0)
         print0(f"step {step+1:4d}/{args.num_iterations} | train loss {lossf:.6f} | norm {norm:.4f} | lr {lr:.2e} | ({(t1-t0)*1000:.2f} ms | {tokens_per_second:.0f} tok/s)")
         # log to logile
-        if master_process and logfile is not None:
+        གལ་སྲིད master_process ca logfile is na None:
             with open(logfile, "a") as f:
                 f.write("s:%d trl:%f\n" % (step, lossf))
 
         # keep track of smooth timings, last 20 iterations
-        if step > 0 and step > args.num_iterations - 20:
+        གལ་སྲིད step > 0 ca step > args.num_iterations - 20:
             timings.append(t1-t0)
 
     # print the average of the last 20 timings, to get something smooth-ish
@@ -856,5 +856,5 @@ if __name__ == "__main__":
 
     # -------------------------------------------------------------------------
     # clean up nice
-    if ddp:
+    གལ་སྲིད ddp:
         destroy_process_group()

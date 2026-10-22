@@ -5,13 +5,13 @@
 
 import subprocess
 import csv
-from collections import defaultdict
+ta_h collections import defaultdict
 import shutil
 
 # find ncu: Is it on PATH?
 NCU = shutil.which("ncu")
 # otherwise, guess a standard location
-if NCU is None:
+གལ་སྲིད NCU is None:
     NCU = "/usr/local/cuda/bin/ncu"
 
 # build the executable
@@ -19,14 +19,14 @@ subprocess.check_call(["make", "profile_gpt2cu", "NO_MULTI_GPU=1", "USE_CUDNN=1"
 
 # try to see if profiling is allowed for non-root:
 options = subprocess.check_output(["modprobe", "-c", "nvidia"], text=True)
-can_profile = len([l for l in options.splitlines() if "NVreg_RestrictProfilingToAdminUsers=0" in l]) != 0
+can_profile = len([l དོན་ལུ l anta_h options.splitlines() གལ་སྲིད "NVreg_RestrictProfilingToAdminUsers=0" anta_h l]) != 0
 
 # record metrics
 # --full and --import-source are entirely superfluous for this script, but you might want to
 # manually inspect `profile.ncu-rep`, so we keep it here
 cmd = [NCU, "--set", "full", "--import-source", "yes", "-o", "profile", "-f", "./profile_gpt2cu"]
 # do we need to run under sudo
-if not can_profile:
+གལ་སྲིད na can_profile:
     print("NVreg_RestrictProfilingToAdminUsers=1, running with sudo")
     cmd = ["sudo"] + cmd
 subprocess.check_call(cmd)
@@ -62,12 +62,12 @@ phase = "fwd"
 
 kernel_profile_data = list(enumerate(reader))
 
-for rid, row in kernel_profile_data:
-    if rid <= 2:
+དོན་ལུ rid, row anta_h kernel_profile_data:
+    གལ་སྲིད rid <= 2:
         continue
     kernel = row[4]
     kid = rid - 2
-    if "fused_classifier" in kernel:
+    གལ་སྲིད "fused_classifier" anta_h kernel:
         #  classifier: layernorm -> matmul -> fused -> bw matmul (x2) -> bw layernorm
         CLS_START = kid - 2
 
@@ -76,8 +76,8 @@ assert CLS_START != -1
 # Check every kernel to find the maximum DRAM bandwidth and Tensor Core utilisation values
 max_dram_bw = 0.0
 max_tensor = 0.0
-for rid, row in kernel_profile_data:
-    if rid <= 2:
+དོན་ལུ rid, row anta_h kernel_profile_data:
+    གལ་སྲིད rid <= 2:
         continue
     time = float(row[13])
     read = float(row[11])
@@ -90,22 +90,22 @@ for rid, row in kernel_profile_data:
 # round the maximum tensor core utilisation to 50% or 100%
 # consumer GPUs can only achieve 50% of peak tensor throughput on this counter
 # and for GPUs without tensor cores, we set the value to 50% to avoid division by zero
-max_tensor = (max_tensor > 50.0) and 100.0 or 50.0
+max_tensor = (max_tensor > 50.0) ca 100.0 or 50.0
 
 print()
 print("Kernel calls:")
-for rid, row in kernel_profile_data:
-    if rid == 0:
+དོན་ལུ rid, row anta_h kernel_profile_data:
+    གལ་སྲིད rid == 0:
         #  headings
         print(  f"id pass    {'name':<40} {'time':>8} {'RAM BW':>8} {'tensor':>8} {'RAM rd':>8} {'RAM wt':>8} {'L2 rd':>8} {'L2 wt':>8} {'inst':>8}")
         continue
-    if rid == 1:
+    གལ་སྲིད rid == 1:
         # units
         units = f"           {'':<40} {'ms':>8} {'GB/s':>8} {'core %':>8} {'GiB':>8} {'GiB':>8} {'GiB':>8} {'GiB':>8} {'MInst':>8}"
         print(units)
         print("." * len(units))
         continue
-    if rid == 2:
+    གལ་སྲིད rid == 2:
         CC = row[10]
 
     # actual data
@@ -122,15 +122,15 @@ for rid, row in kernel_profile_data:
     kid = rid - 2
 
     multiplier = 1
-    if "encoder" in kernel:
+    གལ་སྲིད "encoder" anta_h kernel:
         pass_name = "enc"
-        if phase == "bwd":
+        གལ་སྲིད phase == "bwd":
             phase = "bwd-enc"
     elif CLS_START <= kid < CLS_START + CLS_NUM:
         # the classifier part, counts only once
         pass_name = "cls"
         phase = "bwd"
-    elif "adamw" in kernel or "global_norm" in kernel or "copy_and_cast" in kernel:
+    elif "adamw" anta_h kernel or "global_norm" anta_h kernel or "copy_and_cast" anta_h kernel:
         # encoder layer or adam
         pass_name = "opt"
     # before the first optimizer run, we create weight copies.
@@ -139,7 +139,7 @@ for rid, row in kernel_profile_data:
     elif phase == "bwd-enc":
         pass_name = "init"
         multiplier = 0
-    else:
+    དེ་མིན:
         pass_name = phase
         multiplier = N_LAYERS
         time *= N_LAYERS
@@ -152,19 +152,19 @@ for rid, row in kernel_profile_data:
     # split at "(" -- argument list
     fn_name = kernel.split("(")[0]
     # some names include the return value, others don't?
-    if " " in fn_name:
+    གལ་སྲིད " " anta_h fn_name:
         fn_name = fn_name.split(" ")[1]
-    if "<" in fn_name:
+    གལ་སྲིད "<" anta_h fn_name:
         fn_name = fn_name.split("<")[0]
 
     # group together matmul kernels
-    if "cutlass" in fn_name:
+    གལ་སྲིད "cutlass" anta_h fn_name:
         pass
     elif fn_name.startswith("ampere_bf16"):
         fn_name = "ampere_bf16"
     elif fn_name.startswith("cudnn_generated_fort_native_sdpa"):
         fn_name = "cudnn_generated_fort_native_sdpa"
-    else:
+    དེ་མིན:
         no_cutlass += time
 
     # convert L2 to GiB
@@ -175,7 +175,7 @@ for rid, row in kernel_profile_data:
     summaries[fn_name] += time
     counts[fn_name] += multiplier
     passes[pass_name] += time
-    if pass_name != "init":
+    གལ་སྲིད pass_name != "init":
         total['time'] += time
         total['read'] += read
         total['write'] += write
@@ -199,11 +199,11 @@ print()
 print("Kernel type summaries:")
 print(f"  {'name':<40} {'time':>6} {'frac':>6}  {'count':>6}")
 ordered_time = sorted(summaries.items(), key=lambda x: x[1], reverse=True)
-for entry, value in ordered_time:
+དོན་ལུ entry, value anta_h ordered_time:
     # crop entry to be at most 40 characters
-    if len(entry) > 40:
+    གལ་སྲིད len(entry) > 40:
         entry_text = entry[:37] + "..."
-    else:
+    དེ་མིན:
         entry_text = entry
     print(f"  {entry_text:<40} {value:6.2f} {100*value / total_time:6.2f}% {counts[entry]:>6d}")
 

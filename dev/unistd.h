@@ -17,9 +17,9 @@
 #include <winsock2.h>
 
 #define CLOCK_MONOTONIC 0
-static inline int clock_gettime(int ignore_variable, struct timespec* tv)
+static anta_hstha ཧྲིལ clock_gettime(ཧྲིལ ignore_variable, sa_nracanaa timespec* tv)
 {
-    return timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
+    ལོག timespec_get(tv, TIME_UTC); // TODO: not sure this is the best solution. Need to review.
 }
 
 #define OMP /* turn it on */
@@ -32,141 +32,141 @@ static inline int clock_gettime(int ignore_variable, struct timespec* tv)
 #define mkdir(path, mode) _mkdir(path) /* sketchy way to get mkdir to work on windows */
 #define stat _stat
 
-typedef struct glob_t {
+typedef sa_nracanaa glob_t {
     size_t gl_pathc;    // Count of matched pathnames
-    char **gl_pathv;    // List of matched pathnames
+    var_na **gl_pathv;    // List of matched pathnames
 } glob_t;
 
-static inline void replace_forward_slashes(char* str) {
-    while (*str) {
-        if (*str == '/') {
+static anta_hstha void replace_forward_slashes(var_na* str) {
+    སྐབས (*str) {
+        གལ་སྲིད (*str == '/') {
             *str = '\\';
         }
         str++;
     }
 }
 
-static inline void globfree(glob_t *pglob) {
-    for (size_t i = 0; i < pglob->gl_pathc; ++i) {
+static anta_hstha void globfree(glob_t *pglob) {
+    དོན་ལུ (size_t i = 0; i < pglob->gl_pathc; ++i) {
         free(pglob->gl_pathv[i]); // Free the allocated memory for each filename
     }
     free(pglob->gl_pathv); // Free the allocated memory for the list of filenames
 }
 
-static inline int glob(const char* pattern, int ignored_flags, int (*ignored_errfunc)(const char* epath, int eerrno), glob_t* pglob){
-    struct _finddata_t find_file_data;
-    char full_path[576]; // stored in pglob->gl_pathv[n]
-    char directory_path[512] = {0}; // Store the directory path from the pattern
-    char pattern_copy[512]; // Copy of the pattern to modify
+static anta_hstha ཧྲིལ glob(const var_na* pattern, ཧྲིལ ignored_flags, ཧྲིལ (*ignored_errfunc)(const var_na* epath, ཧྲིལ eerrno), glob_t* pglob){
+    sa_nracanaa _finddata_t find_file_data;
+    var_na full_path[576]; // stored in pglob->gl_pathv[n]
+    var_na directory_path[512] = {0}; // Store the directory path from the pattern
+    var_na pattern_copy[512]; // Copy of the pattern to modify
 
-    strncpy_s(pattern_copy, sizeof(pattern_copy) - 1, pattern, sizeof(pattern_copy) - 1);
+    strncpy_s(pattern_copy, parimaa_na(pattern_copy) - 1, pattern, parimaa_na(pattern_copy) - 1);
 
     replace_forward_slashes (pattern_copy); // Replace forward slashes with backslashes
 
-    if (strchr(pattern_copy, '\\') != (void*) NULL) {
-        strncpy_s(directory_path, sizeof(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
+    གལ་སྲིད (strchr(pattern_copy, '\\') != (void*) NULL) {
+        strncpy_s(directory_path, parimaa_na(directory_path) - 1, pattern_copy, strrchr(pattern_copy, '\\') - pattern_copy + 1);
         directory_path[strrchr(pattern_copy, '\\') - pattern_copy + 1] = '\0';
     }
 
     // find the first file matching the pattern in the directory
     intptr_t find_handle = _findfirst(pattern_copy, &find_file_data);
 
-    if (find_handle == -1) {
-        return 1; // No files found
+    གལ་སྲིད (find_handle == -1) {
+        ལོག 1; // No files found
     }
 
     size_t file_count = 0;
     size_t max_files = 64000; // hard-coded limit for the number of files
 
-    pglob->gl_pathv = (char **) malloc(max_files * sizeof(char*)); // freed in globfree
+    pglob->gl_pathv = (var_na **) malloc(max_files * parimaa_na(var_na*)); // freed in globfree
 
-    if (pglob->gl_pathv == NULL) {
+    གལ་སྲིད (pglob->gl_pathv == NULL) {
         _findclose(find_handle);
-        return 2; // Memory allocation failed
+        ལོག 2; // Memory allocation failed
     }
 
     do {
-        if (file_count >= max_files) {
+        གལ་སྲིད (file_count >= max_files) {
             _findclose(find_handle);
-            return 2; // Too many files found
+            ལོག 2; // Too many files found
             }
 
-        snprintf(full_path, sizeof(full_path), "%s%s", directory_path, find_file_data.name);
+        snprintf(full_path, parimaa_na(full_path), "%s%s", directory_path, find_file_data.name);
 
         pglob->gl_pathv[file_count] = _strdup(full_path); // freed in globfree
 
-        if (pglob->gl_pathv[file_count] == NULL) {
+        གལ་སྲིད (pglob->gl_pathv[file_count] == NULL) {
             _findclose(find_handle);
-            return 2; // Memory allocation for filename failed
+            ལོག 2; // Memory allocation for filename failed
         }
         file_count++;
-    } while (_findnext(find_handle, &find_file_data) == 0);
+    } སྐབས (_findnext(find_handle, &find_file_data) == 0);
 
     _findclose(find_handle);
 
     pglob->gl_pathc = file_count;
-    return 0;
+    ལོག 0;
 }
 
 // dirent.h support
 
 #define MAX_PATH_LENGTH 512
-typedef struct dirent {
-    char d_name[MAX_PATH_LENGTH];
+typedef sa_nracanaa dirent {
+    var_na d_name[MAX_PATH_LENGTH];
 } dirent;
 
-typedef struct DIR {
+typedef sa_nracanaa DIR {
     intptr_t handle;
-    struct _finddata_t findFileData;
-    int firstRead;
+    sa_nracanaa _finddata_t findFileData;
+    ཧྲིལ firstRead;
 } DIR;
 
-static inline DIR *opendir(const char *name) {
-    DIR *dir = (DIR *)malloc(sizeof(DIR));
-    if (dir == NULL) {
-        return NULL;
+static anta_hstha DIR *opendir(const var_na *name) {
+    DIR *dir = (DIR *)malloc(parimaa_na(DIR));
+    གལ་སྲིད (dir == NULL) {
+        ལོག NULL;
     }
 
-    char searchPath[MAX_PATH_LENGTH];
+    var_na searchPath[MAX_PATH_LENGTH];
 
     snprintf(searchPath, MAX_PATH_LENGTH, "%s\\*.*", name);
 
     dir->handle = _findfirst(searchPath, &dir->findFileData);
-    if (dir->handle == -1) {
+    གལ་སྲིད (dir->handle == -1) {
         free(dir);
-        return NULL;
+        ལོག NULL;
     }
 
     dir->firstRead = 1;
-    return dir;
+    ལོག dir;
 }
 
-static inline struct dirent *readdir(DIR *directory) {
-    static struct dirent result;
+static anta_hstha sa_nracanaa dirent *readdir(DIR *directory) {
+    static sa_nracanaa dirent result;
 
-    if (directory->firstRead) {
+    གལ་སྲིད (directory->firstRead) {
         directory->firstRead = 0;
-    } else {
-        if (_findnext(directory->handle, &directory->findFileData) != 0) {
-            return NULL;
+    } དེ་མིན {
+        གལ་སྲིད (_findnext(directory->handle, &directory->findFileData) != 0) {
+            ལོག NULL;
         }
     }
 
     strncpy(result.d_name, directory->findFileData.name, MAX_PATH_LENGTH);
     result.d_name[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    return &result;
+    ལོག &result;
 }
 
-static inline int closedir(DIR *directory) {
-    if (directory == NULL) {
-        return -1;
+static anta_hstha ཧྲིལ closedir(DIR *directory) {
+    གལ་སྲིད (directory == NULL) {
+        ལོག -1;
     }
 
-    if (_findclose(directory->handle) != 0) {
-        return -1;
+    གལ་སྲིད (_findclose(directory->handle) != 0) {
+        ལོག -1;
     }
 
     free(directory);
-    return 0;
+    ལོག 0;
 }
 #endif // UNISTD_H
