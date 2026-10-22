@@ -27,22 +27,22 @@ For more nsys profiling specifics and command options, take a look at: https://d
 NOTE: Currently there is a bug in the profiling using nsight system which produces a unrecognized GPU UUId error on the command line but it
 does not actually interfere with the model training and validation. The report (that you download) is still generated and can be viewed from Nsight Systems
 """
-import subprocess
-import os
-import sys
-import datetime
+درآمد subprocess
+درآمد os
+درآمد sys
+درآمد datetime
 
-import modal
-from modal import Image, Stub
-GPU_NAME_TO_MODAL_CLASS_MAP = {
+درآمد modal
+سے modal درآمد Image, Stub
+GPU_NAME_مقصد_MODAL_CLASS_MAP = {
     "H100": modal.gpu.H100,
     "A100": modal.gpu.A100,
     "A10G": modal.gpu.A10G,
 }
-N_GPUS = int(os.environ.get("N_GPUS", 1))
-GPU_MEM = int(os.environ.get("GPU_MEM", 40))
+N_GPUS = صحیح(os.environ.get("N_GPUS", 1))
+GPU_MEM = صحیح(os.environ.get("GPU_MEM", 40))
 GPU_NAME = os.environ.get("GPU_NAME", "A100")
-GPU_CONFIG = GPU_NAME_TO_MODAL_CLASS_MAP[GPU_NAME](count=N_GPUS, size=str(GPU_MEM) + 'GB')
+GPU_CONFIG = GPU_NAME_مقصد_MODAL_CLASS_MAP[GPU_NAME](گنتی=N_GPUS, سائز=str(GPU_MEM) + 'GB')
 
 APP_NAME = "llm.c benchmark run"
 
@@ -56,41 +56,41 @@ image = (
             TQDM_DISABLE="true",
         )
     )
-    .run_commands(
+    .تسلسل_commands(
     "wget -q https://github.com/Kitware/CMake/releases/download/v3.28.1/cmake-3.28.1-Linux-x86_64.sh",
     "bash cmake-3.28.1-Linux-x86_64.sh --skip-license --prefix=/usr/local",
     "rm cmake-3.28.1-Linux-x86_64.sh",
     "ln -s /usr/local/bin/cmake /usr/bin/cmake",)
-    .run_commands(
+    .تسلسل_commands(
         "apt-get install -y --allow-change-held-packages libcudnn8 libcudnn8-dev",
         "apt-get install -y openmpi-bin openmpi-doc libopenmpi-dev kmod sudo",
         "git clone https://github.com/NVIDIA/cudnn-frontend.git /root/cudnn-frontend",
         "cd /root/cudnn-frontend && mkdir build && cd build && cmake .. && make"
     )
-    .run_commands(
+    .تسلسل_commands(
         "wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin && \
         mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-        apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
-        add-apt-repository \"deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /\" && \
+        apt-کلید adv --fetch-کلیدیں https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub && \
+        جوڑو-apt-repository \"deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /\" && \
         apt-get update"
-    ).run_commands(
+    ).تسلسل_commands(
         "apt-get install -y nsight-systems-2023.3.3"
     )
 )
 
 stub = modal.App(APP_NAME)
 
-def execute_command(command: str):
-    command_args = command.split(" ")
-    print(f"{command_args = }")
-    subprocess.run(command_args, stdout=sys.stdout, stderr=subprocess.STDOUT)
+تعریف execute_command(command: str):
+    command_دلائل = command.بانٹو(" ")
+    چھاپو(f"{command_args = }")
+    subprocess.تسلسل(command_دلائل, stdout=sys.stdout, stderr=subprocess.STDOUT)
 
 @stub.function(
     gpu=GPU_CONFIG,
     image=image,
     allow_concurrent_inputs=4,
     container_idle_timeout=900,
-    mounts=[modal.Mount.from_local_dir("./", remote_path="/root/")],
+    mounts=[modal.Mount.from_local_dir("./", remote_راستہ="/root/")],
     # Instead of 'cuda-env' put your volume name that you create from 'modal volume create {volume-name}'
     # This enables the profiling reports to be saved on the volume that you can download by using:
     # 'modal volume get {volume-name} {/output_file_name}
@@ -100,11 +100,11 @@ def execute_command(command: str):
     # and you can download it with 'modal volume get {volume-name} report1_{timestamp}
     volumes={"/cuda-env": modal.Volume.from_name("cuda-env")},
 )
-def run_benchmark(compile_command: str, run_command: str):
+تعریف تسلسل_benchmark(compile_command: str, تسلسل_command: str):
     execute_command("pwd")
     execute_command("ls")
     execute_command(compile_command)
-    execute_command(run_command)
+    execute_command(تسلسل_command)
     # Use this section if you want to profile using nsight system and install the reports on your volume to be locally downloaded
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -113,9 +113,9 @@ def run_benchmark(compile_command: str, run_command: str):
     execute_command("mv /root/report1.qdstrm /root/report1_" + timestamp + "/")
     execute_command("mv /root/report1_" + timestamp + "/" + " /cuda-env/")
 
-    return None
+    واپس کچھ_نہیں
 
 @stub.local_entrypoint()
-def inference_main(compile_command: str, run_command: str):
-    results = run_benchmark.remote(compile_command, run_command)
-    return results
+تعریف inference_main(compile_command: str, تسلسل_command: str):
+    results = تسلسل_benchmark.remote(compile_command, تسلسل_command)
+    واپس results

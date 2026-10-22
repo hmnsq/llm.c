@@ -16,17 +16,17 @@ Example launches to only benchmark the speed of bfloat16 compiled GPU training:
 TODO: add the actual commands
 """
 
-import argparse
-import os
-import math
-import glob
-import inspect
-from contextlib import nullcontext
-from dataclasses import dataclass
-from pathlib import Path
-import time
-from typing import (
-    AbstractSet,
+درآمد argparse
+درآمد os
+درآمد math
+درآمد glob
+درآمد inspect
+سے contextlib درآمد nullcontext
+سے dataclasses درآمد dataclass
+سے pathlib درآمد راستہ_2
+درآمد time
+سے typing درآمد (
+    Abstract_سیٹ,
     Collection,
     Dict,
     Iterator,
@@ -39,90 +39,90 @@ from typing import (
     cast,
 )
 
-import numpy as np
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-import torch._inductor.config as config
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
-from torch.distributed.optim import ZeroRedundancyOptimizer
-import torch.distributed as dist
+درآمد numpy بطور np
+درآمد torch
+درآمد torch.nn بطور nn
+سے torch.nn درآمد functional بطور F
+درآمد torch._inductor.config بطور config
+سے torch.nn.parallel درآمد Distributed_ڈیٹا_Parallel بطور DDP
+سے torch.distributed درآمد init_process_گروہ, destroy_process_گروہ
+سے torch.distributed.optim درآمد ZeroRedundancyOptimizer
+درآمد torch.distributed بطور dist
 
-import tiktoken
-from tiktoken.load import load_tiktoken_bpe
+درآمد tiktoken
+سے tiktoken.بھرو درآمد بھرو_tiktoken_bpe
 
 # -----------------------------------------------------------------------------
 # PyTorch nn.Module definitions for the LLaMA 3.x model
 
 # Used in Grouped Query Attention (GQA), broadcasts the key and value tensors
-def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
+تعریف repeat_kv(x: torch.Tensor, n_rep: صحیح) -> torch.Tensor:
     """torch.repeat_interleave(x, dim=2, repeats=n_rep)"""
-    bs, slen, n_kv_heads, head_dim = x.shape
-    if n_rep == 1:
-        return x
-    return (
-        x[:, :, :, None, :]
-        .expand(bs, slen, n_kv_heads, n_rep, head_dim)
-        .reshape(bs, slen, n_kv_heads * n_rep, head_dim)
+    bs, slen, n_kv_heads, سر_dim = x.shape
+    اگر n_rep == 1:
+        واپس x
+    واپس (
+        x[:, :, :, کچھ_نہیں, :]
+        .expand(bs, slen, n_kv_heads, n_rep, سر_dim)
+        .reshape(bs, slen, n_kv_heads * n_rep, سر_dim)
     )
 
 # -----------------------------------------------------------------------------
 # RoPE related
 
-def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
+تعریف reshape_for_نشر(freqs_cis: torch.Tensor, x: torch.Tensor):
     ndim = x.ndim
-    assert 0 <= 1 < ndim
-    assert freqs_cis.shape == (x.shape[1], x.shape[-1])
-    shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
-    return freqs_cis.view(*shape)
+    أكد 0 <= 1 < ndim
+    أكد freqs_cis.shape == (x.shape[1], x.shape[-1])
+    shape = [d اگر i == 1 یا i == ndim - 1 ورنہ 1 برائے i, d میں enumerate(x.shape)]
+    واپس freqs_cis.view(*shape)
 
-def apply_scaling(freqs: torch.Tensor):
+تعریف apply_scaling(freqs: torch.Tensor):
     # Values obtained from grid search
-    scale_factor = 8
-    low_freq_factor = 1
-    high_freq_factor = 4
+    scale_ضربی_عدد = 8
+    کم_freq_ضربی_عدد = 1
+    بلند_freq_ضربی_عدد = 4
     old_context_len = 8192  # original llama3 length
 
-    low_freq_wavelen = old_context_len / low_freq_factor
-    high_freq_wavelen = old_context_len / high_freq_factor
+    کم_freq_wavelen = old_context_len / کم_freq_ضربی_عدد
+    بلند_freq_wavelen = old_context_len / بلند_freq_ضربی_عدد
     new_freqs = []
-    for freq in freqs:
+    برائے freq میں freqs:
         wavelen = 2 * math.pi / freq
-        if wavelen < high_freq_wavelen:
+        اگر wavelen < بلند_freq_wavelen:
             new_freqs.append(freq)
-        elif wavelen > low_freq_wavelen:
-            new_freqs.append(freq / scale_factor)
-        else:
-            assert low_freq_wavelen != high_freq_wavelen
-            smooth = (old_context_len / wavelen - low_freq_factor) / (
-                high_freq_factor - low_freq_factor
+        وگرنہ_اگر wavelen > کم_freq_wavelen:
+            new_freqs.append(freq / scale_ضربی_عدد)
+        ورنہ:
+            أكد کم_freq_wavelen != بلند_freq_wavelen
+            smooth = (old_context_len / wavelen - کم_freq_ضربی_عدد) / (
+                بلند_freq_ضربی_عدد - کم_freq_ضربی_عدد
             )
-            new_freqs.append((1 - smooth) * freq / scale_factor + smooth * freq)
-    return torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
+            new_freqs.append((1 - smooth) * freq / scale_ضربی_عدد + smooth * freq)
+    واپس torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
 
-def apply_rotary_emb(
+تعریف apply_rotary_emb(
     xq: torch.Tensor,
     xk: torch.Tensor,
     freqs_cis: torch.Tensor,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
-    xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
-    freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
-    xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
-    xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
-    return xq_out.type_as(xq), xk_out.type_as(xk)
+    xq_ = torch.view_as_complex(xq.اعشاری().reshape(*xq.shape[:-1], -1, 2))
+    xk_ = torch.view_as_complex(xk.اعشاری().reshape(*xk.shape[:-1], -1, 2))
+    freqs_cis = reshape_for_نشر(freqs_cis, xq_)
+    xq_برآمد = torch.view_as_real(xq_ * freqs_cis).flatten(3)
+    xk_برآمد = torch.view_as_real(xk_ * freqs_cis).flatten(3)
+    واپس xq_برآمد.type_as(xq), xk_برآمد.type_as(xk)
 
-def precompute_freqs_cis(
-    dim: int, end: int, theta: float = 10000.0, use_scaled: bool = False
+تعریف precompute_freqs_cis(
+    dim: صحیح, انتہا: صحیح, theta: اعشاری = 10000.0, use_scaled: bool = جھوٹ
 ):
-    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
-    t = torch.arange(end, device=freqs.device, dtype=torch.float32)
-    if use_scaled:
+    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].اعشاری() / dim))
+    t = torch.arange(انتہا, device=freqs.device, dtype=torch.float32)
+    اگر use_scaled:
         freqs = apply_scaling(freqs)
     freqs = torch.outer(t, freqs)
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
-    return freqs_cis
+    واپس freqs_cis
 
 # -----------------------------------------------------------------------------
 # LLaMA building blocks
@@ -130,357 +130,357 @@ def precompute_freqs_cis(
 # LLaMA reference code explicitly implemented RMSNorm so we copy pasted it
 # (https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/api/model.py)
 # we could also use nn.RMSNorm, it has slightly different numeric properties, but equivalent
-class RMSNorm(torch.nn.Module):
-    def __init__(self, dim: int, eps: float = 1e-6):
-        super().__init__()
+جماعت RMSNorm(torch.nn.Module):
+    تعریف __init__(self, dim: صحیح, eps: اعشاری = 1e-6):
+        بالا().__init__()
         self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim))
+        self.وزن = nn.Parameter(torch.ones(dim))
 
-    def _norm(self, x):
-        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+    تعریف _norm(self, x):
+        واپس x * torch.rsqrt(x.pow(2).اوسط(-1, keepdim=سچ) + self.eps)
 
-    def forward(self, x):
-        output = self._norm(x.float()).type_as(x)
-        return output * self.weight
+    تعریف forward(self, x):
+        output = self._norm(x.اعشاری()).type_as(x)
+        واپس output * self.وزن
 
-class CausalSelfAttention(nn.Module):
+جماعت CausalSelfAttention(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
-        assert config.n_embd % config.n_head == 0
+    تعریف __init__(self, config):
+        بالا().__init__()
+        أكد config.n_embd % config.n_سر == 0
 
-        self.n_head = config.n_head
-        self.n_kv_head = config.n_kv_head
-        self.n_rep = self.n_head // self.n_kv_head
-        self.hd = config.n_embd // config.n_head
+        self.n_سر = config.n_سر
+        self.n_kv_سر = config.n_kv_سر
+        self.n_rep = self.n_سر // self.n_kv_سر
+        self.hd = config.n_embd // config.n_سر
         self.use_kv = config.use_kv
         self.flash = config.flash
 
-        self.c_attn = nn.Linear(config.n_embd, (config.n_head + 2 * config.n_kv_head) * self.hd, bias=False)  # key, query, value projections
-        self.c_proj = nn.Linear(config.n_embd, config.n_embd, bias=False)  # output projection
+        self.c_attn = nn.خطی(config.n_embd, (config.n_سر + 2 * config.n_kv_سر) * self.hd, bias=جھوٹ)  # key, query, value projections
+        self.c_proj = nn.خطی(config.n_embd, config.n_embd, bias=جھوٹ)  # output projection
 
         # static KV cache - we could alternatively allocate it outside of the model and just pass it in when needed
-        if self.use_kv:
-            self.cache_k = torch.zeros((config.max_gen_batch_size, config.block_size, config.n_kv_head, self.hd))
-            self.cache_v = torch.zeros((config.max_gen_batch_size, config.block_size, config.n_kv_head, self.hd))
+        اگر self.use_kv:
+            self.cache_k = torch.zeros((config.max_gen_batch_سائز, config.بلاک_سائز, config.n_kv_سر, self.hd))
+            self.cache_v = torch.zeros((config.max_gen_batch_سائز, config.بلاک_سائز, config.n_kv_سر, self.hd))
 
-    def forward(self, x, freqs_cis=None, start_pos=None, mask=None):
-        B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
+    تعریف forward(self, x, freqs_cis=کچھ_نہیں, آغاز_pos=کچھ_نہیں, نقاب=کچھ_نہیں):
+        B, T, C = x.سائز() # batch size, sequence length, embedding dimensionality (n_embd)
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
         qkv = self.c_attn(x)
-        q, k, v = qkv.split([self.n_head * self.hd, self.n_kv_head * self.hd, self.n_kv_head * self.hd], dim=-1)
-        q, k, v = map(lambda t: t.view(B, T, -1, self.hd), (q, k, v))  # (B, T, NH, HD)
+        q, k, v = qkv.بانٹو([self.n_سر * self.hd, self.n_kv_سر * self.hd, self.n_kv_سر * self.hd], dim=-1)
+        q, k, v = map(بےنام t: t.view(B, T, -1, self.hd), (q, k, v))  # (B, T, NH, HD)
 
         q, k = apply_rotary_emb(q, k, freqs_cis=freqs_cis)  # rotate QK (rope)  <-- 1. difference compared to GPT-2
 
-        if self.use_kv and not self.training and start_pos >= 0:  # use kv-caching during inference
-            self.cache_k[:B, start_pos : start_pos + T] = k
-            self.cache_v[:B, start_pos : start_pos + T] = v
-            k = self.cache_k[:B, : start_pos + T]
-            v = self.cache_v[:B, : start_pos + T]
+        اگر self.use_kv اور نہیں self.training اور آغاز_pos >= 0:  # use kv-caching during inference
+            self.cache_k[:B, آغاز_pos : آغاز_pos + T] = k
+            self.cache_v[:B, آغاز_pos : آغاز_pos + T] = v
+            k = self.cache_k[:B, : آغاز_pos + T]
+            v = self.cache_v[:B, : آغاز_pos + T]
 
         k = repeat_kv(k, self.n_rep)  # GQA <-- 2. difference compared to GPT-2
         v = repeat_kv(v, self.n_rep)
 
-        q, k, v = map(lambda t: t.transpose(1, 2), (q, k, v))  # (B, NH, T, HD)
+        q, k, v = map(بےنام t: t.transpose(1, 2), (q, k, v))  # (B, NH, T, HD)
 
-        if self.flash:
+        اگر self.flash:
             # flashattention
             # if T == 1 no need to mask, otherwise the function complains
             # scaled_dot_product_attention expects a mask where value of True indicates that the element should take part in attention
             # our mask is the opposite, so we need to invert it
-            y = F.scaled_dot_product_attention(q, k, v, mask == 0 if T > 1 else None)
-        else:
+            y = F.scaled_dot_حاصل_ضرب_attention(q, k, v, نقاب == 0 اگر T > 1 ورنہ کچھ_نہیں)
+        ورنہ:
             # manual implementation of attention
             # this materializes the large (T,T) matrix for all the queries and keys
-            scores = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(self.hd))
-            if mask is not None:
-                scores.masked_fill_(mask, torch.finfo(scores.dtype).min)
-            att = F.softmax(scores.float(), dim=-1).type_as(q)
+            scores = (q @ k.transpose(-2, -1)) * (1.0 / math.جذر(self.hd))
+            اگر نقاب ہے نہیں کچھ_نہیں:
+                scores.masked_fill_(نقاب, torch.finfo(scores.dtype).min)
+            att = F.softmax(scores.اعشاری(), dim=-1).type_as(q)
             y = att @ v # (B, NH, T, T) x (B, NH, T, HD) -> (B, NH, T, HD)
         y = y.transpose(1, 2).contiguous().view(B, T, C)
         y = self.c_proj(y)
-        return y
+        واپس y
 
-class MLP(nn.Module):
+جماعت MLP(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
+    تعریف __init__(self, config):
+        بالا().__init__()
         hidden_dim = 4 * config.n_embd
-        hidden_dim = int(2 * hidden_dim / 3)
+        hidden_dim = صحیح(2 * hidden_dim / 3)
         # custom dim factor multiplier
-        if config.ffn_dim_multiplier is not None:
-            hidden_dim = int(config.ffn_dim_multiplier * hidden_dim)
-        hidden_dim = config.multiple_of * ((hidden_dim + config.multiple_of - 1) // config.multiple_of)
-        self.c_fc = nn.Linear(config.n_embd, hidden_dim, bias=False)
-        self.c_fc2 = nn.Linear(config.n_embd, hidden_dim, bias=False)
-        self.c_proj = nn.Linear(hidden_dim, config.n_embd, bias=False)
+        اگر config.ffn_dim_multiplier ہے نہیں کچھ_نہیں:
+            hidden_dim = صحیح(config.ffn_dim_multiplier * hidden_dim)
+        hidden_dim = config.مضرب_کا * ((hidden_dim + config.مضرب_کا - 1) // config.مضرب_کا)
+        self.c_fc = nn.خطی(config.n_embd, hidden_dim, bias=جھوٹ)
+        self.c_fc2 = nn.خطی(config.n_embd, hidden_dim, bias=جھوٹ)
+        self.c_proj = nn.خطی(hidden_dim, config.n_embd, bias=جھوٹ)
 
-    def forward(self, x):
+    تعریف forward(self, x):
         # SwiGLU self.c_proj(F.silu(self.c_fc2(x)) * self.c_fc(x))  <-- 3. difference compared to GPT-2
         x1 = self.c_fc(x)
         x2 = self.c_fc2(x)
         x2 = F.silu(x2)
         x = x1 * x2
         x = self.c_proj(x)
-        return x
+        واپس x
 
-class Block(nn.Module):
+جماعت بلاک(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
+    تعریف __init__(self, config):
+        بالا().__init__()
         self.ln_1 = RMSNorm(config.n_embd, config.norm_eps)
         self.attn = CausalSelfAttention(config)
         self.ln_2 = RMSNorm(config.n_embd, config.norm_eps)
         self.mlp = MLP(config)
 
-    def forward(self, x, freqs_cis=None, start_pos=None, mask=None):
-        x = x + self.attn(self.ln_1(x), freqs_cis, start_pos, mask)
+    تعریف forward(self, x, freqs_cis=کچھ_نہیں, آغاز_pos=کچھ_نہیں, نقاب=کچھ_نہیں):
+        x = x + self.attn(self.ln_1(x), freqs_cis, آغاز_pos, نقاب)
         x = x + self.mlp(self.ln_2(x))
-        return x
+        واپس x
 
 # -----------------------------------------------------------------------------
 # The main LLaMA 3.1 model
 
 @dataclass
-class LlamaConfig:
-    version: str = "3.1"
-    block_size: int = 8192
-    vocab_size: int = 128256
-    n_layer: int = 32
-    n_head: int = 32
-    n_kv_head: int = 8
-    n_embd: int = 4096
-    ffn_dim_multiplier: float = 1.3
-    multiple_of: int = 1024
-    norm_eps: float = 1e-5
-    rope_theta: float = 500000.0
-    use_scaled_rope: bool = True
-    max_gen_batch_size: int = 4
-    use_kv: bool = True
-    flash: bool = False  # use flashattention?
+جماعت LlamaConfig:
+    نسخہ: str = "3.1"
+    بلاک_سائز: صحیح = 8192
+    vocab_سائز: صحیح = 128256
+    n_layer: صحیح = 32
+    n_سر: صحیح = 32
+    n_kv_سر: صحیح = 8
+    n_embd: صحیح = 4096
+    ffn_dim_multiplier: اعشاری = 1.3
+    مضرب_کا: صحیح = 1024
+    norm_eps: اعشاری = 1e-5
+    rope_theta: اعشاری = 500000.0
+    use_scaled_rope: bool = سچ
+    max_gen_batch_سائز: صحیح = 4
+    use_kv: bool = سچ
+    flash: bool = جھوٹ  # use flashattention?
 
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            if hasattr(self, k):
+    تعریف __init__(self, **kwargs):
+        برائے k, v میں kwargs.اشیاء():
+            اگر hasattr(self, k):
                 setattr(self, k, v)
-        assert self.n_kv_head <= self.n_head
-        assert self.n_head % self.n_kv_head == 0
-        assert self.n_embd % self.n_head == 0
+        أكد self.n_kv_سر <= self.n_سر
+        أكد self.n_سر % self.n_kv_سر == 0
+        أكد self.n_embd % self.n_سر == 0
 
-class LLaMA(nn.Module):
+جماعت LLaMA(nn.Module):
 
-    def __init__(self, config):
-        super().__init__()
+    تعریف __init__(self, config):
+        بالا().__init__()
         self.config = config
 
         self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(config.vocab_size, config.n_embd),
-            h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
+            wte = nn.Embedding(config.vocab_سائز, config.n_embd),
+            h = nn.ModuleList([بلاک(config) برائے _ میں سلسلہ(config.n_layer)]),
             ln_f = RMSNorm(config.n_embd, config.norm_eps),
         ))
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.lm_سر = nn.خطی(config.n_embd, config.vocab_سائز, bias=جھوٹ)
 
         # init all weights, use a torch rng object to be very careful
         self.init_rng = torch.Generator()
-        self.init_rng.manual_seed(42)
+        self.init_rng.manual_بیج(42)
 
         self.freqs_cis = precompute_freqs_cis(
-            config.n_embd // config.n_head,
-            config.block_size * 2,
+            config.n_embd // config.n_سر,
+            config.بلاک_سائز * 2,
             config.rope_theta,
             config.use_scaled_rope,
         )
 
-    def forward(self, idx, targets=None, return_logits=True, start_pos=0):
-        _, t = idx.size()
-        assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
+    تعریف forward(self, idx, targets=کچھ_نہیں, return_logits=سچ, آغاز_pos=0):
+        _, t = idx.سائز()
+        أكد t <= self.config.بلاک_سائز, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
 
         # forward the LLaMA model itself
         x = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
-        freqs_cis = self.freqs_cis[start_pos:start_pos+t]
+        freqs_cis = self.freqs_cis[آغاز_pos:آغاز_pos+t]
 
-        mask = torch.triu(torch.ones((t, t), device=next(self.parameters()).device, dtype=torch.bool), diagonal=1)
+        نقاب = torch.triu(torch.ones((t, t), device=اگلا_2(self.parameters()).device, dtype=torch.bool), diagonal=1)
 
-        for i, block in enumerate(self.transformer.h):
-            x = block(x, freqs_cis, start_pos, mask)
+        برائے i, بلاک_2 میں enumerate(self.transformer.h):
+            x = بلاک_2(x, freqs_cis, آغاز_pos, نقاب)
         x = self.transformer.ln_f(x)
 
-        if targets is not None:
+        اگر targets ہے نہیں کچھ_نہیں:
             # if we are given some desired targets also calculate the loss
-            logits = self.lm_head(x).float()
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
-        else:
+            logits = self.lm_سر(x).اعشاری()
+            loss = F.cross_entropy(logits.view(-1, logits.سائز(-1)), targets.view(-1), ignore_اشاریہ=-1)
+        ورنہ:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            logits = self.lm_head(x[:, [-1], :]).float() # note: using list [-1] to preserve the time dim
-            loss = None
+            logits = self.lm_سر(x[:, [-1], :]).اعشاری() # note: using list [-1] to preserve the time dim
+            loss = کچھ_نہیں
 
         # there are performance reasons why not returning logits is prudent, if not needed
-        if not return_logits:
-            logits = None
+        اگر نہیں return_logits:
+            logits = کچھ_نہیں
 
-        return logits, loss
+        واپس logits, loss
 
     @staticmethod
-    def adapt_llama_state_dict_keys(checkpoint, config: LlamaConfig):
+    تعریف adapt_llama_state_dict_کلیدیں(checkpoint, config: LlamaConfig):
         # Modify key names from Meta's LLaMA to our LLaMA
         # our key names are derived from GPT-2's key names
-        checkpoint['transformer.wte.weight'] = checkpoint.pop('tok_embeddings.weight')
+        checkpoint['transformer.wte.weight'] = checkpoint.نکالو('tok_embeddings.weight')
 
-        for i in range(config.n_layer):
-            for name in ['attention_norm', 'ffn_norm']:
-                old_key = f'layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
-                new_key = f'transformer.h.{i}.ln_{1 if name == "attention_norm" else 2}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['attention_norm', 'ffn_norm']:
+                old_کلید = f'layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
+                new_کلید = f'transformer.h.{i}.ln_{1 if name == "attention_norm" else 2}.weight'
+                checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
-        for i in range(config.n_layer):
-            for name in ['attention.wq', 'attention.wk', 'attention.wv']:
-                old_key = f'layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.attn.c_attn.weight'
-                if name == 'attention.wq':
-                    checkpoint[new_key] = checkpoint.pop(old_key)
-                else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
-                    checkpoint[new_key] = torch.cat((checkpoint[new_key], checkpoint.pop(old_key)), dim=0)
-            old_key = f'layers.{i}.attention.wo.weight'
-            new_key = f'transformer.h.{i}.attn.c_proj.weight'
-            checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['attention.wq', 'attention.wk', 'attention.wv']:
+                old_کلید = f'layers.{i}.{name}.weight'
+                new_کلید = f'transformer.h.{i}.attn.c_attn.weight'
+                اگر name == 'attention.wq':
+                    checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
+                ورنہ:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
+                    checkpoint[new_کلید] = torch.cat((checkpoint[new_کلید], checkpoint.نکالو(old_کلید)), dim=0)
+            old_کلید = f'layers.{i}.attention.wo.weight'
+            new_کلید = f'transformer.h.{i}.attn.c_proj.weight'
+            checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
         ffn_map = {'w1': 'c_fc2', 'w2': 'c_proj', 'w3': 'c_fc'}
-        for i in range(config.n_layer):
-            for name in ['feed_forward.w1', 'feed_forward.w2', 'feed_forward.w3']:
-                old_key = f'layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.mlp.{ffn_map[name.split(".")[-1]]}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['feed_forward.w1', 'feed_forward.w2', 'feed_forward.w3']:
+                old_کلید = f'layers.{i}.{name}.weight'
+                new_کلید = f'transformer.h.{i}.mlp.{ffn_map[name.split(".")[-1]]}.weight'
+                checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
-        checkpoint['transformer.ln_f.weight'] = checkpoint.pop('norm.weight')
-        checkpoint['lm_head.weight'] = checkpoint.pop('output.weight')
+        checkpoint['transformer.ln_f.weight'] = checkpoint.نکالو('norm.weight')
+        checkpoint['lm_head.weight'] = checkpoint.نکالو('output.weight')
 
-        return checkpoint
+        واپس checkpoint
 
     @staticmethod
-    def adapt_llama_state_dict_keys_hf(checkpoint, config: LlamaConfig):
+    تعریف adapt_llama_state_dict_کلیدیں_hf(checkpoint, config: LlamaConfig):
         # Modify key names from HuggingFace's LLaMA to our LLaMA
         # our key names are derived from GPT-2's key names
-        checkpoint['transformer.wte.weight'] = checkpoint.pop('model.embed_tokens.weight')
+        checkpoint['transformer.wte.weight'] = checkpoint.نکالو('model.embed_tokens.weight')
 
         # We need to unpermute K and V because HF script permuted the original Meta-LLaMA weights
         # see: https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/convert_llama_weights_to_hf.py
-        def unpermute(w, n_heads, dim1, dim2):
-            return w.view(n_heads, 2, dim1 // n_heads // 2, dim2).transpose(1, 2).reshape(dim1, dim2)
+        تعریف unpermute(w, n_heads, dim1, dim2):
+            واپس w.view(n_heads, 2, dim1 // n_heads // 2, dim2).transpose(1, 2).reshape(dim1, dim2)
 
-        for i in range(config.n_layer):
-            for name in ['input_layernorm', 'post_attention_layernorm']:
-                old_key = f'model.layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
-                new_key = f'transformer.h.{i}.ln_{1 if name == "input_layernorm" else 2}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['input_layernorm', 'post_attention_layernorm']:
+                old_کلید = f'model.layers.{i}.{name}.weight'  # e.g. layers.x.attention_norm.weight -> transformer.h.x.ln_1.weight
+                new_کلید = f'transformer.h.{i}.ln_{1 if name == "input_layernorm" else 2}.weight'
+                checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
-        for i in range(config.n_layer):
-            for name in ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj']:
-                old_key = f'model.layers.{i}.{name}.weight'
-                new_key = f'transformer.h.{i}.attn.c_attn.weight'
-                if name == 'self_attn.q_proj':
-                    checkpoint[new_key] = unpermute(checkpoint.pop(old_key), config.n_head, config.n_embd, config.n_embd)
-                else:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
-                    tensor = checkpoint.pop(old_key)
-                    if name == 'self_attn.k_proj':
-                        tensor = unpermute(tensor, config.n_kv_head, config.n_kv_head * (config.n_embd // config.n_head), config.n_embd)
-                    checkpoint[new_key] = torch.cat((checkpoint[new_key], tensor), dim=0)
-            old_key = f'model.layers.{i}.self_attn.o_proj.weight'
-            new_key = f'transformer.h.{i}.attn.c_proj.weight'
-            checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj']:
+                old_کلید = f'model.layers.{i}.{name}.weight'
+                new_کلید = f'transformer.h.{i}.attn.c_attn.weight'
+                اگر name == 'self_attn.q_proj':
+                    checkpoint[new_کلید] = unpermute(checkpoint.نکالو(old_کلید), config.n_سر, config.n_embd, config.n_embd)
+                ورنہ:  # merge 3 weights into transformer.h.x.attn.c_attn.weight
+                    tensor = checkpoint.نکالو(old_کلید)
+                    اگر name == 'self_attn.k_proj':
+                        tensor = unpermute(tensor, config.n_kv_سر, config.n_kv_سر * (config.n_embd // config.n_سر), config.n_embd)
+                    checkpoint[new_کلید] = torch.cat((checkpoint[new_کلید], tensor), dim=0)
+            old_کلید = f'model.layers.{i}.self_attn.o_proj.weight'
+            new_کلید = f'transformer.h.{i}.attn.c_proj.weight'
+            checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
         ffn_map = {'gate_proj': 'c_fc2', 'down_proj': 'c_proj', 'up_proj': 'c_fc'}
-        for i in range(config.n_layer):
-            for name in ['gate_proj', 'down_proj', 'up_proj']:
-                old_key = f'model.layers.{i}.mlp.{name}.weight'
-                new_key = f'transformer.h.{i}.mlp.{ffn_map[name]}.weight'
-                checkpoint[new_key] = checkpoint.pop(old_key)
+        برائے i میں سلسلہ(config.n_layer):
+            برائے name میں ['gate_proj', 'down_proj', 'up_proj']:
+                old_کلید = f'model.layers.{i}.mlp.{name}.weight'
+                new_کلید = f'transformer.h.{i}.mlp.{ffn_map[name]}.weight'
+                checkpoint[new_کلید] = checkpoint.نکالو(old_کلید)
 
-        checkpoint['transformer.ln_f.weight'] = checkpoint.pop('model.norm.weight')
+        checkpoint['transformer.ln_f.weight'] = checkpoint.نکالو('model.norm.weight')
 
-        return checkpoint
+        واپس checkpoint
 
     @classmethod
-    def from_pretrained_llama3_hf(cls, model_id):
+    تعریف from_pretrained_llama3_hf(cls, model_id):
         """Loads pretrained LLaMA model weights from HuggingFace"""
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        assert model_id == "meta-llama/Meta-Llama-3.1-8B", "Only the 8B-base model is supported for now"
-        model_args = LlamaConfig()
+        سے transformers درآمد AutoModelForCausalLM, AutoTokenizer
+        أكد model_id == "meta-llama/Meta-Llama-3.1-8B", "Only the 8B-base model is supported for now"
+        model_دلائل = LlamaConfig()
 
         model = AutoModelForCausalLM.from_pretrained(model_id)
-        checkpoint = LLaMA.adapt_llama_state_dict_keys_hf(model.state_dict(), model_args)
+        checkpoint = LLaMA.adapt_llama_state_dict_کلیدیں_hf(model.state_dict(), model_دلائل)
 
         original_default_type = torch.get_default_dtype()  # save the default type
-        torch.set_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
-        model = LLaMA(model_args)
-        model.load_state_dict(checkpoint, strict=False)
-        torch.set_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
+        torch.سیٹ_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
+        model = LLaMA(model_دلائل)
+        model.بھرو_state_dict(checkpoint, strict=جھوٹ)
+        torch.سیٹ_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
 
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         tokenizer.pad_id = 128004  # this is the pad token id for LLaMA 3.1 base, we need to set this explicitly as our generate func expects it
-        tokenizer.stop_tokens = [tokenizer.eos_token_id]
+        tokenizer.stop_علامات = [tokenizer.eos_token_id]
         model.tokenizer = tokenizer
-        return model
+        واپس model
 
     @classmethod
-    def from_pretrained_llama3_meta(cls, ckpt_dir, tokenizer_path):
+    تعریف from_pretrained_llama3_meta(cls, ckpt_dir, tokenizer_راستہ):
         """Loads pretrained LLaMA model weights from a checkpoint directory"""
-        model_args = LlamaConfig()
+        model_دلائل = LlamaConfig()
 
-        ckpt_path = sorted(Path(ckpt_dir).glob("*.pth"))[0]
-        checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=True)
-        checkpoint = LLaMA.adapt_llama_state_dict_keys(checkpoint, model_args)
+        ckpt_راستہ = sorted(راستہ_2(ckpt_dir).glob("*.pth"))[0]
+        checkpoint = torch.بھرو(ckpt_راستہ, map_location="cpu", weights_only=سچ)
+        checkpoint = LLaMA.adapt_llama_state_dict_کلیدیں(checkpoint, model_دلائل)
 
         original_default_type = torch.get_default_dtype()  # save the default type
-        torch.set_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
-        model = LLaMA(model_args)
-        model.load_state_dict(checkpoint, strict=False)
-        torch.set_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
+        torch.سیٹ_default_tensor_type(torch.cuda.BFloat16Tensor)  # much faster loading
+        model = LLaMA(model_دلائل)
+        model.بھرو_state_dict(checkpoint, strict=جھوٹ)
+        torch.سیٹ_default_tensor_type(torch.tensor([], dtype=original_default_type, device="cpu").type())  # restore default type
 
-        tokenizer = Tokenizer(model_path=tokenizer_path)
+        tokenizer = Tokenizer(model_راستہ=tokenizer_راستہ)
         model.tokenizer = tokenizer
-        return model
+        واپس model
 
-    def configure_optimizers(self, weight_decay, learning_rate, betas, device_type, zero_stage):
+    تعریف configure_optimizers(self, وزن_decay, learning_شرح, betas, device_type, zero_stage):
         # start with all of the candidate parameters
-        param_dict = {pn: p for pn, p in self.named_parameters()}
+        param_dict = {pn: p برائے pn, p میں self.named_parameters()}
         # filter out those that do not require grad
-        param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+        param_dict = {pn: p برائے pn, p میں param_dict.اشیاء() اگر p.requires_grad}
         # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
         # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-        decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-        nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+        decay_params = [p برائے n, p میں param_dict.اشیاء() اگر p.dim() >= 2]
+        nodecay_params = [p برائے n, p میں param_dict.اشیاء() اگر p.dim() < 2]
         optim_groups = [
-            {'params': decay_params, 'weight_decay': weight_decay},
+            {'params': decay_params, 'weight_decay': وزن_decay},
             {'params': nodecay_params, 'weight_decay': 0.0}
         ]
-        num_decay_params = sum(p.numel() for p in decay_params)
-        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        عدد_decay_params = مجموع(p.numel() برائے p میں decay_params)
+        عدد_nodecay_params = مجموع(p.numel() برائے p میں nodecay_params)
         print0(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
         print0(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
-        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and device_type == 'cuda'
+        fused_دستیاب = 'fused' میں inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_دستیاب اور device_type == 'cuda'
         print0(f"using fused AdamW: {use_fused}")
-        if zero_stage == 1:
+        اگر zero_stage == 1:
             print0("using ZeroRedundancyOptimizer")
             optimizer = ZeroRedundancyOptimizer(**optim_groups[0], optimizer_class=torch.optim.AdamW,
-                                                lr=learning_rate, betas=betas, fused=use_fused)
-            optimizer.add_param_group(optim_groups[1])
-        else:
+                                                lr=learning_شرح, betas=betas, fused=use_fused)
+            optimizer.جوڑو_param_گروہ(optim_groups[1])
+        ورنہ:
             print0("using regular AdamW")
-            optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=betas, fused=use_fused)
-        return optimizer
+            optimizer = torch.optim.AdamW(optim_groups, lr=learning_شرح, betas=betas, fused=use_fused)
+        واپس optimizer
 
-    @torch.inference_mode()
-    def generate(
+    @torch.inference_منوال()
+    تعریف generate(
         self,
-        prompt_tokens: List[List[int]],
-        max_gen_len: int,
-        temperature: float = 0.6,
-        top_p: float = 0.9,
-        echo: bool = False,
-    ) -> Tuple[List[List[int]], Optional[List[List[float]]]]:
+        prompt_علامات: List[List[صحیح]],
+        max_gen_len: صحیح,
+        temperature: اعشاری = 0.6,
+        چوٹی_p: اعشاری = 0.9,
+        echo: bool = جھوٹ,
+    ) -> Tuple[List[List[صحیح]], Optional[List[List[اعشاری]]]]:
         """
         Generate text sequences based on provided prompts using the language generation model.
 
@@ -498,65 +498,65 @@ class LLaMA(nn.Module):
             This method uses the provided prompts as a basis for generating text. It employs nucleus sampling to produce text with controlled randomness.
 
         """
-        bsz = len(prompt_tokens)
-        assert bsz <= self.config.max_gen_batch_size, f"Batch size {bsz} exceeds the maximum generation batch size {self.config.max_gen_batch_size}"
-        device = next(self.parameters()).device
+        bsz = لمبائی(prompt_علامات)
+        أكد bsz <= self.config.max_gen_batch_سائز, f"Batch size {bsz} exceeds the maximum generation batch size {self.config.max_gen_batch_size}"
+        device = اگلا_2(self.parameters()).device
 
-        min_prompt_len = min(len(t) for t in prompt_tokens)
-        max_prompt_len = max(len(t) for t in prompt_tokens)
-        assert max_prompt_len <= self.config.block_size, f"Prompt length {max_prompt_len} exceeds the maximum block size {self.config.block_size}"
-        total_len = min(self.config.block_size, max_gen_len + max_prompt_len)
+        min_prompt_len = min(لمبائی(t) برائے t میں prompt_علامات)
+        max_prompt_len = max(لمبائی(t) برائے t میں prompt_علامات)
+        أكد max_prompt_len <= self.config.بلاک_سائز, f"Prompt length {max_prompt_len} exceeds the maximum block size {self.config.block_size}"
+        کل_len = min(self.config.بلاک_سائز, max_gen_len + max_prompt_len)
 
         pad_id = self.tokenizer.pad_id
-        tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device=device)
-        for idx, t in enumerate(prompt_tokens):
-            tokens[idx, : len(t)] = torch.tensor(t, dtype=torch.long, device=device)
+        علامات = torch.بھرا((bsz, کل_len), pad_id, dtype=torch.طویل, device=device)
+        برائے idx, t میں enumerate(prompt_علامات):
+            علامات[idx, : لمبائی(t)] = torch.tensor(t, dtype=torch.طویل, device=device)
 
-        prev_pos = 0
-        eos_reached = torch.tensor([False] * bsz, device=device)
-        input_text_mask = tokens != pad_id
+        پچھلا_pos = 0
+        eos_reached = torch.tensor([جھوٹ] * bsz, device=device)
+        داخلہ_متن_نقاب = علامات != pad_id
 
-        if min_prompt_len == total_len:
-            logits, _ = self.forward(tokens, start_pos=prev_pos)
+        اگر min_prompt_len == کل_len:
+            logits, _ = self.forward(علامات, آغاز_pos=پچھلا_pos)
 
-        stop_tokens = torch.tensor(list(self.tokenizer.stop_tokens)).to(device)
+        stop_علامات = torch.tensor(list(self.tokenizer.stop_علامات)).مقصد(device)
 
-        for cur_pos in range(min_prompt_len, total_len):
-            logits, _ = self.forward(tokens[:, prev_pos:cur_pos], start_pos=prev_pos)
-            if temperature > 0:
+        برائے cur_pos میں سلسلہ(min_prompt_len, کل_len):
+            logits, _ = self.forward(علامات[:, پچھلا_pos:cur_pos], آغاز_pos=پچھلا_pos)
+            اگر temperature > 0:
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
-                next_token = sample_top_p(probs, top_p)
-            else:
-                next_token = torch.argmax(logits[:, -1], dim=-1)
+                اگلا_token = sample_چوٹی_p(probs, چوٹی_p)
+            ورنہ:
+                اگلا_token = torch.argmax(logits[:, -1], dim=-1)
 
-            next_token = next_token.reshape(-1)
+            اگلا_token = اگلا_token.reshape(-1)
             # only replace token if prompt has already been generated
-            next_token = torch.where(input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token)
-            tokens[:, cur_pos] = next_token
-            eos_reached |= ~input_text_mask[:, cur_pos] & torch.isin(next_token, stop_tokens)
-            prev_pos = cur_pos
-            if all(eos_reached):
-                break
+            اگلا_token = torch.where(داخلہ_متن_نقاب[:, cur_pos], علامات[:, cur_pos], اگلا_token)
+            علامات[:, cur_pos] = اگلا_token
+            eos_reached |= ~داخلہ_متن_نقاب[:, cur_pos] & torch.isin(اگلا_token, stop_علامات)
+            پچھلا_pos = cur_pos
+            اگر all(eos_reached):
+                توڑو
 
-        out_tokens = []
-        for i, toks in enumerate(tokens.tolist()):
+        برآمد_علامات = []
+        برائے i, toks میں enumerate(علامات.tolist()):
             # cut to max gen len
-            start = 0 if echo else len(prompt_tokens[i])
-            toks = toks[start : len(prompt_tokens[i]) + max_gen_len]
+            آغاز = 0 اگر echo ورنہ لمبائی(prompt_علامات[i])
+            toks = toks[آغاز : لمبائی(prompt_علامات[i]) + max_gen_len]
             # cut to after eos tok if any
-            for stop_token in self.tokenizer.stop_tokens:
-                try:
-                    eos_idx = toks.index(stop_token)
+            برائے stop_token میں self.tokenizer.stop_علامات:
+                کوشش:
+                    eos_idx = toks.اشاریہ(stop_token)
                     toks = toks[:eos_idx]
-                except ValueError:
-                    pass
-            out_tokens.append(toks)
-        return out_tokens
+                استثنا قدر_Error:
+                    گزرو
+            برآمد_علامات.append(toks)
+        واپس برآمد_علامات
 
 # -----------------------------------------------------------------------------
 # sampling utils
 
-def sample_top_p(probs, p):
+تعریف sample_چوٹی_p(probs, p):
     """
     Perform top-p (nucleus) sampling on a probability distribution.
 
@@ -571,14 +571,14 @@ def sample_top_p(probs, p):
         Top-p sampling selects the smallest set of tokens whose cumulative probability mass
         exceeds the threshold p. The distribution is renormalized based on the selected tokens.
     """
-    probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
-    probs_sum = torch.cumsum(probs_sort, dim=-1)
-    mask = probs_sum - probs_sort > p
-    probs_sort[mask] = 0.0
-    probs_sort.div_(probs_sort.sum(dim=-1, keepdim=True))
-    next_token = torch.multinomial(probs_sort, num_samples=1)
-    next_token = torch.gather(probs_idx, -1, next_token)
-    return next_token
+    probs_ترتیب_دو, probs_idx = torch.ترتیب_دو(probs, dim=-1, descending=سچ)
+    probs_مجموع = torch.cumsum(probs_ترتیب_دو, dim=-1)
+    نقاب = probs_مجموع - probs_ترتیب_دو > p
+    probs_ترتیب_دو[نقاب] = 0.0
+    probs_ترتیب_دو.div_(probs_ترتیب_دو.مجموع(dim=-1, keepdim=سچ))
+    اگلا_token = torch.multinomial(probs_ترتیب_دو, عدد_samples=1)
+    اگلا_token = torch.gather(probs_idx, -1, اگلا_token)
+    واپس اگلا_token
 
 # -----------------------------------------------------------------------------
 # Llama 3.1 Tokenizer
@@ -593,29 +593,29 @@ TIKTOKEN_MAX_ENCODE_CHARS = 400_000
 MAX_NO_WHITESPACES_CHARS = 25_000
 
 
-class Tokenizer:
+جماعت Tokenizer:
     """
     Tokenizing and encoding/decoding text using the Tiktoken tokenizer.
     """
 
-    special_tokens: Dict[str, int]
+    special_علامات_2: Dict[str, صحیح]
 
-    num_reserved_special_tokens = 256
+    عدد_reserved_special_علامات = 256
 
     pat_str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"  # noqa: E501
 
-    def __init__(self, model_path: str):
+    تعریف __init__(self, model_راستہ: str):
         """
         Initializes the Tokenizer with a Tiktoken model.
 
         Args:
             model_path (str): The path to the Tiktoken model file.
         """
-        assert os.path.isfile(model_path), model_path
+        أكد os.راستہ.isfile(model_راستہ), model_راستہ
 
-        mergeable_ranks = load_tiktoken_bpe(model_path)
-        num_base_tokens = len(mergeable_ranks)
-        special_tokens = [
+        mergeable_ranks = بھرو_tiktoken_bpe(model_راستہ)
+        عدد_بنیاد_علامات = لمبائی(mergeable_ranks)
+        special_علامات_2 = [
             "<|begin_of_text|>",
             "<|end_of_text|>",
             "<|reserved_special_token_0|>",
@@ -628,45 +628,45 @@ class Tokenizer:
             "<|eot_id|>",  # end of turn
             "<|python_tag|>",
         ]
-        reserved_tokens = [
+        reserved_علامات = [
             f"<|reserved_special_token_{2 + i}|>"
-            for i in range(self.num_reserved_special_tokens - len(special_tokens))
+            برائے i میں سلسلہ(self.عدد_reserved_special_علامات - لمبائی(special_علامات_2))
         ]
-        special_tokens = special_tokens + reserved_tokens
+        special_علامات_2 = special_علامات_2 + reserved_علامات
 
-        self.special_tokens = {
-            token: num_base_tokens + i for i, token in enumerate(special_tokens)
+        self.special_علامات_2 = {
+            token: عدد_بنیاد_علامات + i برائے i, token میں enumerate(special_علامات_2)
         }
         self.model = tiktoken.Encoding(
-            name=Path(model_path).name,
+            name=راستہ_2(model_راستہ).name,
             pat_str=self.pat_str,
             mergeable_ranks=mergeable_ranks,
-            special_tokens=self.special_tokens,
+            special_علامات_2=self.special_علامات_2,
         )
 
-        self.n_words: int = num_base_tokens + len(special_tokens)
+        self.n_الفاظ: صحیح = عدد_بنیاد_علامات + لمبائی(special_علامات_2)
         # BOS / EOS token IDs
-        self.bos_id: int = self.special_tokens["<|begin_of_text|>"]
-        self.eos_id: int = self.special_tokens["<|end_of_text|>"]
-        self.eot_id: int = self.special_tokens["<|eot_id|>"]
-        self.eom_id: int = self.special_tokens["<|eom_id|>"]
-        self.python_tag_id = self.special_tokens["<|python_tag|>"]
-        self.pad_id: int = self.special_tokens["<|finetune_right_pad_id|>"]
+        self.bos_id: صحیح = self.special_علامات_2["<|begin_of_text|>"]
+        self.eos_id: صحیح = self.special_علامات_2["<|end_of_text|>"]
+        self.eot_id: صحیح = self.special_علامات_2["<|eot_id|>"]
+        self.eom_id: صحیح = self.special_علامات_2["<|eom_id|>"]
+        self.python_لیبل_id = self.special_علامات_2["<|python_tag|>"]
+        self.pad_id: صحیح = self.special_علامات_2["<|finetune_right_pad_id|>"]
         # hardcoded stop tokens for the base model
-        self.stop_tokens = [
-            self.special_tokens["<|begin_of_text|>"],
-            self.special_tokens["<|end_of_text|>"],
+        self.stop_علامات = [
+            self.special_علامات_2["<|begin_of_text|>"],
+            self.special_علامات_2["<|end_of_text|>"],
         ]
 
-    def encode(
+    تعریف encode(
         self,
         s: str,
         *,
         bos: bool,
         eos: bool,
-        allowed_special: Optional[Union[Literal["all"], AbstractSet[str]]] = None,
+        allowed_special: Optional[Union[Literal["all"], Abstract_سیٹ[str]]] = کچھ_نہیں,
         disallowed_special: Union[Literal["all"], Collection[str]] = (),
-    ) -> List[int]:
+    ) -> List[صحیح]:
         """
         Encodes a string into a list of token IDs.
 
@@ -688,19 +688,19 @@ class Tokenizer:
         - Setting `allowed_special` to "all" will treat all text corresponding
           to special tokens to be encoded as special tokens.
         """
-        if allowed_special is None:
-            allowed_special = set()
-        assert type(s) is str
+        اگر allowed_special ہے کچھ_نہیں:
+            allowed_special = سیٹ()
+        أكد type(s) ہے str
 
         substrs = (
             substr
-            for i in range(0, len(s), TIKTOKEN_MAX_ENCODE_CHARS)
-            for substr in self._split_whitespaces_or_nonwhitespaces(
+            برائے i میں سلسلہ(0, لمبائی(s), TIKTOKEN_MAX_ENCODE_CHARS)
+            برائے substr میں self.بانٹو_whitespaces_or_nonwhitespaces(
                 s[i : i + TIKTOKEN_MAX_ENCODE_CHARS], MAX_NO_WHITESPACES_CHARS
             )
         )
-        t: List[int] = []
-        for substr in substrs:
+        t: List[صحیح] = []
+        برائے substr میں substrs:
             t.extend(
                 self.model.encode(
                     substr,
@@ -708,70 +708,70 @@ class Tokenizer:
                     disallowed_special=disallowed_special,
                 )
             )
-        if bos:
-            t.insert(0, self.bos_id)
-        if eos:
+        اگر bos:
+            t.داخل_کرو(0, self.bos_id)
+        اگر eos:
             t.append(self.eos_id)
-        return t
+        واپس t
 
-    def decode(self, t: Sequence[int]) -> str:
+    تعریف decode(self, t: Sequence[صحیح]) -> str:
         # Typecast is safe here. Tiktoken doesn't do anything list-related with the sequence.
-        return self.model.decode(cast(List[int], t))
+        واپس self.model.decode(cast(List[صحیح], t))
 
     @staticmethod
-    def _split_whitespaces_or_nonwhitespaces(
-        s: str, max_consecutive_slice_len: int
+    تعریف بانٹو_whitespaces_or_nonwhitespaces(
+        s: str, max_consecutive_قاش_len: صحیح
     ) -> Iterator[str]:
         """
         Splits the string `s` so that each substring contains no more than `max_consecutive_slice_len`
         consecutive whitespaces or consecutive non-whitespaces.
         """
-        current_slice_len = 0
-        current_slice_is_space = s[0].isspace() if len(s) > 0 else False
-        slice_start = 0
+        current_قاش_len = 0
+        current_قاش_is_space = s[0].isspace() اگر لمبائی(s) > 0 ورنہ جھوٹ
+        قاش_آغاز = 0
 
-        for i in range(len(s)):
+        برائے i میں سلسلہ(لمبائی(s)):
             is_now_space = s[i].isspace()
 
-            if current_slice_is_space ^ is_now_space:
-                current_slice_len = 1
-                current_slice_is_space = is_now_space
-            else:
-                current_slice_len += 1
-                if current_slice_len > max_consecutive_slice_len:
-                    yield s[slice_start:i]
-                    slice_start = i
-                    current_slice_len = 1
-        yield s[slice_start:]
+            اگر current_قاش_is_space ^ is_now_space:
+                current_قاش_len = 1
+                current_قاش_is_space = is_now_space
+            ورنہ:
+                current_قاش_len += 1
+                اگر current_قاش_len > max_consecutive_قاش_len:
+                    دو s[قاش_آغاز:i]
+                    قاش_آغاز = i
+                    current_قاش_len = 1
+        دو s[قاش_آغاز:]
 
 # -----------------------------------------------------------------------------
 # Our own simple Distributed Data Loader
 
-def _peek_data_shard(filename):
+تعریف peek_ڈیٹا_shard(filename):
     # only reads the header, returns header data
-    with open(filename, "rb") as f:
+    ساتھ open(filename, "rb") بطور f:
         # first read the header, which is 256 int32 integers (4 bytes each)
-        header = np.frombuffer(f.read(256*4), dtype=np.int32)
-    if header[0] != 20240801:
-        print("ERROR: magic number mismatch in the data .bin file!")
+        سرخی = np.frombuffer(f.اقرأ(256*4), dtype=np.int32)
+    اگر سرخی[0] != 20240801:
+        چھاپو("ERROR: magic number mismatch in the data .bin file!")
         exit(1)
-    assert header[1] == 7, "unsupported version"
-    ntok = header[2] # number of tokens (claimed)
-    return ntok # for now just return the number of tokens
+    أكد سرخی[1] == 7, "unsupported version"
+    ntok = سرخی[2] # number of tokens (claimed)
+    واپس ntok # for now just return the number of tokens
 
-def _load_data_shard(filename):
-    with open(filename, "rb") as f:
+تعریف بھرو_ڈیٹا_shard(filename):
+    ساتھ open(filename, "rb") بطور f:
         # first read the header, which is 256 int32 integers (4 bytes each)
-        header = np.frombuffer(f.read(256*4), dtype=np.int32)
-        assert header[0] == 20240801, "magic number mismatch in the data .bin file"
-        assert header[1] == 7, "unsupported version"
-        ntok = header[2] # number of tokens (claimed)
+        سرخی = np.frombuffer(f.اقرأ(256*4), dtype=np.int32)
+        أكد سرخی[0] == 20240801, "magic number mismatch in the data .bin file"
+        أكد سرخی[1] == 7, "unsupported version"
+        ntok = سرخی[2] # number of tokens (claimed)
         # the rest of it are tokens, stored as uint16
-        tokens = np.frombuffer(f.read(), dtype=np.uint32)
-    assert len(tokens) == ntok, "number of tokens read does not match header?"
-    return tokens
+        علامات = np.frombuffer(f.اقرأ(), dtype=np.uint32)
+    أكد لمبائی(علامات) == ntok, "number of tokens read does not match header?"
+    واپس علامات
 
-class DistributedShardedDataLoader:
+جماعت Distributed_Sharded_ڈیٹا_Loader:
     """
     This DataLoader is both:
     - distributed (works correctly in case of multiple processes in DDP)
@@ -780,287 +780,287 @@ class DistributedShardedDataLoader:
     of the dataset on disk, so the user should make sure to shuffle their examples
     during the creation of their data shards for best performance.
     """
-    def __init__(self, filename_pattern, B, T, process_rank, num_processes):
+    تعریف __init__(self, filename_نمونہ, B, T, process_rank, عدد_processes):
         self.process_rank = process_rank
-        self.num_processes = num_processes
+        self.عدد_processes = عدد_processes
         self.B = B
         self.T = T
 
         # glob files that match the pattern
-        self.files = sorted(glob.glob(filename_pattern))
-        assert len(self.files) > 0, f"did not find any files that match the pattern {filename_pattern}"
+        self.files = sorted(glob.glob(filename_نمونہ))
+        أكد لمبائی(self.files) > 0, f"did not find any files that match the pattern {filename_pattern}"
 
         # load and validate all data shards, count number of tokens in total
-        ntok_total = 0
-        for fname in self.files:
-            shard_ntok = _peek_data_shard(fname)
-            assert shard_ntok >= num_processes * B * T + 1
-            ntok_total += shard_ntok
-        self.ntok_total = ntok_total
+        ntok_کل = 0
+        برائے fname میں self.files:
+            shard_ntok = peek_ڈیٹا_shard(fname)
+            أكد shard_ntok >= عدد_processes * B * T + 1
+            ntok_کل += shard_ntok
+        self.ntok_کل = ntok_کل
         print0(f"DataLoader: total number of tokens: {ntok_total:,} across {len(self.files)} files")
 
         # kick things off
-        self.current_shard = None
+        self.current_shard = کچھ_نہیں
         self.reset()
 
-    def reset(self):
+    تعریف reset(self):
         # we're being a bit clever here: if we already had shard 0 loaded,
         # then don't do the work to reload it, just reset the pointer
-        if self.current_shard != 0:
+        اگر self.current_shard != 0:
             self.current_shard = 0
-            self.tokens = _load_data_shard(self.files[self.current_shard])
+            self.علامات = بھرو_ڈیٹا_shard(self.files[self.current_shard])
         self.current_position = self.process_rank * self.B * self.T
 
-    def advance(self): # advance to next data shard
-        self.current_shard = (self.current_shard + 1) % len(self.files)
+    تعریف advance(self): # advance to next data shard
+        self.current_shard = (self.current_shard + 1) % لمبائی(self.files)
         self.current_position = self.process_rank * self.B * self.T
-        self.tokens = _load_data_shard(self.files[self.current_shard])
+        self.علامات = بھرو_ڈیٹا_shard(self.files[self.current_shard])
 
-    def next_batch(self):
+    تعریف اگلا_batch(self):
         B = self.B
         T = self.T
-        buf = self.tokens[self.current_position : self.current_position+B*T+1]
-        buf = torch.tensor(buf, dtype=torch.long)
+        buf = self.علامات[self.current_position : self.current_position+B*T+1]
+        buf = torch.tensor(buf, dtype=torch.طویل)
         x = (buf[:-1]).view(B, T) # inputs
         y = (buf[1:]).view(B, T) # targets
         # advance the start pointer in current shard
-        self.current_position += B * T * self.num_processes
+        self.current_position += B * T * self.عدد_processes
         # if loading the next batch would be out of bounds advance the shard
-        if self.current_position + (B * T * self.num_processes + 1) > len(self.tokens):
+        اگر self.current_position + (B * T * self.عدد_processes + 1) > لمبائی(self.علامات):
             self.advance()
-        return x, y
+        واپس x, y
 
 # -----------------------------------------------------------------------------
 # Python -> C bridge utilities for saving params/grads/activations to .bin files
 
-def write_fp32(tensor, file):
-    t = tensor.detach().cpu().to(torch.float32)
+تعریف write_fp32(tensor, file):
+    t = tensor.detach().cpu().مقصد(torch.float32)
     b = t.numpy().tobytes()
-    file.write(b)
+    file.اكتب(b)
 
-def write_bf16(tensor, file):
-    t = tensor.detach().cpu().to(torch.bfloat16)
+تعریف write_bf16(tensor, file):
+    t = tensor.detach().cpu().مقصد(torch.bfloat16)
     # numpy doesn't have bf16 datatype so we have to trick it
     t = t.view(torch.int16) # trick: reinterpret as int16
     b = t.numpy().tobytes()
-    file.write(b)
+    file.اكتب(b)
 
-def write_tensors(model_tensors, L, file, dtype):
+تعریف write_tensors(model_tensors, L, file, dtype):
     # writes LLaMA 3 model's weights to a binary file
-    assert dtype in {"float32", "bfloat16"}
-    write_fun = write_fp32 if dtype == "float32" else write_bf16
+    أكد dtype میں {"float32", "bfloat16"}
+    write_fun = write_fp32 اگر dtype == "float32" ورنہ write_bf16
     write_fun(model_tensors["transformer.wte.weight"], file) # (V, C)
-    for i in range(L): # (L, C)
+    برائے i میں سلسلہ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_1.weight"], file)
-    for i in range(L): # (L, 3C, C)
+    برائے i میں سلسلہ(L): # (L, 3C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_attn.weight"], file)
-    for i in range(L): # (L, C, C)
+    برائے i میں سلسلہ(L): # (L, C, C)
         write_fun(model_tensors[f"transformer.h.{i}.attn.c_proj.weight"], file)
-    for i in range(L): # (L, C)
+    برائے i میں سلسلہ(L): # (L, C)
         write_fun(model_tensors[f"transformer.h.{i}.ln_2.weight"], file)
-    for i in range(L): # (L, 4C, C)
+    برائے i میں سلسلہ(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc.weight"], file)
-    for i in range(L): # (L, 4C, C)
+    برائے i میں سلسلہ(L): # (L, 4C, C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_fc2.weight"], file)
-    for i in range(L): # (L, C, 4C)
+    برائے i میں سلسلہ(L): # (L, C, 4C)
         write_fun(model_tensors[f"transformer.h.{i}.mlp.c_proj.weight"], file)
     write_fun(model_tensors["transformer.ln_f.weight"], file) # (C, )
     write_fun(model_tensors["lm_head.weight"], file) # (V, C)
 
-def write_model(model, filename, dtype):
+تعریف write_model(model, filename, dtype):
     # everything we need to instantiate the model
     # 1) header is: version int, LLaMAConfig ints, padding to 1024 bytes
-    assert dtype in {"float32", "bfloat16"}
-    version = {
+    أكد dtype میں {"float32", "bfloat16"}
+    نسخہ = {
         "float32": 3, # 3: all tensors are fp32
         "bfloat16": 5, # 5: all tensors are bf16
     }[dtype]
-    header = torch.zeros(256, dtype=torch.int32)
-    header[0] = 20240803 # magic
-    header[1] = version # checkpoint version
-    header[2] = model.config.block_size
-    header[3] = model.config.vocab_size
-    header[4] = model.config.n_layer
-    header[5] = model.config.n_head
-    header[6] = model.config.n_kv_head
-    header[7] = model.config.n_embd
-    header[8] = model.config.ffn_dim_multiplier
-    header[9] = model.config.multiple_of
-    header[10] = model.config.norm_eps
-    header[11] = model.config.rope_theta
-    header[12] = model.config.use_scaled_rope
-    header[13] = model.config.max_gen_batch_size
-    header[14] = int(model.config.version.split('.')[0]) # major version
-    header[15] = int(model.config.version.split('.')[1]) # minor version
+    سرخی = torch.zeros(256, dtype=torch.int32)
+    سرخی[0] = 20240803 # magic
+    سرخی[1] = نسخہ # checkpoint version
+    سرخی[2] = model.config.بلاک_سائز
+    سرخی[3] = model.config.vocab_سائز
+    سرخی[4] = model.config.n_layer
+    سرخی[5] = model.config.n_سر
+    سرخی[6] = model.config.n_kv_سر
+    سرخی[7] = model.config.n_embd
+    سرخی[8] = model.config.ffn_dim_multiplier
+    سرخی[9] = model.config.مضرب_کا
+    سرخی[10] = model.config.norm_eps
+    سرخی[11] = model.config.rope_theta
+    سرخی[12] = model.config.use_scaled_rope
+    سرخی[13] = model.config.max_gen_batch_سائز
+    سرخی[14] = صحیح(model.config.نسخہ.بانٹو('.')[0]) # major version
+    سرخی[15] = صحیح(model.config.نسخہ.بانٹو('.')[1]) # minor version
     # 2) the parameters follow the header
-    params = {name: param.cpu() for name, param in model.named_parameters()}
+    params = {name: param.cpu() برائے name, param میں model.named_parameters()}
     # now write to file
-    with open(filename, "wb") as file:
-        file.write(header.numpy().tobytes()) # header
+    ساتھ open(filename, "wb") بطور file:
+        file.اكتب(سرخی.numpy().tobytes()) #سرخی
         write_tensors(params, model.config.n_layer, file, dtype) # params
-    print(f"wrote {filename}")
+    چھاپو(f"wrote {filename}")
 
-def write_state(model, x, y, logits, loss, filename):
+تعریف write_state(model, x, y, logits, loss, filename):
     # the state is used for debugging.
     # it contains information about the input, logits, loss, and the parameter gradients
     # this can be used for checking the computation correctness in C
-    header = torch.zeros(256, dtype=torch.int32)
-    header[0] = 20240803 # magic
-    header[1] = x.size(0) # batch size of the batch, B
-    header[2] = x.size(1) # temporal extent of the batch, T
-    grads = {name: param.grad.cpu() for name, param in model.named_parameters()}
-    with open(filename, "wb") as file:
-        # header
-        file.write(header.numpy().tobytes())
+    سرخی = torch.zeros(256, dtype=torch.int32)
+    سرخی[0] = 20240803 # magic
+    سرخی[1] = x.سائز(0) # batch size of the batch, B
+    سرخی[2] = x.سائز(1) # temporal extent of the batch, T
+    grads = {name: param.grad.cpu() برائے name, param میں model.named_parameters()}
+    ساتھ open(filename, "wb") بطور file:
+        #سرخی
+        file.اكتب(سرخی.numpy().tobytes())
         # input x
-        file.write(x.cpu().numpy().astype("int32").tobytes()) # (B, T)
+        file.اكتب(x.cpu().numpy().astype("int32").tobytes()) # (B, T)
         # targets y
-        file.write(y.cpu().numpy().astype("int32").tobytes()) # (B, T)
+        file.اكتب(y.cpu().numpy().astype("int32").tobytes()) # (B, T)
         # logits (result of the model forward pass)
         write_fp32(logits.cpu(), file)
         # loss (single float, result of the cross entropy loss)
         write_fp32(loss.cpu(), file)
         # gradients
         write_tensors(grads, model.config.n_layer, file, "float32")
-    print(f"wrote {filename}")
+    چھاپو(f"wrote {filename}")
 
 # -----------------------------------------------------------------------------
 # int main
 
-def print0(*args, **kwargs):
+تعریف print0(*دلائل, **kwargs):
     # modified print that only prints from the master process
     # if this is not a distributed run, it's just a print
-    if int(os.environ.get("RANK", 0)) == 0:
-        print(*args, **kwargs)
+    اگر صحیح(os.environ.get("RANK", 0)) == 0:
+        چھاپو(*دلائل, **kwargs)
 
-if __name__ == "__main__":
+اگر __name__ == "__main__":
     print0(f"Running pytorch {torch.version.__version__}")
 
     # default settings will overfit a tiny batch of data
     # and save model weights and debug state to disk on the first iteration
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--use_hf", type=int, default=1, help="use HuggingFace (default) or use Meta's model")
-    parser.add_argument("--ckpt_dir", type=str, default=None, help="path to llama3 model checkpoint (needed if use_hf=0)")
-    parser.add_argument("--tokenizer_path", type=str, default=None, help="path to llama3 tokenizer (needed if use_hf=0)")
+    parser = argparse.دلیل_Parser()
+    parser.جوڑو_دلیل("--use_hf", type=صحیح, طےشدہ=1, help="use HuggingFace (default) or use Meta's model")
+    parser.جوڑو_دلیل("--ckpt_dir", type=str, طےشدہ=کچھ_نہیں, help="path to llama3 model checkpoint (needed if use_hf=0)")
+    parser.جوڑو_دلیل("--tokenizer_path", type=str, طےشدہ=کچھ_نہیں, help="path to llama3 tokenizer (needed if use_hf=0)")
     # file system input / output
-    parser.add_argument("--input_bin", type=str, default="dev/data/tinyshakespeare/tiny_shakespeare_val.bin", help="input .bin to train on")
-    parser.add_argument("--input_val_bin", type=str, default="", help="input .bin to eval validation loss on")
-    parser.add_argument("--output_dir", type=str, default="", help="output directory to which to write logs and checkpoints")
-    parser.add_argument("--model", type=str, default="meta-llama/Meta-Llama-3.1-8B", help="chose the llama model")
+    parser.جوڑو_دلیل("--input_bin", type=str, طےشدہ="dev/data/tinyshakespeare/tiny_shakespeare_val.bin", help="input .bin to train on")
+    parser.جوڑو_دلیل("--input_val_bin", type=str, طےشدہ="", help="input .bin to eval validation loss on")
+    parser.جوڑو_دلیل("--output_dir", type=str, طےشدہ="", help="output directory to which to write logs and checkpoints")
+    parser.جوڑو_دلیل("--model", type=str, طےشدہ="meta-llama/Meta-Llama-3.1-8B", help="chose the llama model")
     # token layout for each step of the optimization
-    parser.add_argument("--batch_size", type=int, default=4, help="batch size, in units of #batch dimensions")
-    parser.add_argument("--sequence_length", type=int, default=64, help="sequence length")
-    parser.add_argument("--total_batch_size", type=int, default=256, help="total desired batch size, in units of #tokens")
+    parser.جوڑو_دلیل("--batch_size", type=صحیح, طےشدہ=4, help="batch size, in units of #batch dimensions")
+    parser.جوڑو_دلیل("--sequence_length", type=صحیح, طےشدہ=64, help="sequence length")
+    parser.جوڑو_دلیل("--total_batch_size", type=صحیح, طےشدہ=256, help="total desired batch size, in units of #tokens")
     # workload (number of steps)
-    parser.add_argument("--num_iterations", type=int, default=10, help="number of iterations to run")
-    parser.add_argument("--inference_only", type=int, default=0, help="only run inference")
+    parser.جوڑو_دلیل("--num_iterations", type=صحیح, طےشدہ=10, help="number of iterations to run")
+    parser.جوڑو_دلیل("--inference_only", type=صحیح, طےشدہ=0, help="only run inference")
     # optimization
-    parser.add_argument("--learning_rate", type=float, default=1e-5, help="learning rate warmup iterations")
-    parser.add_argument("--warmup_iters", type=int, default=0, help="learning rate warmup iterations")
-    parser.add_argument("--learning_rate_decay_frac", type=float, default=1.0, help="learning rate warmup iterations")
-    parser.add_argument("--weight_decay", type=float, default=0.0, help="weight decay")
-    parser.add_argument("--grad_clip", type=float, default=1.0, help="maximum gradient magnitude")
+    parser.جوڑو_دلیل("--learning_rate", type=اعشاری, طےشدہ=1e-5, help="learning rate warmup iterations")
+    parser.جوڑو_دلیل("--warmup_iters", type=صحیح, طےشدہ=0, help="learning rate warmup iterations")
+    parser.جوڑو_دلیل("--learning_rate_decay_frac", type=اعشاری, طےشدہ=1.0, help="learning rate warmup iterations")
+    parser.جوڑو_دلیل("--weight_decay", type=اعشاری, طےشدہ=0.0, help="weight decay")
+    parser.جوڑو_دلیل("--grad_clip", type=اعشاری, طےشدہ=1.0, help="maximum gradient magnitude")
     # evaluation
-    parser.add_argument("--val_loss_every", type=int, default=0, help="every how mant steps to evaluate val loss?")
-    parser.add_argument("--val_max_steps", type=int, default=20, help="how many batches of val to average?")
-    parser.add_argument("--sample_every", type=int, default=0, help="how often to sample from the model?")
+    parser.جوڑو_دلیل("--val_loss_every", type=صحیح, طےشدہ=0, help="every how mant steps to evaluate val loss?")
+    parser.جوڑو_دلیل("--val_max_steps", type=صحیح, طےشدہ=20, help="how many batches of val to average?")
+    parser.جوڑو_دلیل("--sample_every", type=صحیح, طےشدہ=0, help="how often to sample from the model?")
     # debugging
-    parser.add_argument("--overfit_single_batch", type=int, default=1, help="overfit just one batch of data")
+    parser.جوڑو_دلیل("--overfit_single_batch", type=صحیح, طےشدہ=1, help="overfit just one batch of data")
     # numerics
-    parser.add_argument("--tensorcores", type=int, default=0, help="use tensorcores")
+    parser.جوڑو_دلیل("--tensorcores", type=صحیح, طےشدہ=0, help="use tensorcores")
     # memory management
-    parser.add_argument("--device", type=str, default="", help="by default we autodetect, or set it here")
-    parser.add_argument("--compile", type=int, default=0, help="torch.compile the model")
-    parser.add_argument("--dtype", type=str, default="bfloat16", help="float32|float16|bfloat16")
-    parser.add_argument("--zero_stage", type=int, default=0, help="zero redundancy optimizer stage (0/1/2/3)")
+    parser.جوڑو_دلیل("--device", type=str, طےشدہ="", help="by default we autodetect, or set it here")
+    parser.جوڑو_دلیل("--compile", type=صحیح, طےشدہ=0, help="torch.compile the model")
+    parser.جوڑو_دلیل("--dtype", type=str, طےشدہ="bfloat16", help="float32|float16|bfloat16")
+    parser.جوڑو_دلیل("--zero_stage", type=صحیح, طےشدہ=0, help="zero redundancy optimizer stage (0/1/2/3)")
     # python -> C bridge
-    parser.add_argument("--write_tensors", type=int, default=0, help="write tensors to disk")
-    args = parser.parse_args()
+    parser.جوڑو_دلیل("--write_tensors", type=صحیح, طےشدہ=0, help="write tensors to disk")
+    دلائل = parser.parse_دلائل()
 
     # args error checking and convenience variables
-    B, T = args.batch_size, args.sequence_length
-    assert 1 <= T <= 8192, "sequence length must be between 1 and 8192"
-    assert args.dtype in {"float32", "float16", "bfloat16"}
-    assert args.model in {"meta-llama/Meta-Llama-3.1-8B"}  # only 8B base model supported for now
+    B, T = دلائل.batch_سائز, دلائل.sequence_لمبائی
+    أكد 1 <= T <= 8192, "sequence length must be between 1 and 8192"
+    أكد دلائل.dtype میں {"float32", "float16", "bfloat16"}
+    أكد دلائل.model میں {"meta-llama/Meta-Llama-3.1-8B"}  # only 8B base model supported for now
 
     # create the logging directory if it does not exist
-    logfile = None
-    if args.output_dir:
-        os.makedirs(args.output_dir, exist_ok=True)
-        logfile = os.path.join(args.output_dir, "main.log")
+    logfile = کچھ_نہیں
+    اگر دلائل.output_dir:
+        os.makedirs(دلائل.output_dir, exist_ok=سچ)
+        logfile = os.راستہ.join(دلائل.output_dir, "main.log")
         # create the log file "main.log" inside it, and wipe it clean
-        with open(logfile, "w") as f:
-            pass
+        ساتھ open(logfile, "w") بطور f:
+            گزرو
 
     # set up DDP (distributed data parallel). torchrun sets this env variable
-    ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
-    if ddp:
+    ddp = صحیح(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+    اگر ddp:
         # use of DDP atm demands CUDA, we set the device appropriately according to rank
-        assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
-        init_process_group(backend='nccl')
-        ddp_rank = int(os.environ['RANK'])
-        ddp_local_rank = int(os.environ['LOCAL_RANK'])
-        ddp_world_size = int(os.environ['WORLD_SIZE'])
+        أكد torch.cuda.is_دستیاب(), "for now i think we need CUDA for DDP"
+        init_process_گروہ(backend='nccl')
+        ddp_rank = صحیح(os.environ['RANK'])
+        ddp_local_rank = صحیح(os.environ['LOCAL_RANK'])
+        ddp_world_سائز = صحیح(os.environ['WORLD_SIZE'])
         device = f'cuda:{ddp_local_rank}'
-        torch.cuda.set_device(device)
+        torch.cuda.سیٹ_device(device)
         master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
-        seed_offset = 0 # each process gets the exact same seed
-        zero_stage = args.zero_stage
-    else:
+        بیج_انحراف = 0 # each process gets the exact same seed
+        zero_stage = دلائل.zero_stage
+    ورنہ:
         ddp_rank = 0
         ddp_local_rank = 0
         zero_stage = 0
-        ddp_world_size = 1
-        master_process = True
-        seed_offset = 0
+        ddp_world_سائز = 1
+        master_process = سچ
+        بیج_انحراف = 0
         # select the device
-        if args.device:
+        اگر دلائل.device:
             # provided explicitly by the user
-            device = args.device
-        else:
+            device = دلائل.device
+        ورنہ:
             # attempt to autodetect the device
             device = "cpu"
-            if torch.cuda.is_available():
+            اگر torch.cuda.is_دستیاب():
                 device = "cuda"
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            وگرنہ_اگر hasattr(torch.backends, "mps") اور torch.backends.mps.is_دستیاب():
                 device = "mps"
-    device_type = 'cuda' if 'cuda' in device else 'cpu'
-    assert device_type in {'cuda'}, "GPU required to run LLaMA 3"  # we need to load LLaMA as bf16 on CUDA
-    print(f"using device: {device}")
+    device_type = 'cuda' اگر 'cuda' میں device ورنہ 'cpu'
+    أكد device_type میں {'cuda'}, "GPU required to run LLaMA 3"  # we need to load LLaMA as bf16 on CUDA
+    چھاپو(f"using device: {device}")
 
     # calculate gradient accumulation from the desired total batch size and the current run configuration
-    tokens_per_fwdbwd = B * T * ddp_world_size
-    assert args.total_batch_size % tokens_per_fwdbwd == 0
-    grad_accum_steps = args.total_batch_size // tokens_per_fwdbwd
+    علامات_فی_fwdbwd = B * T * ddp_world_سائز
+    أكد دلائل.کل_batch_سائز % علامات_فی_fwdbwd == 0
+    grad_accum_اقدام = دلائل.کل_batch_سائز // علامات_فی_fwdbwd
     print0(f"total desired batch size: {args.total_batch_size}")
     print0(f"=> calculated gradient accumulation steps: {grad_accum_steps}")
 
     # set up a context manager following the desired dtype and device
-    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[args.dtype]
-    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) if (device_type == "cuda") else nullcontext()
+    ptdtype = {'float32': torch.float32, 'bfloat16': torch.bfloat16, 'float16': torch.float16}[دلائل.dtype]
+    ctx = torch.amp.autocast(device_type=device_type, dtype=ptdtype) اگر (device_type == "cuda") ورنہ nullcontext()
 
     # rng / reproducibility
-    torch.manual_seed(42)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
+    torch.manual_بیج(42)
+    اگر torch.cuda.is_دستیاب():
+        torch.cuda.manual_بیج(42)
 
     # set the torch precision mode to use TensorFloat32 (TF32) for matmuls
     # docs https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
-    if args.tensorcores:
-        torch.set_float32_matmul_precision('high')
+    اگر دلائل.tensorcores:
+        torch.سیٹ_float32_matmul_precision('high')
 
     # init the model
-    if args.use_hf:
-        model = LLaMA.from_pretrained_llama3_hf(args.model)
-    else:  # use Meta's checkpoint
-        assert args.ckpt_dir is not None and os.path.exists(args.ckpt_dir), f"llama3 ckpt dir {args.ckpt_dir} does not exist"
-        assert args.tokenizer_path is not None and os.path.exists(args.tokenizer_path), f"llama3 tokenizer path {args.tokenizer_path} does not exist"
-        model = LLaMA.from_pretrained_llama3_meta(args.ckpt_dir, args.tokenizer_path)
+    اگر دلائل.use_hf:
+        model = LLaMA.from_pretrained_llama3_hf(دلائل.model)
+    ورنہ:  # use Meta's checkpoint
+        أكد دلائل.ckpt_dir ہے نہیں کچھ_نہیں اور os.راستہ.exists(دلائل.ckpt_dir), f"llama3 ckpt dir {args.ckpt_dir} does not exist"
+        أكد دلائل.tokenizer_راستہ ہے نہیں کچھ_نہیں اور os.راستہ.exists(دلائل.tokenizer_راستہ), f"llama3 tokenizer path {args.tokenizer_path} does not exist"
+        model = LLaMA.from_pretrained_llama3_meta(دلائل.ckpt_dir, دلائل.tokenizer_راستہ)
 
     model.train()
-    if args.compile:
-        if hasattr(config, "coordinate_descent_tuning"):
-            config.coordinate_descent_tuning = True # suggested by @Chillee
+    اگر دلائل.compile:
+        اگر hasattr(config, "coordinate_descent_tuning"):
+            config.coordinate_descent_tuning = سچ # suggested by @Chillee
         print0("compiling the model...")
         model = torch.compile(model)
 
@@ -1068,27 +1068,27 @@ if __name__ == "__main__":
     # Our own version of a simple DistributedDataLoader
 
     # load tokens
-    train_loader = DistributedShardedDataLoader(args.input_bin, B, T, ddp_rank, ddp_world_size)
-    val_loader = None
-    if args.input_val_bin:
-        val_loader = DistributedShardedDataLoader(args.input_val_bin, B, T, ddp_rank, ddp_world_size)
+    train_loader = Distributed_Sharded_ڈیٹا_Loader(دلائل.داخلہ_bin, B, T, ddp_rank, ddp_world_سائز)
+    val_loader = کچھ_نہیں
+    اگر دلائل.داخلہ_val_bin:
+        val_loader = Distributed_Sharded_ڈیٹا_Loader(دلائل.داخلہ_val_bin, B, T, ddp_rank, ddp_world_سائز)
 
     # -------------------------------------------------------------------------
     # PyTorch -> C bridge: save some weights and state for C to load later as reference
 
     # do one forward pass to generate ground truth for our C tests
-    if master_process and args.write_tensors and (not args.inference_only):
-        x, y = train_loader.next_batch()
-        x, y = x.to(device), y.to(device)
+    اگر master_process اور دلائل.write_tensors اور (نہیں دلائل.inference_only):
+        x, y = train_loader.اگلا_batch()
+        x, y = x.مقصد(device), y.مقصد(device)
         logits, loss = model(x, y)
         loss.backward()
         # save model params, in bfloat16
-        model_to_size = {"meta-llama/Meta-Llama-3.1-8B": "8B"}
-        model_size_str = model_to_size[args.model] # e.g. "8B"
-        write_model(model, os.path.join(args.output_dir, f"llama3.1_{model_size_str}_bf16.bin"), dtype="bfloat16")
+        model_مقصد_سائز = {"meta-llama/Meta-Llama-3.1-8B": "8B"}
+        model_سائز_str = model_مقصد_سائز[دلائل.model] # e.g. "8B"
+        write_model(model, os.راستہ.join(دلائل.output_dir, f"llama3.1_{model_size_str}_bf16.bin"), dtype="bfloat16")
         # save x, y, logits, loss, and parameter gradients, for debugging C
         # always store these in fp32 to have an accurate reference (?)
-        write_state(model, x, y, logits, loss, os.path.join(args.output_dir, f"llama3_{model_size_str}_debug_state.bin"))
+        write_state(model, x, y, logits, loss, os.راستہ.join(دلائل.output_dir, f"llama3_{model_size_str}_debug_state.bin"))
         # reset the train_loader for the optimization below
         train_loader.reset()
 
@@ -1096,62 +1096,62 @@ if __name__ == "__main__":
     # main training loop
 
     # here we wrap model into DDP container
-    if ddp:
+    اگر ddp:
         model = DDP(model, device_ids=[ddp_local_rank])
-    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    raw_model = model.module اگر ddp ورنہ model # always contains the "raw" unwrapped model
 
     # init the optimizer
-    optimizer = raw_model.configure_optimizers(weight_decay=args.weight_decay,
-                                               learning_rate=args.learning_rate, betas=(0.9, 0.95),
+    optimizer = raw_model.configure_optimizers(وزن_decay=دلائل.وزن_decay,
+                                               learning_شرح=دلائل.learning_شرح, betas=(0.9, 0.95),
                                                device_type=device, zero_stage=zero_stage)
 
     # learning rate decay scheduler (cosine with warmup)
-    def get_lr(it):
-        min_lr = args.learning_rate * args.learning_rate_decay_frac
+    تعریف get_lr(it):
+        min_lr = دلائل.learning_شرح * دلائل.learning_شرح_decay_frac
         # 1) linear warmup for warmup_iters steps
-        if it < args.warmup_iters:
-            return args.learning_rate * (it+1) / args.warmup_iters
+        اگر it < دلائل.warmup_iters:
+            واپس دلائل.learning_شرح * (it+1) / دلائل.warmup_iters
         # 2) if it > lr_decay_iters, return min learning rate
-        if it > args.num_iterations:
-            return min_lr
+        اگر it > دلائل.عدد_iterations:
+            واپس min_lr
         # 3) in between, use cosine decay down to min learning rate
-        decay_ratio = (it - args.warmup_iters) / (args.num_iterations - args.warmup_iters)
-        assert 0 <= decay_ratio <= 1
-        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
-        return min_lr + coeff * (args.learning_rate - min_lr)
+        decay_تناسب = (it - دلائل.warmup_iters) / (دلائل.عدد_iterations - دلائل.warmup_iters)
+        أكد 0 <= decay_تناسب <= 1
+        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_تناسب)) # coeff starts at 1 and goes to 0
+        واپس min_lr + coeff * (دلائل.learning_شرح - min_lr)
 
-    if device == "cuda":
-        torch.cuda.reset_peak_memory_stats()
+    اگر device == "cuda":
+        torch.cuda.reset_peak_حافظہ_stats()
     timings = []
     norm = -1.0   # dummy value to print in inference-only mode
-    for step in range(args.num_iterations + 1):
+    برائے قدم میں سلسلہ(دلائل.عدد_iterations + 1):
         t0 = time.time()
-        last_step = (step == args.num_iterations)
+        آخری_قدم = (قدم == دلائل.عدد_iterations)
 
         # once in a while evaluate the validation dataset
-        if (args.val_loss_every > 0 \
-            and (step % args.val_loss_every == 0 or last_step)) \
-            and (val_loader is not None):
+        اگر (دلائل.val_loss_every > 0 \
+            اور (قدم % دلائل.val_loss_every == 0 یا آخری_قدم)) \
+            اور (val_loader ہے نہیں کچھ_نہیں):
             model.eval()
             val_loader.reset()
-            with torch.no_grad():
+            ساتھ torch.no_grad():
                 val_loss = 0.0
-                for _ in range(args.val_max_steps):
-                    x, y = val_loader.next_batch()
-                    x, y = x.to(device), y.to(device)
-                    _, loss = model(x, y, return_logits=False)
-                    val_loss += loss.item()
-                val_loss /= args.val_max_steps
+                برائے _ میں سلسلہ(دلائل.val_max_اقدام):
+                    x, y = val_loader.اگلا_batch()
+                    x, y = x.مقصد(device), y.مقصد(device)
+                    _, loss = model(x, y, return_logits=جھوٹ)
+                    val_loss += loss.شے_2()
+                val_loss /= دلائل.val_max_اقدام
             # log to console and to file
             print0(f"val loss {val_loss}")
-            if master_process and logfile is not None:
-                with open(logfile, "a") as f:
-                    f.write("s:%d tel:%f\n" % (step, val_loss))
+            اگر master_process اور logfile ہے نہیں کچھ_نہیں:
+                ساتھ open(logfile, "a") بطور f:
+                    f.اكتب("s:%d tel:%f\n" % (قدم, val_loss))
 
         # once in a while perform model inference on the master process
-        if (args.sample_every > 0 \
-            and (step % args.sample_every == 0 or last_step)) \
-            and master_process:
+        اگر (دلائل.sample_every > 0 \
+            اور (قدم % دلائل.sample_every == 0 یا آخری_قدم)) \
+            اور master_process:
             model.eval()
             prompts: List[str] = [
         "Clearly, the meaning of life is",
@@ -1164,84 +1164,84 @@ if __name__ == "__main__":
         plush girafe => girafe peluche
         cheese =>""",
             ]
-            if args.use_hf:
-                prompt_tokens = [model.tokenizer(x).input_ids for x in prompts]
-            else:  # Meta
-                prompt_tokens = [model.tokenizer.encode(x, bos=True, eos=False) for x in prompts]
+            اگر دلائل.use_hf:
+                prompt_علامات = [model.tokenizer(x).داخلہ_ids برائے x میں prompts]
+            ورنہ:  # Meta
+                prompt_علامات = [model.tokenizer.encode(x, bos=سچ, eos=جھوٹ) برائے x میں prompts]
 
-            generation_tokens = model.generate(prompt_tokens, max_gen_len=64, temperature=0.6, top_p=0.9, echo=False)
-            results = [{"generation": model.tokenizer.decode(t)} for t in generation_tokens]
-            for prompt, result in zip(prompts, results):
-                print(prompt, end="")
-                print(f"{result['generation']}")
-                print("\n==================================\n")
+            generation_علامات = model.generate(prompt_علامات, max_gen_len=64, temperature=0.6, چوٹی_p=0.9, echo=جھوٹ)
+            results = [{"generation": model.tokenizer.decode(t)} برائے t میں generation_علامات]
+            برائے prompt, نتیجہ میں zip(prompts, results):
+                چھاپو(prompt, انتہا="")
+                چھاپو(f"{result['generation']}")
+                چھاپو("\n==================================\n")
 
         # bit confusing: we want to make sure to eval and sample on 0th iteration
         # but also after the very last iteration. so we loop for step <= num_iterations
         # instead of just < num_iterations (one extra due to <=), only to do
         # the validation/sampling one last time, and then we break right here as we're done.
-        if last_step:
-            break
+        اگر آخری_قدم:
+            توڑو
 
         # --------------- TRAINING SECTION BEGIN -----------------
         model.train()
-        optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad(سیٹ_مقصد_none=سچ)
         # if we are trying to overfit a single batch, we reset the loader here
-        if args.overfit_single_batch:
+        اگر دلائل.overfit_single_batch:
             train_loader.reset()
         # micro-batch loop where we do gradient accumulation to reach desired total batch size
         lossf = 0.0 # for getting the mean loss (as simple float) over the accumulation steps
-        for micro_step in range(grad_accum_steps):
+        برائے micro_قدم میں سلسلہ(grad_accum_اقدام):
             # fetch a batch
-            x, y = train_loader.next_batch()
-            x, y = x.to(device), y.to(device)
-            if ddp:
+            x, y = train_loader.اگلا_batch()
+            x, y = x.مقصد(device), y.مقصد(device)
+            اگر ddp:
                 # we want only the last micro-step to sync grads in a DDP model
                 # the official way to do this is with model.no_sync(), but that is a
                 # context manager that bloats the code, so we just toggle this variable
-                model.require_backward_grad_sync = (micro_step == grad_accum_steps - 1)
+                model.require_backward_grad_sync = (micro_قدم == grad_accum_اقدام - 1)
             # forward pass
-            with ctx:
-                _, loss = model(x, y, return_logits=False)
+            ساتھ ctx:
+                _, loss = model(x, y, return_logits=جھوٹ)
                 # we have to scale the loss to account for gradient accumulation,
                 # because the gradients just add on each successive backward().
                 # addition of gradients corresponds to a SUM in the objective, but
                 # instead of a SUM we want MEAN, so we scale the loss here
-                loss = loss / grad_accum_steps
+                loss = loss / grad_accum_اقدام
                 lossf += loss.detach() # keep track of the mean loss
             # backward pass
-            if not args.inference_only:
+            اگر نہیں دلائل.inference_only:
                 loss.backward()
-        if ddp:
+        اگر ddp:
             dist.all_reduce(lossf, op=dist.ReduceOp.AVG)
-        lossf = lossf.item()
-        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        lossf = lossf.شے_2()
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), دلائل.grad_clip)
         # determine and set the learning rate for this iteration
-        lr = get_lr(step)
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+        lr = get_lr(قدم)
+        برائے param_گروہ میں optimizer.param_groups:
+            param_گروہ['lr'] = lr
         # step the optimizer
-        optimizer.step()
+        optimizer.قدم()
         # --------------- TRAINING SECTION END -------------------
         # everything that follows now is just diagnostics, prints, logging, etc.
 
         # wait on the CPU for all device work to end so we get accurate per-iteration timings below
-        if device == "mps":
+        اگر device == "mps":
             torch.mps.synchronize()
-        elif device == "cuda":
+        وگرنہ_اگر device == "cuda":
             torch.cuda.synchronize()
         # time and print
         t1 = time.time()
         # the 0th iteration is often an outlier (much slower) => skip logging it
-        tokens_per_second = grad_accum_steps * ddp_world_size * B * T / (t1-t0)
+        علامات_فی_دوسرا = grad_accum_اقدام * ddp_world_سائز * B * T / (t1-t0)
         print0(f"step {step+1:4d}/{args.num_iterations} | train loss {lossf:.6f} | norm {norm:.4f} | lr {lr:.2e} | ({(t1-t0)*1000:.2f} ms | {tokens_per_second:.0f} tok/s)")
         # log to logile
-        if master_process and logfile is not None:
-            with open(logfile, "a") as f:
-                f.write("s:%d trl:%f\n" % (step, lossf))
+        اگر master_process اور logfile ہے نہیں کچھ_نہیں:
+            ساتھ open(logfile, "a") بطور f:
+                f.اكتب("s:%d trl:%f\n" % (قدم, lossf))
 
         # keep track of smooth timings, last 20 iterations
-        if step > 0 and step > args.num_iterations - 20:
+        اگر قدم > 0 اور قدم > دلائل.عدد_iterations - 20:
             timings.append(t1-t0)
 
     # print the average of the last 20 timings, to get something smooth-ish
@@ -1251,5 +1251,5 @@ if __name__ == "__main__":
 
     # -------------------------------------------------------------------------
     # clean up nice
-    if ddp:
-        destroy_process_group()
+    اگر ddp:
+        destroy_process_گروہ()

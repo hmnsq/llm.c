@@ -6,100 +6,100 @@ If we wanted to later prompt the model, we'd have to add decoding.
 Which could be tricky in C because of the regex involved, to look into later.
 */
 
-#include <stdint.h>
-#include <ctype.h>
-#include <assert.h>
+#شامل <stdint.h>
+#شامل <ctype.h>
+#شامل <assert.h>
 // our own utilities
 // defines fopenCheck, freadCheck, fcloseCheck, fseekCheck, mallocCheck
-#include "utils.h"
+#شامل "utils.h"
 
 // ----------------------------------------------------------------------------
 
-typedef struct {
-    uint32_t vocab_size;
-    char **token_table;
-    int init_ok;
-    int eot_token; // <|endoftext|> token id
+قسمتعریف ساخت {
+    uint32_t vocab_سائز;
+    حرف **token_جدول;
+    صحیح init_ok;
+    صحیح eot_token; // <|endoftext|> token id
 } Tokenizer;
 
-void safe_printf(const char *piece) {
+خالی محفوظ_printf(ثابت حرف *piece) {
     // the tokens are raw bytes, and we we only want to print the printable ones
     // many bytes can be various control codes, backspace, etc.
-    if (piece == NULL) { return; }
-    if (piece[0] == '\0') { return; }
+    اگر (piece == تہی) { واپس; }
+    اگر (piece[0] == '\0') { واپس; }
     // handle individual byte tokens
     // every token is asserted to be at least one byte so doing piece[1] is ok
-    if (piece[1] == '\0') {
-        unsigned char byte_val = piece[0];
-        if (!(isprint(byte_val) || isspace(byte_val))) {
-            return; // weird byte, don't print it
+    اگر (piece[1] == '\0') {
+        غیرعلامتی حرف byte_val = piece[0];
+        اگر (!(isprint(byte_val) || خلا_ہے(byte_val))) {
+            واپس; // weird byte, don't print it
         }
     }
-    printf("%s", piece);
+    لکھو("%s", piece);
 }
 
-void tokenizer_init(Tokenizer *tokenizer, const char *filename) {
+خالی tokenizer_init(Tokenizer *tokenizer, ثابت حرف *filename) {
     FILE *file = fopen(filename, "rb");
-    if (file == NULL) {
+    اگر (file == تہی) {
         // try to be more helpful as we just added this feature, erase later
-        printf("---\n");
-        printf("WARNING: Failed to open the tokenizer file %s\n", filename);
-        printf("The Tokenizer is a new feature added April 14 2024.\n");
-        printf("Re-run `python train_gpt2.py` to write it\n");
-        printf("---\n");
+        لکھو("---\n");
+        لکھو("WARNING: Failed to open the tokenizer file %s\n", filename);
+        لکھو("The Tokenizer is a new feature added April 14 2024.\n");
+        لکھو("Re-run `python train_gpt2.py` to write it\n");
+        لکھو("---\n");
         tokenizer->init_ok = 0;
-        return;
+        واپس;
     }
     // read in the header
-    uint32_t header[256];
-    freadCheck(header, sizeof(uint32_t), 256, file);
-    assert(header[0] == 20240328);
-    int version = header[1];
-    tokenizer->vocab_size = header[2];
-    if (version == 1) {
+    uint32_t سرخی[256];
+    freadCheck(سرخی, حجم(uint32_t), 256, file);
+    أكد(سرخی[0] == 20240328);
+    صحیح نسخہ = سرخی[1];
+    tokenizer->vocab_سائز = سرخی[2];
+    اگر (نسخہ == 1) {
         // version 1 didn't include the EOT token id
         // so we assume it is 50256, the EOT in GPT-2
-        assert(tokenizer->vocab_size == 50257); // let's be defensive here
+        أكد(tokenizer->vocab_سائز == 50257); // let's be defensive here
         tokenizer->eot_token = 50256;
-    } else if (version == 2) {
-        tokenizer->eot_token = header[3];
-    } else {
-        fprintf(stderr, "Tokenizer model file %s has bad version: %d\n", filename, version);
-        exit(EXIT_FAILURE);
+    } ورنہ اگر (نسخہ == 2) {
+        tokenizer->eot_token = سرخی[3];
+    } ورنہ {
+        fprintf(stderr, "Tokenizer model file %s has bad version: %d\n", filename, نسخہ);
+        باہر_نکلو(EXIT_FAILURE);
     }
     // read in all the tokens
-    unsigned char length;
-    tokenizer->token_table = (char **)mallocCheck(tokenizer->vocab_size * sizeof(char *));
-    for (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
-        freadCheck(&length, sizeof(unsigned char), 1, file);
-        assert(length > 0); // every token should be at least one character
-        char *token_bytes = (char *)mallocCheck(length + 1);
-        freadCheck(token_bytes, sizeof(char), length, file);
-        token_bytes[length] = '\0';  // Add null terminator for printing
-        tokenizer->token_table[i] = token_bytes;
+    غیرعلامتی حرف لمبائی_2;
+    tokenizer->token_جدول = (حرف **)mallocCheck(tokenizer->vocab_سائز * حجم(حرف *));
+    برائے (uint32_t i = 0; i < tokenizer->vocab_سائز; i++) {
+        freadCheck(&لمبائی_2, حجم(غیرعلامتی حرف), 1, file);
+        أكد(لمبائی_2 > 0); // every token should be at least one character
+        حرف *token_بائٹیں = (حرف *)mallocCheck(لمبائی_2 + 1);
+        freadCheck(token_بائٹیں, حجم(حرف), لمبائی_2, file);
+        token_بائٹیں[لمبائی_2] = '\0';  // Add null terminator for printing
+        tokenizer->token_جدول[i] = token_بائٹیں;
     }
     // cleanups
     fcloseCheck(file);
     tokenizer->init_ok = 1;
 }
 
-const char *tokenizer_decode(Tokenizer *tokenizer, uint32_t token_id) {
-    if (tokenizer->init_ok == 0) {
-        return NULL;
+ثابت حرف *tokenizer_decode(Tokenizer *tokenizer, uint32_t token_id) {
+    اگر (tokenizer->init_ok == 0) {
+        واپس تہی;
     }
-    if (token_id < tokenizer->vocab_size) {
-        return tokenizer->token_table[token_id];
-    } else {
-        printf("invalid token id %u!\n", token_id);
-        return NULL;
+    اگر (token_id < tokenizer->vocab_سائز) {
+        واپس tokenizer->token_جدول[token_id];
+    } ورنہ {
+        لکھو("invalid token id %u!\n", token_id);
+        واپس تہی;
     }
 }
 
-void tokenizer_free(Tokenizer *tokenizer) {
-    if (tokenizer->init_ok) {
-        for (uint32_t i = 0; i < tokenizer->vocab_size; i++) {
-            free(tokenizer->token_table[i]);
+خالی tokenizer_free(Tokenizer *tokenizer) {
+    اگر (tokenizer->init_ok) {
+        برائے (uint32_t i = 0; i < tokenizer->vocab_سائز; i++) {
+            آزاد(tokenizer->token_جدول[i]);
         }
-        free(tokenizer->token_table);
+        آزاد(tokenizer->token_جدول);
     }
 }

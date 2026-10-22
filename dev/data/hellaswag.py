@@ -27,19 +27,19 @@ gpt2-xl (1558M)
 The validation set of HellaSwag has a total of 10,042 examples.
 """
 
-import os
-import json
-import requests
-import tiktoken
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from transformers import GPT2LMHeadModel
-from data_common import download_file, write_evalfile
+درآمد os
+درآمد json
+درآمد درخواستیں
+درآمد tiktoken
+سے tqdm درآمد tqdm
+درآمد torch
+درآمد torch.nn بطور nn
+سے torch.nn درآمد functional بطور F
+سے transformers درآمد GPT2LMHeadModel
+سے ڈیٹا_common درآمد download_file, write_evalfile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
+ڈیٹا_CACHE_DIR = os.راستہ.join(os.راستہ.dirname(__file__), "hellaswag")
 
 hellaswags = {
     "train": "https://raw.githubusercontent.com/rowanz/hellaswag/master/data/hellaswag_train.jsonl",
@@ -49,18 +49,18 @@ hellaswags = {
 
 enc = tiktoken.get_encoding("gpt2")
 
-def download(split):
+تعریف download(بانٹو):
     """Downloads HellaSwag DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
-    data_url = hellaswags[split]
-    data_filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    os.makedirs(ڈیٹا_CACHE_DIR, exist_ok=سچ)
+    ڈیٹا_url = hellaswags[بانٹو]
+    ڈیٹا_filename = os.راستہ.join(ڈیٹا_CACHE_DIR, f"hellaswag_{split}.jsonl")
+    اگر نہیں os.راستہ.exists(ڈیٹا_filename):
+        چھاپو(f"Downloading {data_url} to {data_filename}...")
+        download_file(ڈیٹا_url, ڈیٹا_filename)
+    ورنہ:
+        چھاپو(f"{data_filename} already exists, skipping download...")
 
-def render_example(example):
+تعریف render_example(example):
     """
     Given the example as a dictionary, render it as three torch tensors:
     - tokens (the tokens of context + completion, of size 4xN, as there are always 4 candidates)
@@ -72,103 +72,103 @@ def render_example(example):
     endings = example["endings"]
 
     # data needed to reproduce this eval on the C size
-    data = {
+    ڈیٹا = {
         "label": label,
-        "ctx_tokens": None,
+        "ctx_tokens": کچھ_نہیں,
         "ending_tokens": [],
     }
 
     # gather up all the tokens
-    ctx_tokens = enc.encode(ctx)
-    data["ctx_tokens"] = ctx_tokens
-    tok_rows = []
-    mask_rows = []
-    for end in endings:
-        end_tokens = enc.encode(" " + end) # note: prepending " " because GPT-2 tokenizer
-        tok_rows.append(ctx_tokens + end_tokens)
-        mask_rows.append([0]*len(ctx_tokens) + [1]*len(end_tokens))
-        data["ending_tokens"].append(end_tokens)
+    ctx_علامات = enc.encode(ctx)
+    ڈیٹا["ctx_tokens"] = ctx_علامات
+    tok_صفیں = []
+    نقاب_صفیں = []
+    برائے انتہا میں endings:
+        انتہا_علامات = enc.encode(" " + انتہا) # note: prepending " " because GPT-2 tokenizer
+        tok_صفیں.append(ctx_علامات + انتہا_علامات)
+        نقاب_صفیں.append([0]*لمبائی(ctx_علامات) + [1]*لمبائی(انتہا_علامات))
+        ڈیٹا["ending_tokens"].append(انتہا_علامات)
 
     # have to be careful during the collation because the number of tokens in each row can differ
-    max_len = max(len(row) for row in tok_rows)
-    tokens = torch.zeros((4, max_len), dtype=torch.long)
-    mask = torch.zeros((4, max_len), dtype=torch.long)
-    for i, (tok_row, mask_row) in enumerate(zip(tok_rows, mask_rows)):
-        tokens[i, :len(tok_row)] = torch.tensor(tok_row)
-        mask[i, :len(mask_row)] = torch.tensor(mask_row)
+    max_len = max(لمبائی(صف) برائے صف میں tok_صفیں)
+    علامات = torch.zeros((4, max_len), dtype=torch.طویل)
+    نقاب = torch.zeros((4, max_len), dtype=torch.طویل)
+    برائے i, (tok_صف, نقاب_صف) میں enumerate(zip(tok_صفیں, نقاب_صفیں)):
+        علامات[i, :لمبائی(tok_صف)] = torch.tensor(tok_صف)
+        نقاب[i, :لمبائی(نقاب_صف)] = torch.tensor(نقاب_صف)
 
-    return data, tokens, mask, label
+    واپس ڈیٹا, علامات, نقاب, label
 
-def iterate_examples(split):
+تعریف iterate_examples(بانٹو):
     # there are 10,042 examples in total in val
-    download(split)
-    with open(os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") as f:
-        for line in f:
-            example = json.loads(line)
-            yield example
+    download(بانٹو)
+    ساتھ open(os.راستہ.join(ڈیٹا_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") بطور f:
+        برائے سطر میں f:
+            example = json.loads(سطر)
+            دو example
 
 @torch.no_grad()
-def evaluate(model_type, device):
+تعریف evaluate(model_type, device):
 
-    torch.set_float32_matmul_precision('high') # use tf32
+    torch.سیٹ_float32_matmul_precision('high') # use tf32
 
     model = GPT2LMHeadModel.from_pretrained(model_type)
-    model.to(device)
+    model.مقصد(device)
     # model = torch.compile(model)
 
     datas = []
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
-    for example in iterate_examples("val"):
-        data, tokens, mask, label = render_example(example)
-        datas.append(data)
-        tokens = tokens.to(device)
-        mask = mask.to(device)
+    عدد_correct_norm = 0
+    عدد_correct = 0
+    عدد_کل = 0
+    برائے example میں iterate_examples("val"):
+        ڈیٹا, علامات, نقاب, label = render_example(example)
+        datas.append(ڈیٹا)
+        علامات = علامات.مقصد(device)
+        نقاب = نقاب.مقصد(device)
 
         # get the logits
-        logits = model(tokens).logits
+        logits = model(علامات).logits
         # evaluate the autoregressive loss at all positions
-        shift_logits = (logits[..., :-1, :]).contiguous()
-        shift_tokens = (tokens[..., 1:]).contiguous()
-        flat_shift_logits = shift_logits.view(-1, shift_logits.size(-1))
-        flat_shift_tokens = shift_tokens.view(-1)
-        shift_losses = F.cross_entropy(flat_shift_logits, flat_shift_tokens, reduction='none')
-        shift_losses = shift_losses.view(tokens.size(0), -1)
+        سرکاؤ_logits = (logits[..., :-1, :]).contiguous()
+        سرکاؤ_علامات = (علامات[..., 1:]).contiguous()
+        flat_سرکاؤ_logits = سرکاؤ_logits.view(-1, سرکاؤ_logits.سائز(-1))
+        flat_سرکاؤ_علامات = سرکاؤ_علامات.view(-1)
+        سرکاؤ_losses = F.cross_entropy(flat_سرکاؤ_logits, flat_سرکاؤ_علامات, reduction='none')
+        سرکاؤ_losses = سرکاؤ_losses.view(علامات.سائز(0), -1)
         # now get the average loss just for the completion region (where mask == 1), in each row
-        shift_mask = (mask[..., 1:]).contiguous() # we must shift mask, so we start at the last prompt token
-        masked_shift_losses = shift_losses * shift_mask
+        سرکاؤ_نقاب = (نقاب[..., 1:]).contiguous() # we must shift mask, so we start at the last prompt token
+        masked_سرکاؤ_losses = سرکاؤ_losses * سرکاؤ_نقاب
         # sum and divide by the number of 1s in the mask
-        sum_loss = masked_shift_losses.sum(dim=1)
-        avg_loss = sum_loss / shift_mask.sum(dim=1)
+        مجموع_loss = masked_سرکاؤ_losses.مجموع(dim=1)
+        avg_loss = مجموع_loss / سرکاؤ_نقاب.مجموع(dim=1)
         # now we have a loss for each of the 4 completions
         # the one with the lowest loss should be the most likely
-        pred = sum_loss.argmin().item()
-        pred_norm = avg_loss.argmin().item()
+        pred = مجموع_loss.argmin().شے_2()
+        pred_norm = avg_loss.argmin().شے_2()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
-        print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
+        عدد_کل += 1
+        عدد_correct += صحیح(pred == label)
+        عدد_correct_norm += صحیح(pred_norm == label)
+        چھاپو(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
 
         # debug: pretty print a few examples, and the losses in each case
-        if num_total < 10:
-            print("---")
-            print(f"Context:\n {example['ctx']}")
-            print(f"Endings:")
-            for i, end in enumerate(example["endings"]):
-                print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
-            print(f"predicted: {pred_norm}, actual: {label}")
+        اگر عدد_کل < 10:
+            چھاپو("---")
+            چھاپو(f"Context:\n {example['ctx']}")
+            چھاپو(f"Endings:")
+            برائے i, انتہا میں enumerate(example["endings"]):
+                چھاپو(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
+            چھاپو(f"predicted: {pred_norm}, actual: {label}")
 
     # now write the data to a .bin file
-    filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_val.bin")
+    filename = os.راستہ.join(ڈیٹا_CACHE_DIR, f"hellaswag_val.bin")
     write_evalfile(filename, datas)
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
-    parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
-    args = parser.parse_args()
-    evaluate(args.model_type, args.device)
+اگر __name__ == "__main__":
+    درآمد argparse
+    parser = argparse.دلیل_Parser()
+    parser.جوڑو_دلیل("-m", "--model_type", type=str, طےشدہ="gpt2", help="the model type to use")
+    parser.جوڑو_دلیل("-d", "--device", type=str, طےشدہ="cuda", help="the device to use")
+    دلائل = parser.parse_دلائل()
+    evaluate(دلائل.model_type, دلائل.device)

@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#شامل <stdio.h>
+#شامل <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
-#define OUTLIER_DETECTOR_WINDOW_SIZE 128
+#تعریف_کرو OUTLIER_DETECTOR_کھڑکی_سائز 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+قسمتعریف ساخت {
+    دوہرا بفر[OUTLIER_DETECTOR_کھڑکی_سائز];
+    صحیح گنتی;
+    صحیح اشاریہ;
+    دوہرا مجموع;
+    دوہرا مجموع_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
-        detector->buffer[i] = 0.0;
+خالی init_detector(OutlierDetector *detector) {
+    برائے (صحیح i = 0; i < OUTLIER_DETECTOR_کھڑکی_سائز; i++) {
+        detector->بفر[i] = 0.0;
     }
-    detector->count = 0;
-    detector->index = 0;
-    detector->sum = 0.0;
-    detector->sum_sq = 0.0;
+    detector->گنتی = 0;
+    detector->اشاریہ = 0;
+    detector->مجموع = 0.0;
+    detector->مجموع_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+دوہرا update_detector(OutlierDetector *detector, دوہرا new_قدر) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    اگر (detector->گنتی < OUTLIER_DETECTOR_کھڑکی_سائز) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->بفر[detector->گنتی] = new_قدر;
+        detector->مجموع += new_قدر;
+        detector->مجموع_sq += new_قدر * new_قدر;
+        detector->گنتی++;
+        واپس nan(""); // not enough data yet
 
-    } else {
+    } ورنہ {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        دوہرا old_قدر = detector->بفر[detector->اشاریہ];
+        detector->مجموع -= old_قدر;
+        detector->مجموع_sq -= old_قدر * old_قدر;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->بفر[detector->اشاریہ] = new_قدر;
+        detector->مجموع += new_قدر;
+        detector->مجموع_sq += new_قدر * new_قدر;
         // move the index to the next position
-        detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
+        detector->اشاریہ = (detector->اشاریہ + 1) % OUTLIER_DETECTOR_کھڑکی_سائز;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        دوہرا اوسط = detector->مجموع / OUTLIER_DETECTOR_کھڑکی_سائز;
+        دوہرا variance = (detector->مجموع_sq / OUTLIER_DETECTOR_کھڑکی_سائز) - (اوسط * اوسط);
+        دوہرا std_dev = جذر(variance);
+        اگر (std_dev == 0.0) {
+            واپس 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        دوہرا z = (new_قدر - اوسط) / std_dev;
 
-        return z;
+        واپس z;
     }
 }
