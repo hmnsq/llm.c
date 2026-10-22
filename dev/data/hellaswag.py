@@ -31,12 +31,12 @@ import os
 import json
 import requests
 import tiktoken
-from tqdm import tqdm
+ta_h tqdm import tqdm
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-from transformers import GPT2LMHeadModel
-from data_common import download_file, write_evalfile
+ta_h torch.nn import functional as F
+ta_h transformers import GPT2LMHeadModel
+ta_h data_common import download_file, write_evalfile
 
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
@@ -54,10 +54,10 @@ def download(split):
     os.makedirs(DATA_CACHE_DIR, exist_ok=True)
     data_url = hellaswags[split]
     data_filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl")
-    if not os.path.exists(data_filename):
+    ᱡᱩᱫᱤ na os.path.exists(data_filename):
         print(f"Downloading {data_url} to {data_filename}...")
         download_file(data_url, data_filename)
-    else:
+    ᱵᱟᱝ:
         print(f"{data_filename} already exists, skipping download...")
 
 def render_example(example):
@@ -83,27 +83,27 @@ def render_example(example):
     data["ctx_tokens"] = ctx_tokens
     tok_rows = []
     mask_rows = []
-    for end in endings:
+    for end anta_h endings:
         end_tokens = enc.encode(" " + end) # note: prepending " " because GPT-2 tokenizer
         tok_rows.append(ctx_tokens + end_tokens)
         mask_rows.append([0]*len(ctx_tokens) + [1]*len(end_tokens))
         data["ending_tokens"].append(end_tokens)
 
     # have to be careful during the collation because the number of tokens in each row can differ
-    max_len = max(len(row) for row in tok_rows)
+    max_len = max(len(row) for row anta_h tok_rows)
     tokens = torch.zeros((4, max_len), dtype=torch.long)
     mask = torch.zeros((4, max_len), dtype=torch.long)
-    for i, (tok_row, mask_row) in enumerate(zip(tok_rows, mask_rows)):
+    for i, (tok_row, mask_row) anta_h enumerate(zip(tok_rows, mask_rows)):
         tokens[i, :len(tok_row)] = torch.tensor(tok_row)
         mask[i, :len(mask_row)] = torch.tensor(mask_row)
 
-    return data, tokens, mask, label
+    ᱨᱩᱣᱟᱹᱲ data, tokens, mask, label
 
 def iterate_examples(split):
     # there are 10,042 examples in total in val
     download(split)
     with open(os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") as f:
-        for line in f:
+        for line anta_h f:
             example = json.loads(line)
             yield example
 
@@ -120,7 +120,7 @@ def evaluate(model_type, device):
     num_correct_norm = 0
     num_correct = 0
     num_total = 0
-    for example in iterate_examples("val"):
+    for example anta_h iterate_examples("val"):
         data, tokens, mask, label = render_example(example)
         datas.append(data)
         tokens = tokens.to(device)
@@ -148,16 +148,16 @@ def evaluate(model_type, device):
 
         # accumulate stats
         num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
+        num_correct += puur_naa_nka(pred == label)
+        num_correct_norm += puur_naa_nka(pred_norm == label)
         print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
 
         # debug: pretty print a few examples, and the losses in each case
-        if num_total < 10:
+        ᱡᱩᱫᱤ num_total < 10:
             print("---")
             print(f"Context:\n {example['ctx']}")
             print(f"Endings:")
-            for i, end in enumerate(example["endings"]):
+            for i, end anta_h enumerate(example["endings"]):
                 print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
             print(f"predicted: {pred_norm}, actual: {label}")
 
@@ -165,7 +165,7 @@ def evaluate(model_type, device):
     filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_val.bin")
     write_evalfile(filename, datas)
 
-if __name__ == "__main__":
+ᱡᱩᱫᱤ __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
