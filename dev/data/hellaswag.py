@@ -27,19 +27,19 @@ gpt2-xl (1558M)
 The validation set of HellaSwag has a total of 10,042 examples.
 """
 
-import os
-import json
-import requests
-import tiktoken
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from transformers import GPT2LMHeadModel
-from data_common import download_file, write_evalfile
+ಆಮದು os
+ಆಮದು json
+ಆಮದು ವಿನಂತಿಗಳು
+ಆಮದು tiktoken
+ತಃ tqdm ಆಮದು tqdm
+ಆಮದು torch
+ಆಮದು torch.nn ಇವ nn
+ತಃ torch.nn ಆಮದು functional ಇವ F
+ತಃ transformers ಆಮದು GPT2LMHeadModel
+ತಃ ದತ್ತಾಂಶ_common ಆಮದು download_file, write_evalfile
 
 # -----------------------------------------------------------------------------
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
+ದತ್ತಾಂಶ_CACHE_DIR = os.ಮಾರ್ಗ.join(os.ಮಾರ್ಗ.dirname(__file__), "hellaswag")
 
 hellaswags = {
     "train": "https://raw.githubusercontent.com/rowanz/hellaswag/master/data/hellaswag_train.jsonl",
@@ -49,18 +49,18 @@ hellaswags = {
 
 enc = tiktoken.get_encoding("gpt2")
 
-def download(split):
+ವ್ಯಾಖ್ಯಾನ download(ವಿಭಜಿಸು):
     """Downloads HellaSwag DATA_CACHE_DIR"""
-    os.makedirs(DATA_CACHE_DIR, exist_ok=True)
-    data_url = hellaswags[split]
-    data_filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl")
-    if not os.path.exists(data_filename):
-        print(f"Downloading {data_url} to {data_filename}...")
-        download_file(data_url, data_filename)
-    else:
-        print(f"{data_filename} already exists, skipping download...")
+    os.makedirs(ದತ್ತಾಂಶ_CACHE_DIR, exist_ok=ನಿಜ)
+    ದತ್ತಾಂಶ_url = hellaswags[ವಿಭಜಿಸು]
+    ದತ್ತಾಂಶ_filename = os.ಮಾರ್ಗ.join(ದತ್ತಾಂಶ_CACHE_DIR, f"hellaswag_{split}.jsonl")
+    ಆದರೆ ಅಲ್ಲ os.ಮಾರ್ಗ.exists(ದತ್ತಾಂಶ_filename):
+        ಮುದ್ರಿಸು(f"Downloading {data_url} to {data_filename}...")
+        download_file(ದತ್ತಾಂಶ_url, ದತ್ತಾಂಶ_filename)
+    ಇಲ್ಲದಿದ್ದರೆ:
+        ಮುದ್ರಿಸು(f"{data_filename} already exists, skipping download...")
 
-def render_example(example):
+ವ್ಯಾಖ್ಯಾನ render_example(example):
     """
     Given the example as a dictionary, render it as three torch tensors:
     - tokens (the tokens of context + completion, of size 4xN, as there are always 4 candidates)
@@ -72,103 +72,103 @@ def render_example(example):
     endings = example["endings"]
 
     # data needed to reproduce this eval on the C size
-    data = {
+    ದತ್ತಾಂಶ = {
         "label": label,
-        "ctx_tokens": None,
+        "ctx_tokens": ಏನೂಇಲ್ಲ,
         "ending_tokens": [],
     }
 
     # gather up all the tokens
-    ctx_tokens = enc.encode(ctx)
-    data["ctx_tokens"] = ctx_tokens
-    tok_rows = []
-    mask_rows = []
-    for end in endings:
-        end_tokens = enc.encode(" " + end) # note: prepending " " because GPT-2 tokenizer
-        tok_rows.append(ctx_tokens + end_tokens)
-        mask_rows.append([0]*len(ctx_tokens) + [1]*len(end_tokens))
-        data["ending_tokens"].append(end_tokens)
+    ctx_ಟೋಕನುಗಳು = enc.encode(ctx)
+    ದತ್ತಾಂಶ["ctx_tokens"] = ctx_ಟೋಕನುಗಳು
+    tok_ಅಡ್ಡಸಾಲುಗಳು = []
+    ಮುಖವಾಡ_ಅಡ್ಡಸಾಲುಗಳು = []
+    ಗಾಗಿ ಕೊನೆ ಒಳಗೆ endings:
+        ಕೊನೆ_ಟೋಕನುಗಳು = enc.encode(" " + ಕೊನೆ) # note: prepending " " because GPT-2 tokenizer
+        tok_ಅಡ್ಡಸಾಲುಗಳು.append(ctx_ಟೋಕನುಗಳು + ಕೊನೆ_ಟೋಕನುಗಳು)
+        ಮುಖವಾಡ_ಅಡ್ಡಸಾಲುಗಳು.append([0]*ಉದ್ದ(ctx_ಟೋಕನುಗಳು) + [1]*ಉದ್ದ(ಕೊನೆ_ಟೋಕನುಗಳು))
+        ದತ್ತಾಂಶ["ending_tokens"].append(ಕೊನೆ_ಟೋಕನುಗಳು)
 
     # have to be careful during the collation because the number of tokens in each row can differ
-    max_len = max(len(row) for row in tok_rows)
-    tokens = torch.zeros((4, max_len), dtype=torch.long)
-    mask = torch.zeros((4, max_len), dtype=torch.long)
-    for i, (tok_row, mask_row) in enumerate(zip(tok_rows, mask_rows)):
-        tokens[i, :len(tok_row)] = torch.tensor(tok_row)
-        mask[i, :len(mask_row)] = torch.tensor(mask_row)
+    max_len = max(ಉದ್ದ(ಅಡ್ಡಸಾಲು) ಗಾಗಿ ಅಡ್ಡಸಾಲು ಒಳಗೆ tok_ಅಡ್ಡಸಾಲುಗಳು)
+    ಟೋಕನುಗಳು = torch.zeros((4, max_len), dtype=torch.ದೀರ್ಘ)
+    ಮುಖವಾಡ = torch.zeros((4, max_len), dtype=torch.ದೀರ್ಘ)
+    ಗಾಗಿ i, (tok_ಅಡ್ಡಸಾಲು, ಮುಖವಾಡ_ಅಡ್ಡಸಾಲು) ಒಳಗೆ enumerate(zip(tok_ಅಡ್ಡಸಾಲುಗಳು, ಮುಖವಾಡ_ಅಡ್ಡಸಾಲುಗಳು)):
+        ಟೋಕನುಗಳು[i, :ಉದ್ದ(tok_ಅಡ್ಡಸಾಲು)] = torch.tensor(tok_ಅಡ್ಡಸಾಲು)
+        ಮುಖವಾಡ[i, :ಉದ್ದ(ಮುಖವಾಡ_ಅಡ್ಡಸಾಲು)] = torch.tensor(ಮುಖವಾಡ_ಅಡ್ಡಸಾಲು)
 
-    return data, tokens, mask, label
+    ಹಿಂತಿರುಗಿ ದತ್ತಾಂಶ, ಟೋಕನುಗಳು, ಮುಖವಾಡ, label
 
-def iterate_examples(split):
+ವ್ಯಾಖ್ಯಾನ iterate_examples(ವಿಭಜಿಸು):
     # there are 10,042 examples in total in val
-    download(split)
-    with open(os.path.join(DATA_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") as f:
-        for line in f:
-            example = json.loads(line)
-            yield example
+    download(ವಿಭಜಿಸು)
+    ಜೊತೆ open(os.ಮಾರ್ಗ.join(ದತ್ತಾಂಶ_CACHE_DIR, f"hellaswag_{split}.jsonl"), "r") ಇವ f:
+        ಗಾಗಿ ಸಾಲು ಒಳಗೆ f:
+            example = json.loads(ಸಾಲು)
+            ನೀಡು example
 
 @torch.no_grad()
-def evaluate(model_type, device):
+ವ್ಯಾಖ್ಯಾನ evaluate(model_type, device):
 
-    torch.set_float32_matmul_precision('high') # use tf32
+    torch.ಗಣ_float32_matmul_precision('high') # use tf32
 
     model = GPT2LMHeadModel.from_pretrained(model_type)
-    model.to(device)
+    model.ಗಮ್ಯ(device)
     # model = torch.compile(model)
 
     datas = []
-    num_correct_norm = 0
-    num_correct = 0
-    num_total = 0
-    for example in iterate_examples("val"):
-        data, tokens, mask, label = render_example(example)
-        datas.append(data)
-        tokens = tokens.to(device)
-        mask = mask.to(device)
+    ಅಂಕೆ_correct_norm = 0
+    ಅಂಕೆ_correct = 0
+    ಅಂಕೆ_ಒಟ್ಟು = 0
+    ಗಾಗಿ example ಒಳಗೆ iterate_examples("val"):
+        ದತ್ತಾಂಶ, ಟೋಕನುಗಳು, ಮುಖವಾಡ, label = render_example(example)
+        datas.append(ದತ್ತಾಂಶ)
+        ಟೋಕನುಗಳು = ಟೋಕನುಗಳು.ಗಮ್ಯ(device)
+        ಮುಖವಾಡ = ಮುಖವಾಡ.ಗಮ್ಯ(device)
 
         # get the logits
-        logits = model(tokens).logits
+        logits = model(ಟೋಕನುಗಳು).logits
         # evaluate the autoregressive loss at all positions
-        shift_logits = (logits[..., :-1, :]).contiguous()
-        shift_tokens = (tokens[..., 1:]).contiguous()
-        flat_shift_logits = shift_logits.view(-1, shift_logits.size(-1))
-        flat_shift_tokens = shift_tokens.view(-1)
-        shift_losses = F.cross_entropy(flat_shift_logits, flat_shift_tokens, reduction='none')
-        shift_losses = shift_losses.view(tokens.size(0), -1)
+        ಸರಿಸು_logits = (logits[..., :-1, :]).contiguous()
+        ಸರಿಸು_ಟೋಕನುಗಳು = (ಟೋಕನುಗಳು[..., 1:]).contiguous()
+        flat_ಸರಿಸು_logits = ಸರಿಸು_logits.view(-1, ಸರಿಸು_logits.ಗಾತ್ರ_2(-1))
+        flat_ಸರಿಸು_ಟೋಕನುಗಳು = ಸರಿಸು_ಟೋಕನುಗಳು.view(-1)
+        ಸರಿಸು_losses = F.cross_entropy(flat_ಸರಿಸು_logits, flat_ಸರಿಸು_ಟೋಕನುಗಳು, reduction='none')
+        ಸರಿಸು_losses = ಸರಿಸು_losses.view(ಟೋಕನುಗಳು.ಗಾತ್ರ_2(0), -1)
         # now get the average loss just for the completion region (where mask == 1), in each row
-        shift_mask = (mask[..., 1:]).contiguous() # we must shift mask, so we start at the last prompt token
-        masked_shift_losses = shift_losses * shift_mask
+        ಸರಿಸು_ಮುಖವಾಡ = (ಮುಖವಾಡ[..., 1:]).contiguous() # we must shift mask, so we start at the last prompt token
+        masked_ಸರಿಸು_losses = ಸರಿಸು_losses * ಸರಿಸು_ಮುಖವಾಡ
         # sum and divide by the number of 1s in the mask
-        sum_loss = masked_shift_losses.sum(dim=1)
-        avg_loss = sum_loss / shift_mask.sum(dim=1)
+        ಮೊತ್ತ_loss = masked_ಸರಿಸು_losses.ಮೊತ್ತ(dim=1)
+        avg_loss = ಮೊತ್ತ_loss / ಸರಿಸು_ಮುಖವಾಡ.ಮೊತ್ತ(dim=1)
         # now we have a loss for each of the 4 completions
         # the one with the lowest loss should be the most likely
-        pred = sum_loss.argmin().item()
-        pred_norm = avg_loss.argmin().item()
+        pred = ಮೊತ್ತ_loss.argmin().ಅಂಶ()
+        pred_norm = avg_loss.argmin().ಅಂಶ()
 
         # accumulate stats
-        num_total += 1
-        num_correct += int(pred == label)
-        num_correct_norm += int(pred_norm == label)
-        print(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
+        ಅಂಕೆ_ಒಟ್ಟು += 1
+        ಅಂಕೆ_correct += ಪೂರ್ಣಾಂಕ(pred == label)
+        ಅಂಕೆ_correct_norm += ಪೂರ್ಣಾಂಕ(pred_norm == label)
+        ಮುದ್ರಿಸು(f"{num_total} acc: {num_correct/num_total:.4f} acc_norm: {num_correct_norm}/{num_total}={num_correct_norm/num_total:.4f}")
 
         # debug: pretty print a few examples, and the losses in each case
-        if num_total < 10:
-            print("---")
-            print(f"Context:\n {example['ctx']}")
-            print(f"Endings:")
-            for i, end in enumerate(example["endings"]):
-                print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
-            print(f"predicted: {pred_norm}, actual: {label}")
+        ಆದರೆ ಅಂಕೆ_ಒಟ್ಟು < 10:
+            ಮುದ್ರಿಸು("---")
+            ಮುದ್ರಿಸು(f"Context:\n {example['ctx']}")
+            ಮುದ್ರಿಸು(f"Endings:")
+            ಗಾಗಿ i, ಕೊನೆ ಒಳಗೆ enumerate(example["endings"]):
+                ಮುದ್ರಿಸು(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
+            ಮುದ್ರಿಸು(f"predicted: {pred_norm}, actual: {label}")
 
     # now write the data to a .bin file
-    filename = os.path.join(DATA_CACHE_DIR, f"hellaswag_val.bin")
+    filename = os.ಮಾರ್ಗ.join(ದತ್ತಾಂಶ_CACHE_DIR, f"hellaswag_val.bin")
     write_evalfile(filename, datas)
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model_type", type=str, default="gpt2", help="the model type to use")
-    parser.add_argument("-d", "--device", type=str, default="cuda", help="the device to use")
-    args = parser.parse_args()
-    evaluate(args.model_type, args.device)
+ಆದರೆ __name__ == "__main__":
+    ಆಮದು argparse
+    parser = argparse.ವಾದ_Parser()
+    parser.ಕೂಡಿಸು_ವಾದ("-m", "--model_type", type=str, ಪೂರ್ವನಿಯೋಜಿತ="gpt2", help="the model type to use")
+    parser.ಕೂಡಿಸು_ವಾದ("-d", "--device", type=str, ಪೂರ್ವನಿಯೋಜಿತ="cuda", help="the device to use")
+    ವಾದಗಳು = parser.parse_ವಾದಗಳು()
+    evaluate(ವಾದಗಳು.model_type, ವಾದಗಳು.device)

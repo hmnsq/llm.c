@@ -80,161 +80,161 @@ Both output:
     2756748748
 */
 
-#ifndef RAND_H
-#define RAND_H
+#ವ್ಯಾಖ್ಯಾನಿತವಾಗದಿದ್ದರೆ RAND_H
+#ವ್ಯಾಖ್ಯಾನಿಸು RAND_H
 
-#include <math.h>
+#ಅನ್ತರ್ಭಾವ <math.h>
 
-#define MERSENNE_STATE_M 397u
-#define MERSENNE_STATE_N 624u
+#ವ್ಯಾಖ್ಯಾನಿಸು MERSENNE_STATE_M 397u
+#ವ್ಯಾಖ್ಯಾನಿಸು MERSENNE_STATE_N 624u
 
-#define LMASK 0x7ffffffful
-#define UMASK 0x80000000ul
+#ವ್ಯಾಖ್ಯಾನಿಸು LMASK 0x7ffffffful
+#ವ್ಯಾಖ್ಯಾನಿಸು UMASK 0x80000000ul
 
 // Copyright(c) Makoto Matsumoto and Takuji Nishimura
 
 // This implementation follows PyTorch so that we are numerically identical when running verification tests.
 
-typedef struct {
-    unsigned long long seed_;
-    int left_;
-    unsigned int next_;
-    unsigned int state_[MERSENNE_STATE_N];
-    unsigned int MATRIX_A[2];
+ಪ್ರಕಾರವ್ಯಾಖ್ಯೆ ರಚನೆ {
+    ಚಿಹ್ನೆರಹಿತ ದೀರ್ಘ ದೀರ್ಘ ಬೀಜ;
+    ಪೂರ್ಣಾಂಕ ಎಡ_2;
+    ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ ಮುಂದಿನ;
+    ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ state_[MERSENNE_STATE_N];
+    ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ ಮಾತೃಕೆ_A[2];
 } mt19937_state;
 
-void manual_seed(mt19937_state* state, unsigned int seed) {
-    state->MATRIX_A[0] = 0x0u;
-    state->MATRIX_A[1] = 0x9908b0df;
-    state->state_[0] = seed & 0xffffffff;
-    for (unsigned int j = 1; j < MERSENNE_STATE_N; j++) {
+ಶೂನ್ಯ manual_ಬೀಜ(mt19937_state* state, ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ ಬೀಜ_2) {
+    state->ಮಾತೃಕೆ_A[0] = 0x0u;
+    state->ಮಾತೃಕೆ_A[1] = 0x9908b0df;
+    state->state_[0] = ಬೀಜ_2 & 0xffffffff;
+    ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ j = 1; j < MERSENNE_STATE_N; j++) {
         state->state_[j] = 1812433253 * (state->state_[j - 1] ^ (state->state_[j - 1] >> 30)) + j;
         state->state_[j] &= 0xffffffff;
     }
-    state->left_ = 1;
-    state->next_ = 0;
+    state->ಎಡ_2 = 1;
+    state->ಮುಂದಿನ = 0;
 }
 
-void next_state(mt19937_state* state) {
-    state->left_ = MERSENNE_STATE_N;
-    state->next_ = 0;
-    unsigned int y, j;
-    for (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
+ಶೂನ್ಯ ಮುಂದಿನ_state(mt19937_state* state) {
+    state->ಎಡ_2 = MERSENNE_STATE_N;
+    state->ಮುಂದಿನ = 0;
+    ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ y, j;
+    ಗಾಗಿ (j = 0; j < MERSENNE_STATE_N - MERSENNE_STATE_M; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + MERSENNE_STATE_M] ^ (y >> 1) ^ state->ಮಾತೃಕೆ_A[y & 0x1];
     }
-    for (; j < MERSENNE_STATE_N - 1; j++) {
+    ಗಾಗಿ (; j < MERSENNE_STATE_N - 1; j++) {
         y = (state->state_[j] & UMASK) | (state->state_[j + 1] & LMASK);
-        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+        state->state_[j] = state->state_[j + (MERSENNE_STATE_M - MERSENNE_STATE_N)] ^ (y >> 1) ^ state->ಮಾತೃಕೆ_A[y & 0x1];
     }
     y = (state->state_[MERSENNE_STATE_N - 1] & UMASK) | (state->state_[0] & LMASK);
-    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->MATRIX_A[y & 0x1];
+    state->state_[MERSENNE_STATE_N - 1] = state->state_[MERSENNE_STATE_M - 1] ^ (y >> 1) ^ state->ಮಾತೃಕೆ_A[y & 0x1];
 }
 
-unsigned int randint32(mt19937_state* state) {
-    if (!state) return 0;
-    if (state->MATRIX_A[0] != 0 || state->MATRIX_A[1] != 0x9908b0df) manual_seed(state, 5489); // auto-initialize
-    if (--state->left_ <= 0) {
-        next_state(state);
+ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ randint32(mt19937_state* state) {
+    ಆದರೆ (!state) ಹಿಂತಿರುಗಿ 0;
+    ಆದರೆ (state->ಮಾತೃಕೆ_A[0] != 0 || state->ಮಾತೃಕೆ_A[1] != 0x9908b0df) manual_ಬೀಜ(state, 5489); // auto-initialize
+    ಆದರೆ (--state->ಎಡ_2 <= 0) {
+        ಮುಂದಿನ_state(state);
     }
-    unsigned int y = state->state_[state->next_++];
+    ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ y = state->state_[state->ಮುಂದಿನ++];
     y ^= y >> 11;
     y ^= (y << 7) & 0x9d2c5680;
     y ^= (y << 15) & 0xefc60000;
     y ^= y >> 18;
-    return y;
+    ಹಿಂತಿರುಗಿ y;
 }
 
-inline unsigned long long randint64(mt19937_state* state) {
-    return (((unsigned long long)(randint32(state)) << 32) | randint32(state));
+ಸಾಲೊಳಗೆ ಚಿಹ್ನೆರಹಿತ ದೀರ್ಘ ದೀರ್ಘ randint64(mt19937_state* state) {
+    ಹಿಂತಿರುಗಿ (((ಚಿಹ್ನೆರಹಿತ ದೀರ್ಘ ದೀರ್ಘ)(randint32(state)) << 32) | randint32(state));
 }
 
-inline float randfloat32(mt19937_state* state) {
-    return (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
+ಸಾಲೊಳಗೆ ದಶಮಾಂಶ randfloat32(mt19937_state* state) {
+    ಹಿಂತಿರುಗಿ (randint32(state) & ((1ull << 24) - 1)) * (1.0f / (1ull << 24));
 }
 
-inline double randfloat64(mt19937_state* state) {
-    return (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
+ಸಾಲೊಳಗೆ ದ್ವಿಗುಣ randfloat64(mt19937_state* state) {
+    ಹಿಂತಿರುಗಿ (randint64(state) & ((1ull << 53) - 1)) * (1.0 / (1ull << 53));
 }
 
-void uniform_(float* data, unsigned int numel, float from, float to, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state) * (to - from) + from;
+ಶೂನ್ಯ ಏಕರೂಪ(ದಶಮಾಂಶ* ದತ್ತಾಂಶ, ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ numel, ದಶಮಾಂಶ from, ದಶಮಾಂಶ ಗಮ್ಯ, mt19937_state* state) {
+    ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ t = 0; t < numel; t++) {
+        ದತ್ತಾಂಶ[t] = randfloat32(state) * (ಗಮ್ಯ - from) + from;
     }
 }
 
 // Box-Muller transform: maps uniform random numbers to Gaussian distributed numbers
 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-void normal_fill_16(float* data, float mean, float std) {
-    #define EPSILONE 1e-12f
-    for (unsigned int t = 0; t < 8; t++) {
-        float u1 = 1 - data[t];
-        float u2 = data[t + 8];
-        float radius = sqrtf(-2 * logf(u1 + EPSILONE));
-        float theta = (float) (2.0 * M_PI * u2);
-        data[t] = (radius * cosf(theta) * std + mean);
-        data[t + 8] = (radius * sinf(theta) * std + mean);
+ಶೂನ್ಯ ಸಾಮಾನ್ಯ_fill_16(ದಶಮಾಂಶ* ದತ್ತಾಂಶ, ದಶಮಾಂಶ ಸರಾಸರಿ, ದಶಮಾಂಶ std) {
+    #ವ್ಯಾಖ್ಯಾನಿಸು EPSILONE 1e-12f
+    ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ t = 0; t < 8; t++) {
+        ದಶಮಾಂಶ u1 = 1 - ದತ್ತಾಂಶ[t];
+        ದಶಮಾಂಶ u2 = ದತ್ತಾಂಶ[t + 8];
+        ದಶಮಾಂಶ radius = sqrtf(-2 * logf(u1 + EPSILONE));
+        ದಶಮಾಂಶ theta = (ದಶಮಾಂಶ) (2.0 * M_PI * u2);
+        ದತ್ತಾಂಶ[t] = (radius * cosf(theta) * std + ಸರಾಸರಿ);
+        ದತ್ತಾಂಶ[t + 8] = (radius * sinf(theta) * std + ಸರಾಸರಿ);
     }
 }
 
-void normal_fill(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    for (unsigned int t = 0; t < numel; t++) {
-        data[t] = randfloat32(state);
+ಶೂನ್ಯ ಸಾಮಾನ್ಯ_fill(ದಶಮಾಂಶ* ದತ್ತಾಂಶ, ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ numel, ದಶಮಾಂಶ ಸರಾಸರಿ, ದಶಮಾಂಶ std, mt19937_state* state) {
+    ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ t = 0; t < numel; t++) {
+        ದತ್ತಾಂಶ[t] = randfloat32(state);
     }
-    for (unsigned int i = 0; i < numel - 15; i += 16) {
-        normal_fill_16(data + i, mean, std);
+    ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ i = 0; i < numel - 15; i += 16) {
+        ಸಾಮಾನ್ಯ_fill_16(ದತ್ತಾಂಶ + i, ಸರಾಸರಿ, std);
     }
-    if (numel % 16 != 0) {
+    ಆದರೆ (numel % 16 != 0) {
         // recompute the last 16 values
-        data = data + numel - 16;
-        for (unsigned int i = 0; i < 16; i++) {
-            data[i] = randfloat32(state);
+        ದತ್ತಾಂಶ = ದತ್ತಾಂಶ + numel - 16;
+        ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ i = 0; i < 16; i++) {
+            ದತ್ತಾಂಶ[i] = randfloat32(state);
         }
-        normal_fill_16(data, mean, std);
+        ಸಾಮಾನ್ಯ_fill_16(ದತ್ತಾಂಶ, ಸರಾಸರಿ, std);
     }
 }
 
-void normal_(float* data, unsigned int numel, float mean, float std, mt19937_state* state) {
-    #define EPSILONE 1e-12f
-    if (numel >= 16) {
-        normal_fill(data, numel, mean, std, state);
+ಶೂನ್ಯ ಸಾಮಾನ್ಯ(ದಶಮಾಂಶ* ದತ್ತಾಂಶ, ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ numel, ದಶಮಾಂಶ ಸರಾಸರಿ, ದಶಮಾಂಶ std, mt19937_state* state) {
+    #ವ್ಯಾಖ್ಯಾನಿಸು EPSILONE 1e-12f
+    ಆದರೆ (numel >= 16) {
+        ಸಾಮಾನ್ಯ_fill(ದತ್ತಾಂಶ, numel, ಸರಾಸರಿ, std, state);
     }
-    else {
-        double next_double_normal_sample = 0.0; // make compiler warning happy, won't be used
-        int has_next_double_normal_sample = 0;
-        for (unsigned int  t = 0; t < numel; t++) {
-            if (has_next_double_normal_sample) {
-                data[t] = (float)(next_double_normal_sample * std + mean);
-                has_next_double_normal_sample = 0;
-                continue;
+    ಇಲ್ಲದಿದ್ದರೆ {
+        ದ್ವಿಗುಣ ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample = 0.0; // make compiler warning happy, won't be used
+        ಪೂರ್ಣಾಂಕ has_ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample = 0;
+        ಗಾಗಿ (ಚಿಹ್ನೆರಹಿತ ಪೂರ್ಣಾಂಕ  t = 0; t < numel; t++) {
+            ಆದರೆ (has_ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample) {
+                ದತ್ತಾಂಶ[t] = (ದಶಮಾಂಶ)(ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample * std + ಸರಾಸರಿ);
+                has_ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample = 0;
+                ಮುಂದುವರಿ;
             }
             // for numel < 16 we draw a double (float64)
-            float u1 = (float) randfloat64(state);
-            float u2 = (float) randfloat64(state);
-            float radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
-            float theta = (float) (2.0 * M_PI * u1);
-            next_double_normal_sample = radius * sinf(theta);
-            has_next_double_normal_sample = 1;
-            data[t] = (radius * cosf(theta) * std + mean);
+            ದಶಮಾಂಶ u1 = (ದಶಮಾಂಶ) randfloat64(state);
+            ದಶಮಾಂಶ u2 = (ದಶಮಾಂಶ) randfloat64(state);
+            ದಶಮಾಂಶ radius = sqrtf(-2 * logf(1 - u2 + EPSILONE));
+            ದಶಮಾಂಶ theta = (ದಶಮಾಂಶ) (2.0 * M_PI * u1);
+            ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample = radius * sinf(theta);
+            has_ಮುಂದಿನ_double_ಸಾಮಾನ್ಯ_sample = 1;
+            ದತ್ತಾಂಶ[t] = (radius * cosf(theta) * std + ಸರಾಸರಿ);
         }
     }
 }
 
-void init_identity_permutation(int *data, int numel) {
-    for (int i = 0; i < numel; i++) {
-        data[i] = i;
+ಶೂನ್ಯ init_ತಟಸ್ಥ_permutation(ಪೂರ್ಣಾಂಕ *ದತ್ತಾಂಶ, ಪೂರ್ಣಾಂಕ numel) {
+    ಗಾಗಿ (ಪೂರ್ಣಾಂಕ i = 0; i < numel; i++) {
+        ದತ್ತಾಂಶ[i] = i;
     }
 }
 
-void random_permutation(int* data, int numel, mt19937_state* state) {
-    for (int i = numel - 1; i > 0; i--) {
+ಶೂನ್ಯ random_permutation(ಪೂರ್ಣಾಂಕ* ದತ್ತಾಂಶ, ಪೂರ್ಣಾಂಕ numel, mt19937_state* state) {
+    ಗಾಗಿ (ಪೂರ್ಣಾಂಕ i = numel - 1; i > 0; i--) {
         // pick an index j in [0, i] with equal probability
-        int j = randint32(state) % (i + 1);
+        ಪೂರ್ಣಾಂಕ j = randint32(state) % (i + 1);
         // swap i <-> j
-        int tmp = data[i];
-        data[i] = data[j];
-        data[j] = tmp;
+        ಪೂರ್ಣಾಂಕ tmp = ದತ್ತಾಂಶ[i];
+        ದತ್ತಾಂಶ[i] = ದತ್ತಾಂಶ[j];
+        ದತ್ತಾಂಶ[j] = tmp;
     }
 }
 
-#endif
+#ಆದರೆ_ಅಂತ್ಯ

@@ -19,125 +19,125 @@ Example of downloading the 100B dataset of FineWebEDU, from root directory:
 python dev/data/fineweb.py -t edu -v 100B
 100B runs for small few hours, depending on your internet and computer.
 """
-import os
-import argparse
-import multiprocessing as mp
+ಆಮದು os
+ಆಮದು argparse
+ಆಮದು multiprocessing ಇವ mp
 
-import numpy as np
-import tiktoken
-from datasets import load_dataset
-from tqdm import tqdm
+ಆಮದು numpy ಇವ np
+ಆಮದು tiktoken
+ತಃ datasets ಆಮದು ತುಂಬು_dataset
+ತಃ tqdm ಆಮದು tqdm
 
-from transformers import AutoTokenizer
+ತಃ transformers ಆಮದು AutoTokenizer
 
 
-from data_common import write_datafile
+ತಃ ದತ್ತಾಂಶ_common ಆಮದು write_datafile
 # ------------------------------------------
 
-parser = argparse.ArgumentParser(description="FineWeb and Edu-FineWeb dataset preprocessing")
-parser.add_argument("-t", "--type", type=str, default="classic", help="Fineweb type, edu|classic")
-parser.add_argument("-v", "--version", type=str, default="10B", help="Fineweb data sample size, 10B|100B")
-parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", help="Model descriptor, gpt-2|llama-3")
-parser.add_argument("-s", "--shard_size", type=int, default=10**8, help="Size of each data shard in the output .bin files, in tokens")
-args = parser.parse_args()
+parser = argparse.ವಾದ_Parser(description="FineWeb and Edu-FineWeb dataset preprocessing")
+parser.ಕೂಡಿಸು_ವಾದ("-t", "--type", type=str, ಪೂರ್ವನಿಯೋಜಿತ="classic", help="Fineweb type, edu|classic")
+parser.ಕೂಡಿಸು_ವಾದ("-v", "--version", type=str, ಪೂರ್ವನಿಯೋಜಿತ="10B", help="Fineweb data sample size, 10B|100B")
+parser.ಕೂಡಿಸು_ವಾದ("-m", "--model_desc", type=str, ಪೂರ್ವನಿಯೋಜಿತ="gpt-2", help="Model descriptor, gpt-2|llama-3")
+parser.ಕೂಡಿಸು_ವಾದ("-s", "--shard_size", type=ಪೂರ್ಣಾಂಕ, ಪೂರ್ವನಿಯೋಜಿತ=10**8, help="Size of each data shard in the output .bin files, in tokens")
+ವಾದಗಳು = parser.parse_ವಾದಗಳು()
 
 # FineWeb has a few possible subsamples available
-assert args.version in {"10B", "100B"}, "version must be one of: 10B, 100B"
-assert args.type in {"edu", "classic"}, "type must be one of: edu, classic"
+ಪ್ರತಿಜ್ಞಾ ವಾದಗಳು.ಆವೃತ್ತಿ ಒಳಗೆ {"10B", "100B"}, "version must be one of: 10B, 100B"
+ಪ್ರತಿಜ್ಞಾ ವಾದಗಳು.type ಒಳಗೆ {"edu", "classic"}, "type must be one of: edu, classic"
 directories = {
     ("classic", "10B"): ("fineweb10B", "sample-10BT"),
     ("classic", "100B"): ("fineweb100B", "sample-100BT"),
     ("edu", "10B"): ("edu_fineweb10B", "sample-10BT"),
     ("edu", "100B"): ("edu_fineweb100B", "sample-100BT")
 }
-local_dir, remote_name = directories[(args.type, args.version)]
+local_dir, remote_name = directories[(ವಾದಗಳು.type, ವಾದಗಳು.ಆವೃತ್ತಿ)]
 
 # create the cache the local directory if it doesn't exist yet
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), local_dir)
-os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+ದತ್ತಾಂಶ_CACHE_DIR = os.ಮಾರ್ಗ.join(os.ಮಾರ್ಗ.dirname(__file__), local_dir)
+os.makedirs(ದತ್ತಾಂಶ_CACHE_DIR, exist_ok=ನಿಜ)
 
 # download the dataset
-if args.type == "classic":
-    fw = load_dataset("HuggingFaceFW/fineweb", name=remote_name, split="train")
+ಆದರೆ ವಾದಗಳು.type == "classic":
+    fw = ತುಂಬು_dataset("HuggingFaceFW/fineweb", name=remote_name, ವಿಭಜಿಸು="train")
     name = "fineweb"
-elif args.type =="edu":
-    fw = load_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, split="train")
+ಅಥವಾಆದರೆ ವಾದಗಳು.type =="edu":
+    fw = ತುಂಬು_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, ವಿಭಜಿಸು="train")
     name = "edu_fineweb"
 
-def tokenize_llama(doc):
+ವ್ಯಾಖ್ಯಾನ tokenize_llama(doc):
     # tokenizes a single document and returns a numpy array of uint32 tokens
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-    encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+    encode = ಅನಾಮಿಕ s: tokenizer.encode(s, ಕೂಡಿಸು_special_ಟೋಕನುಗಳು=ಸುಳ್ಳು, verbose=ಸುಳ್ಳು, ವಿಭಜಿಸು_special_ಟೋಕನುಗಳು=ನಿಜ)
     eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    tokens = [eot] # the special <|endoftext|> token delimits all documents
-    tokens.extend(encode(doc["text"]))
-    tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**32).all(), "token dictionary too large for uint32"
-    tokens_np_uint = tokens_np.astype(np.uint32)
-    return tokens_np_uint
+    ಟೋಕನುಗಳು = [eot] # the special <|endoftext|> token delimits all documents
+    ಟೋಕನುಗಳು.extend(encode(doc["text"]))
+    ಟೋಕನುಗಳು_np = np.array(ಟೋಕನುಗಳು)
+    ಪ್ರತಿಜ್ಞಾ (0 <= ಟೋಕನುಗಳು_np).all() ಮತ್ತು (ಟೋಕನುಗಳು_np < 2**32).all(), "token dictionary too large for uint32"
+    ಟೋಕನುಗಳು_np_uint = ಟೋಕನುಗಳು_np.astype(np.uint32)
+    ಹಿಂತಿರುಗಿ ಟೋಕನುಗಳು_np_uint
 
-def tokenize_gpt2(doc):
+ವ್ಯಾಖ್ಯಾನ tokenize_gpt2(doc):
     # tokenizes a single document and returns a numpy array of uint16 tokens
     enc = tiktoken.get_encoding("gpt2")
-    encode = lambda s: enc.encode_ordinary(s)
-    eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    tokens = [eot] # the special <|endoftext|> token delimits all documents
-    tokens.extend(encode(doc["text"]))
-    tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**16).all(), "token dictionary too large for uint16"
-    tokens_np_uint = tokens_np.astype(np.uint16)
-    return tokens_np_uint
+    encode = ಅನಾಮಿಕ s: enc.encode_ordinary(s)
+    eot = enc.special_ಟೋಕನುಗಳು['<|endoftext|>'] # end of text token
+    ಟೋಕನುಗಳು = [eot] # the special <|endoftext|> token delimits all documents
+    ಟೋಕನುಗಳು.extend(encode(doc["text"]))
+    ಟೋಕನುಗಳು_np = np.array(ಟೋಕನುಗಳು)
+    ಪ್ರತಿಜ್ಞಾ (0 <= ಟೋಕನುಗಳು_np).all() ಮತ್ತು (ಟೋಕನುಗಳು_np < 2**16).all(), "token dictionary too large for uint16"
+    ಟೋಕನುಗಳು_np_uint = ಟೋಕನುಗಳು_np.astype(np.uint16)
+    ಹಿಂತಿರುಗಿ ಟೋಕನುಗಳು_np_uint
 
 token_dtype = {
     "gpt-2": np.uint16,
     "llama-3": np.uint32
-}[args.model_desc]
+}[ವಾದಗಳು.model_desc]
 
 # tokenize all documents and write output shards, each of shard_size tokens (last shard has remainder)
-nprocs = max(1, os.cpu_count() - 2) # don't hog the entire system
-with mp.Pool(nprocs) as pool:
-    shard_index = 0
+nprocs = max(1, os.cpu_ಎಣಿಕೆ() - 2) # don't hog the entire system
+ಜೊತೆ mp.Pool(nprocs) ಇವ pool:
+    shard_ಸೂಚ್ಯಂಕ = 0
     # preallocate buffer to hold current shard
-    all_tokens_np = np.empty((args.shard_size,), dtype=token_dtype)
-    token_count = 0
-    progress_bar = None
+    all_ಟೋಕನುಗಳು_np = np.ಖಾಲಿಗಳು((ವಾದಗಳು.shard_ಗಾತ್ರ,), dtype=token_dtype)
+    token_ಎಣಿಕೆ = 0
+    ಪ್ರಗತಿ_bar = ಏನೂಇಲ್ಲ
 
-    tokenize = lambda x: None
-    if args.model_desc == "gpt-2":
+    tokenize = ಅನಾಮಿಕ x: ಏನೂಇಲ್ಲ
+    ಆದರೆ ವಾದಗಳು.model_desc == "gpt-2":
         tokenize = tokenize_gpt2
-    elif args.model_desc == "llama-3":
+    ಅಥವಾಆದರೆ ವಾದಗಳು.model_desc == "llama-3":
         tokenize = tokenize_llama
-    else:
-        raise ValueError(f"unknown model {args.model_desc}")
+    ಇಲ್ಲದಿದ್ದರೆ:
+        ಎತ್ತು ಮೌಲ್ಯ_Error(f"unknown model {args.model_desc}")
 
-    for tokens in pool.imap(tokenize, fw, chunksize=16):
+    ಗಾಗಿ ಟೋಕನುಗಳು ಒಳಗೆ pool.imap(tokenize, fw, chunksize=16):
 
         # is there enough space in the current shard for the new tokens?
-        if token_count + len(tokens) < args.shard_size:
+        ಆದರೆ token_ಎಣಿಕೆ + ಉದ್ದ(ಟೋಕನುಗಳು) < ವಾದಗಳು.shard_ಗಾತ್ರ:
             # simply append tokens to current shard
-            all_tokens_np[token_count:token_count+len(tokens)] = tokens
-            token_count += len(tokens)
+            all_ಟೋಕನುಗಳು_np[token_ಎಣಿಕೆ:token_ಎಣಿಕೆ+ಉದ್ದ(ಟೋಕನುಗಳು)] = ಟೋಕನುಗಳು
+            token_ಎಣಿಕೆ += ಉದ್ದ(ಟೋಕನುಗಳು)
             # update progress bar
-            if progress_bar is None:
-                progress_bar = tqdm(total=args.shard_size, unit="tokens", desc=f"Shard {shard_index}")
-            progress_bar.update(len(tokens))
-        else:
+            ಆದರೆ ಪ್ರಗತಿ_bar ಆಗಿರುವ ಏನೂಇಲ್ಲ:
+                ಪ್ರಗತಿ_bar = tqdm(ಒಟ್ಟು=ವಾದಗಳು.shard_ಗಾತ್ರ, unit="tokens", desc=f"Shard {shard_index}")
+            ಪ್ರಗತಿ_bar.update(ಉದ್ದ(ಟೋಕನುಗಳು))
+        ಇಲ್ಲದಿದ್ದರೆ:
             # write the current shard and start a new one
-            split = "val" if shard_index == 0 else "train"
-            filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+            ವಿಭಜಿಸು = "val" ಆದರೆ shard_ಸೂಚ್ಯಂಕ == 0 ಇಲ್ಲದಿದ್ದರೆ "train"
+            filename = os.ಮಾರ್ಗ.join(ದತ್ತಾಂಶ_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
             # split the document into whatever fits in this shard; the remainder goes to next one
-            remainder = args.shard_size - token_count
-            progress_bar.update(remainder)
-            all_tokens_np[token_count:token_count+remainder] = tokens[:remainder]
-            write_datafile(filename, all_tokens_np.tolist(), args.model_desc)
-            shard_index += 1
-            progress_bar = None
+            remainder = ವಾದಗಳು.shard_ಗಾತ್ರ - token_ಎಣಿಕೆ
+            ಪ್ರಗತಿ_bar.update(remainder)
+            all_ಟೋಕನುಗಳು_np[token_ಎಣಿಕೆ:token_ಎಣಿಕೆ+remainder] = ಟೋಕನುಗಳು[:remainder]
+            write_datafile(filename, all_ಟೋಕನುಗಳು_np.tolist(), ವಾದಗಳು.model_desc)
+            shard_ಸೂಚ್ಯಂಕ += 1
+            ಪ್ರಗತಿ_bar = ಏನೂಇಲ್ಲ
             # populate the next shard with the leftovers of the current doc
-            all_tokens_np[0:len(tokens)-remainder] = tokens[remainder:]
-            token_count = len(tokens)-remainder
+            all_ಟೋಕನುಗಳು_np[0:ಉದ್ದ(ಟೋಕನುಗಳು)-remainder] = ಟೋಕನುಗಳು[remainder:]
+            token_ಎಣಿಕೆ = ಉದ್ದ(ಟೋಕನುಗಳು)-remainder
 
     # write any remaining tokens as the last shard
-    if token_count != 0:
-        split = "val" if shard_index == 0 else "train"
-        filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
-        write_datafile(filename, (all_tokens_np[:token_count]).tolist(), args.model_desc)
+    ಆದರೆ token_ಎಣಿಕೆ != 0:
+        ವಿಭಜಿಸು = "val" ಆದರೆ shard_ಸೂಚ್ಯಂಕ == 0 ಇಲ್ಲದಿದ್ದರೆ "train"
+        filename = os.ಮಾರ್ಗ.join(ದತ್ತಾಂಶ_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+        write_datafile(filename, (all_ಟೋಕನುಗಳು_np[:token_ಎಣಿಕೆ]).tolist(), ವಾದಗಳು.model_desc)
