@@ -3,12 +3,12 @@
 # this script is optional, the run_eval.sh should already print these
 # but this script can be used to re-print them
 
-import json, sys
+استورد json, sys
 
-RESULT = sys.argv[1]
-print("-"*40)
+نتیجه_2 = sys.argv[1]
+چاپ("-"*40)
 
-key = {"arc_challenge_25shot.json": "acc_norm",
+کلید = {"arc_challenge_25shot.json": "acc_norm",
        "gsm8k_5shot.json": "acc",
        "hellaswag_10shot.json": "acc_norm",
        "mmlu_5shot.json": "acc",
@@ -16,17 +16,17 @@ key = {"arc_challenge_25shot.json": "acc_norm",
        "winogrande_5shot.json": "acc"
        }
 
-total = 0
-for test in ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
-    data = json.loads(open("./%s/%s"%(RESULT, test)).read())
-    r_count = 0
-    r_total = 0
-    for test_name in data['results']:
-      r_count += 1
-      r_total += data['results'][test_name][key[test]]
-    score = (r_total*100)/r_count
-    print(f"{test:<30} : {score:.4f}")
-    total += score
-average = total / 6.0
-print("-"*40)
-print(f"Average Score                  : {average:.4f}")
+مجموع = 0
+لكل test في ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
+    داده = json.loads(open("./%s/%s"%(نتیجه_2, test)).اقرأ())
+    r_شمار = 0
+    r_مجموع = 0
+    لكل test_name في داده['results']:
+      r_شمار += 1
+      r_مجموع += داده['results'][test_name][کلید[test]]
+    score = (r_مجموع*100)/r_شمار
+    چاپ(f"{test:<30} : {score:.4f}")
+    مجموع += score
+معدل = مجموع / 6.0
+چاپ("-"*40)
+چاپ(f"Average Score                  : {average:.4f}")

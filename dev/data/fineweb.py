@@ -19,125 +19,125 @@ Example of downloading the 100B dataset of FineWebEDU, from root directory:
 python dev/data/fineweb.py -t edu -v 100B
 100B runs for small few hours, depending on your internet and computer.
 """
-import os
-import argparse
-import multiprocessing as mp
+استورد os
+استورد argparse
+استورد multiprocessing كـ mp
 
-import numpy as np
-import tiktoken
-from datasets import load_dataset
-from tqdm import tqdm
+استورد numpy كـ np
+استورد tiktoken
+من datasets استورد بارگیری_dataset
+من tqdm استورد tqdm
 
-from transformers import AutoTokenizer
+من transformers استورد AutoTokenizer
 
 
-from data_common import write_datafile
+من داده_common استورد write_datafile
 # ------------------------------------------
 
-parser = argparse.ArgumentParser(description="FineWeb and Edu-FineWeb dataset preprocessing")
-parser.add_argument("-t", "--type", type=str, default="classic", help="Fineweb type, edu|classic")
-parser.add_argument("-v", "--version", type=str, default="10B", help="Fineweb data sample size, 10B|100B")
-parser.add_argument("-m", "--model_desc", type=str, default="gpt-2", help="Model descriptor, gpt-2|llama-3")
-parser.add_argument("-s", "--shard_size", type=int, default=10**8, help="Size of each data shard in the output .bin files, in tokens")
-args = parser.parse_args()
+parser = argparse.آرگومان_Parser(description="FineWeb and Edu-FineWeb dataset preprocessing")
+parser.جمع_کن_آرگومان("-t", "--type", type=str, افتراضي="classic", help="Fineweb type, edu|classic")
+parser.جمع_کن_آرگومان("-v", "--version", type=str, افتراضي="10B", help="Fineweb data sample size, 10B|100B")
+parser.جمع_کن_آرگومان("-m", "--model_desc", type=str, افتراضي="gpt-2", help="Model descriptor, gpt-2|llama-3")
+parser.جمع_کن_آرگومان("-s", "--shard_size", type=صحيح, افتراضي=10**8, help="Size of each data shard in the output .bin files, in tokens")
+آرگومانها = parser.parse_آرگومانها()
 
 # FineWeb has a few possible subsamples available
-assert args.version in {"10B", "100B"}, "version must be one of: 10B, 100B"
-assert args.type in {"edu", "classic"}, "type must be one of: edu, classic"
+أكد آرگومانها.نسخه في {"10B", "100B"}, "version must be one of: 10B, 100B"
+أكد آرگومانها.type في {"edu", "classic"}, "type must be one of: edu, classic"
 directories = {
     ("classic", "10B"): ("fineweb10B", "sample-10BT"),
     ("classic", "100B"): ("fineweb100B", "sample-100BT"),
     ("edu", "10B"): ("edu_fineweb10B", "sample-10BT"),
     ("edu", "100B"): ("edu_fineweb100B", "sample-100BT")
 }
-local_dir, remote_name = directories[(args.type, args.version)]
+local_dir, remote_name = directories[(آرگومانها.type, آرگومانها.نسخه)]
 
 # create the cache the local directory if it doesn't exist yet
-DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), local_dir)
-os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+داده_CACHE_DIR = os.مسیر.join(os.مسیر.dirname(__file__), local_dir)
+os.makedirs(داده_CACHE_DIR, exist_ok=درست)
 
 # download the dataset
-if args.type == "classic":
-    fw = load_dataset("HuggingFaceFW/fineweb", name=remote_name, split="train")
+إذا آرگومانها.type == "classic":
+    fw = بارگیری_dataset("HuggingFaceFW/fineweb", name=remote_name, تقسیم="train")
     name = "fineweb"
-elif args.type =="edu":
-    fw = load_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, split="train")
+وإلاإذا آرگومانها.type =="edu":
+    fw = بارگیری_dataset("HuggingFaceFW/fineweb-edu", name=remote_name, تقسیم="train")
     name = "edu_fineweb"
 
-def tokenize_llama(doc):
+تعریف tokenize_llama(doc):
     # tokenizes a single document and returns a numpy array of uint32 tokens
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B")
-    encode = lambda s: tokenizer.encode(s, add_special_tokens=False, verbose=False, split_special_tokens=True)
+    encode = مجهول s: tokenizer.encode(s, جمع_کن_special_نشانهها=خطأ, verbose=خطأ, تقسیم_special_نشانهها=درست)
     eot = tokenizer.encode('')[0] # by default the tokenizer adds the EOT token (128000)
-    tokens = [eot] # the special <|endoftext|> token delimits all documents
-    tokens.extend(encode(doc["text"]))
-    tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**32).all(), "token dictionary too large for uint32"
-    tokens_np_uint = tokens_np.astype(np.uint32)
-    return tokens_np_uint
+    نشانهها = [eot] # the special <|endoftext|> token delimits all documents
+    نشانهها.extend(encode(doc["text"]))
+    نشانهها_np = np.array(نشانهها)
+    أكد (0 <= نشانهها_np).all() و (نشانهها_np < 2**32).all(), "token dictionary too large for uint32"
+    نشانهها_np_uint = نشانهها_np.astype(np.uint32)
+    أرجع نشانهها_np_uint
 
-def tokenize_gpt2(doc):
+تعریف tokenize_gpt2(doc):
     # tokenizes a single document and returns a numpy array of uint16 tokens
     enc = tiktoken.get_encoding("gpt2")
-    encode = lambda s: enc.encode_ordinary(s)
-    eot = enc._special_tokens['<|endoftext|>'] # end of text token
-    tokens = [eot] # the special <|endoftext|> token delimits all documents
-    tokens.extend(encode(doc["text"]))
-    tokens_np = np.array(tokens)
-    assert (0 <= tokens_np).all() and (tokens_np < 2**16).all(), "token dictionary too large for uint16"
-    tokens_np_uint = tokens_np.astype(np.uint16)
-    return tokens_np_uint
+    encode = مجهول s: enc.encode_ordinary(s)
+    eot = enc.special_نشانهها['<|endoftext|>'] # end of text token
+    نشانهها = [eot] # the special <|endoftext|> token delimits all documents
+    نشانهها.extend(encode(doc["text"]))
+    نشانهها_np = np.array(نشانهها)
+    أكد (0 <= نشانهها_np).all() و (نشانهها_np < 2**16).all(), "token dictionary too large for uint16"
+    نشانهها_np_uint = نشانهها_np.astype(np.uint16)
+    أرجع نشانهها_np_uint
 
 token_dtype = {
     "gpt-2": np.uint16,
     "llama-3": np.uint32
-}[args.model_desc]
+}[آرگومانها.model_desc]
 
 # tokenize all documents and write output shards, each of shard_size tokens (last shard has remainder)
-nprocs = max(1, os.cpu_count() - 2) # don't hog the entire system
-with mp.Pool(nprocs) as pool:
-    shard_index = 0
+nprocs = max(1, os.cpu_شمار() - 2) # don't hog the entire system
+با mp.Pool(nprocs) كـ pool:
+    shard_شاخص = 0
     # preallocate buffer to hold current shard
-    all_tokens_np = np.empty((args.shard_size,), dtype=token_dtype)
-    token_count = 0
-    progress_bar = None
+    all_نشانهها_np = np.خالی((آرگومانها.shard_اندازه,), dtype=token_dtype)
+    token_شمار = 0
+    پیشرفت_bar = هیچ
 
-    tokenize = lambda x: None
-    if args.model_desc == "gpt-2":
+    tokenize = مجهول x: هیچ
+    إذا آرگومانها.model_desc == "gpt-2":
         tokenize = tokenize_gpt2
-    elif args.model_desc == "llama-3":
+    وإلاإذا آرگومانها.model_desc == "llama-3":
         tokenize = tokenize_llama
-    else:
-        raise ValueError(f"unknown model {args.model_desc}")
+    وإلا:
+        ارفع مقدار_Error(f"unknown model {args.model_desc}")
 
-    for tokens in pool.imap(tokenize, fw, chunksize=16):
+    لكل نشانهها في pool.imap(tokenize, fw, chunksize=16):
 
         # is there enough space in the current shard for the new tokens?
-        if token_count + len(tokens) < args.shard_size:
+        إذا token_شمار + طول(نشانهها) < آرگومانها.shard_اندازه:
             # simply append tokens to current shard
-            all_tokens_np[token_count:token_count+len(tokens)] = tokens
-            token_count += len(tokens)
+            all_نشانهها_np[token_شمار:token_شمار+طول(نشانهها)] = نشانهها
+            token_شمار += طول(نشانهها)
             # update progress bar
-            if progress_bar is None:
-                progress_bar = tqdm(total=args.shard_size, unit="tokens", desc=f"Shard {shard_index}")
-            progress_bar.update(len(tokens))
-        else:
+            إذا پیشرفت_bar است هیچ:
+                پیشرفت_bar = tqdm(مجموع=آرگومانها.shard_اندازه, unit="tokens", desc=f"Shard {shard_index}")
+            پیشرفت_bar.update(طول(نشانهها))
+        وإلا:
             # write the current shard and start a new one
-            split = "val" if shard_index == 0 else "train"
-            filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+            تقسیم = "val" إذا shard_شاخص == 0 وإلا "train"
+            filename = os.مسیر.join(داده_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
             # split the document into whatever fits in this shard; the remainder goes to next one
-            remainder = args.shard_size - token_count
-            progress_bar.update(remainder)
-            all_tokens_np[token_count:token_count+remainder] = tokens[:remainder]
-            write_datafile(filename, all_tokens_np.tolist(), args.model_desc)
-            shard_index += 1
-            progress_bar = None
+            remainder = آرگومانها.shard_اندازه - token_شمار
+            پیشرفت_bar.update(remainder)
+            all_نشانهها_np[token_شمار:token_شمار+remainder] = نشانهها[:remainder]
+            write_datafile(filename, all_نشانهها_np.tolist(), آرگومانها.model_desc)
+            shard_شاخص += 1
+            پیشرفت_bar = هیچ
             # populate the next shard with the leftovers of the current doc
-            all_tokens_np[0:len(tokens)-remainder] = tokens[remainder:]
-            token_count = len(tokens)-remainder
+            all_نشانهها_np[0:طول(نشانهها)-remainder] = نشانهها[remainder:]
+            token_شمار = طول(نشانهها)-remainder
 
     # write any remaining tokens as the last shard
-    if token_count != 0:
-        split = "val" if shard_index == 0 else "train"
-        filename = os.path.join(DATA_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
-        write_datafile(filename, (all_tokens_np[:token_count]).tolist(), args.model_desc)
+    إذا token_شمار != 0:
+        تقسیم = "val" إذا shard_شاخص == 0 وإلا "train"
+        filename = os.مسیر.join(داده_CACHE_DIR, f"{name}_{split}_{shard_index:06d}.bin")
+        write_datafile(filename, (all_نشانهها_np[:token_شمار]).tolist(), آرگومانها.model_desc)
