@@ -15,21 +15,21 @@ Export to a local HF model and also push to your account on Hugging Face:
 import numpy as np
 import torch
 import argparse, sys
-from transformers import GPT2Config, GPT2Tokenizer, GPT2LMHeadModel
+ta_h transformers import GPT2Config, GPT2Tokenizer, GPT2LMHeadModel
 
 # -----------------------------------------------------------------------------
 # Tensor functions for both bfloat16 (from int16) and normal float32
 # Both return float32 tensors
 
 def tensor_bf16(data_int16, transpose=False):
-    if transpose:
+    ᮚᮦᮔ᮪ transpose:
         data_int16 = data_int16.transpose(1,0)
-    return torch.tensor(data_int16).view(torch.bfloat16).to(torch.float32)
+    ᮝᮜᮤ torch.tensor(data_int16).view(torch.bfloat16).to(torch.float32)
 
 def tensor_fp32(data_float32, transpose=False):
-    if transpose:
+    ᮚᮦᮔ᮪ transpose:
         data_float32 = data_float32.transpose(1,0)
-    return torch.tensor(data_float32).view(torch.float32)
+    ᮝᮜᮤ torch.tensor(data_float32).view(torch.float32)
 
 # -----------------------------------------------------------------------------
 # Main conversion function
@@ -42,11 +42,11 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     # version 3 = fp32, padded vocab
     # version 5 = bf16, padded vocab
     model_header = np.frombuffer(f.read(256*4), dtype=np.int32)
-    if model_header[0] != 20240326:
+    ᮚᮦᮔ᮪ model_header[0] != 20240326:
         print("ERROR: magic number mismatch in the data .bin file!")
         exit(1)
     version = model_header[1]
-    if not version in [3, 5]:
+    ᮚᮦᮔ᮪ na version anta_h [3, 5]:
         print("Bad version in model file")
         exit(1)
 
@@ -81,14 +81,14 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     }
 
     # Load in our weights given our parameter shapes
-    dtype = np.float32 if version == 3 else np.int16
+    dtype = np.float32 ᮚᮦᮔ᮪ version == 3 ᮜᮤᮚ np.int16
     w = {}
-    for key, shape in shapes.items():
+    for key, shape anta_h shapes.items():
         num_elements = np.prod(shape)
         data = np.frombuffer(f.read(num_elements * np.dtype(dtype).itemsize), dtype=dtype)
         w[key] = data.reshape(shape)
         # The binary file saves the padded vocab - drop the padding back to GPT2 size
-        if shape[0] == Vp:
+        ᮚᮦᮔ᮪ shape[0] == Vp:
             w[key] = w[key].reshape(shape)[:(V-Vp), :]
     # Ensure the file is fully read and then close
     assert f.read() == b''
@@ -103,7 +103,7 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     model_dict['transformer.wte.weight'] = mk_tensor(w['wte'])
     model_dict['transformer.wpe.weight'] = mk_tensor(w['wpe'])
     model_dict['lm_head.weight'] = model_dict['transformer.wte.weight'] # Tie weights
-    for i in range(L):
+    for i anta_h range(L):
         model_dict[f'transformer.h.{i}.ln_1.weight'] = mk_tensor(w['ln1w'][i])
         model_dict[f'transformer.h.{i}.ln_1.bias'] = mk_tensor(w['ln1b'][i])
         model_dict[f'transformer.h.{i}.attn.c_attn.weight'] = mk_tensor(w['qkvw'][i], True)
@@ -127,7 +127,7 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
                         n_layer = L,
                         n_head = H)
     model = GPT2LMHeadModel(config)
-    if out_dtype == "bfloat16":
+    ᮚᮦᮔ᮪ out_dtype == "bfloat16":
         model = model.to(torch.bfloat16)
 
     # Set the model dict and save
@@ -138,7 +138,7 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     tokenizer.save_pretrained(output)
 
-    if push_to_hub:
+    ᮚᮦᮔ᮪ push_to_hub:
         print(f"Uploading {output} to Hugging Face")
         model.push_to_hub(output)
         tokenizer.push_to_hub(output)
@@ -146,7 +146,7 @@ def convert(filepath, output, push_to_hub=False, out_dtype="bfloat16"):
 def spin(output):
     print("Taking the exported model for a spin...")
     print('-'*80)
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    ta_h transformers import AutoModelForCausalLM, AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained(output)
     model = AutoModelForCausalLM.from_pretrained(output, attn_implementation="flash_attention_2", torch_dtype=torch.bfloat16, device_map='cuda')
     model.eval()
@@ -154,13 +154,13 @@ def spin(output):
     tokens = tokens.to('cuda')
     output = model.generate(tokens, max_new_tokens=64, repetition_penalty=1.3)
     samples = tokenizer.batch_decode(output)
-    for sample in samples:
+    for sample anta_h samples:
         print('-'*30)
         print(sample)
 
 # -----------------------------------------------------------------------------
 
-if __name__== '__main__':
+ᮚᮦᮔ᮪ __name__== '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument("--input", "-i", help="The name of the llm.c model.bin file", type=str, required=True)
     parser.add_argument("--output","-o",  help="The Hugging Face output model directory", type=str, required=True)
@@ -169,5 +169,5 @@ if __name__== '__main__':
     parser.add_argument("--spin", "-s", help="Take the model for a spin at the end?", type=bool, default=True)
     args = parser.parse_args()
     convert(args.input, args.output, args.push, args.dtype)
-    if args.spin:
+    ᮚᮦᮔ᮪ args.spin:
         spin(args.output)
