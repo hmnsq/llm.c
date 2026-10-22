@@ -3,12 +3,12 @@
 # this script is optional, the run_eval.sh should already print these
 # but this script can be used to re-print them
 
-import json, sys
+आनयन json, sys
 
 RESULT = sys.argv[1]
 print("-"*40)
 
-key = {"arc_challenge_25shot.json": "acc_norm",
+किल्ली = {"arc_challenge_25shot.json": "acc_norm",
        "gsm8k_5shot.json": "acc",
        "hellaswag_10shot.json": "acc_norm",
        "mmlu_5shot.json": "acc",
@@ -17,14 +17,14 @@ key = {"arc_challenge_25shot.json": "acc_norm",
        }
 
 total = 0
-for test in ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
-    data = json.loads(open("./%s/%s"%(RESULT, test)).read())
-    r_count = 0
+प्रति test अन्तः ["arc_challenge_25shot.json", "gsm8k_5shot.json", "hellaswag_10shot.json", "mmlu_5shot.json", "truthfulqa_0shot.json", "winogrande_5shot.json"]:
+    data = json.loads(open("./%s/%s"%(RESULT, test)).पठ())
+    r_मोजणी = 0
     r_total = 0
-    for test_name in data['results']:
-      r_count += 1
-      r_total += data['results'][test_name][key[test]]
-    score = (r_total*100)/r_count
+    प्रति test_name अन्तः data['results']:
+      r_मोजणी += 1
+      r_total += data['results'][test_name][किल्ली[test]]
+    score = (r_total*100)/r_मोजणी
     print(f"{test:<30} : {score:.4f}")
     total += score
 average = total / 6.0
