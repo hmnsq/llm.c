@@ -8,21 +8,21 @@
 
 void layernorm_forward(float* out, float* mean, float* rstd,
                        float* inp, float* weight, float* bias,
-                       int B, int T, int C) {
+                       целое B, целое T, целое C) {
     float eps = 1e-5f;
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+    для (целое b = 0; b < B; b++) {
+        для (целое t = 0; t < T; t++) {
             // seek to the input position inp[b,t,:]
             float* x = inp + b * T * C + t * C;
             // calculate the mean
             float m = 0.0f;
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 m += x[i];
             }
             m = m/C;
             // calculate the variance (without any bias correction)
             float v = 0.0f;
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 float xshift = x[i] - m;
                 v += xshift * xshift;
             }
@@ -31,7 +31,7 @@ void layernorm_forward(float* out, float* mean, float* rstd,
             float s = 1.0f / sqrtf(v + eps);
             // seek to the output position in out[b,t,:]
             float* out_bt = out + b * T * C + t * C;
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 float n = (s * (x[i] - m)); // normalized output
                 float o = n * weight[i] + bias[i]; // scale and shift it
                 out_bt[i] = o; // write
@@ -45,9 +45,9 @@ void layernorm_forward(float* out, float* mean, float* rstd,
 
 void layernorm_backward(float* dinp, float* dweight, float* dbias,
                         float* dout, float* inp, float* weight, float* mean, float* rstd,
-                        int B, int T, int C) {
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+                        целое B, целое T, целое C) {
+    для (целое b = 0; b < B; b++) {
+        для (целое t = 0; t < T; t++) {
             float* dout_bt = dout + b * T * C + t * C;
             float* inp_bt = inp + b * T * C + t * C;
             float* dinp_bt = dinp + b * T * C + t * C;
@@ -57,7 +57,7 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             // first: two reduce operations
             float dnorm_mean = 0.0f;
             float dnorm_norm_mean = 0.0f;
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
                 float dnorm_i = weight[i] * dout_bt[i];
                 dnorm_mean += dnorm_i;
@@ -67,7 +67,7 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
             dnorm_norm_mean = dnorm_norm_mean / C;
 
             // now iterate again and accumulate all the gradients
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 float norm_bti = (inp_bt[i] - mean_bt) * rstd_bt;
                 float dnorm_i = weight[i] * dout_bt[i];
                 // gradient contribution to bias
@@ -87,26 +87,26 @@ void layernorm_backward(float* dinp, float* dweight, float* dbias,
 }
 
 // poor man's tensor checker
-int check_tensor(float *a, float *b, int n, char* label) {
-    int ok = 1;
+целое check_tensor(float *a, float *b, целое n, char* label) {
+    целое ok = 1;
     printf("%s\n", label);
-    for (int i = 0; i < n; i++) {
-        if (fabs(a[i] - b[i]) <= 1e-5) {
+    для (целое i = 0; i < n; i++) {
+        если (fabs(a[i] - b[i]) <= 1e-5) {
             printf("OK ");
-        } else {
+        } иначе {
             printf("NOT OK ");
             ok = 0;
         }
         printf("%f %f\n", a[i], b[i]);
     }
-    return ok;
+    вернуть ok;
 }
 
-int main() {
+целое основной() {
 
-    int B = 2; // batch
-    int T = 3; // time / sequence length
-    int C = 4; // number of channels
+    целое B = 2; // batch
+    целое T = 3; // time / sequence length
+    целое C = 4; // number of channels
 
     float* x = (float*) malloc(B * T * C * sizeof(float));
     float* w = (float*) malloc(C * sizeof(float));
@@ -121,9 +121,9 @@ int main() {
 
     // read reference information from Python
     FILE *file = fopen("ln.bin", "rb");
-    if (file == NULL) {
+    если (file == NULL) {
         printf("Error opening file\n");
-        return 1;
+        вернуть 1;
     }
     fread(x, sizeof(float), B * T * C, file);
     fread(w, sizeof(float), C, file);
@@ -171,5 +171,5 @@ int main() {
     free(dx);
     free(dw);
     free(db);
-    return 0;
+    вернуть 0;
 }

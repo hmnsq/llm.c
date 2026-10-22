@@ -20,18 +20,18 @@ CPU Kernels for matmul forward pass.
 
 void matmul_forward_cpu(float* out,
                     const float* inp, const float* weight, const float* bias,
-                    int B, int T, int C, int OC) {
+                    целое B, целое T, целое C, целое OC) {
     // OC is short for "output channels"
     // inp is (B,T,C), weight is (OC, C), bias is (OC)
     // out will be (B,T,OC)
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < T; t++) {
+    для (целое b = 0; b < B; b++) {
+        для (целое t = 0; t < T; t++) {
             float* out_bt = out + b * T * OC + t * OC;
             const float* inp_bt = inp + b * T * C + t * C;
-            for (int o = 0; o < OC; o++) {
+            для (целое o = 0; o < OC; o++) {
                 float val = (bias != NULL) ? bias[o] : 0.0f;
                 const float* wrow = weight + o*C;
-                for (int i = 0; i < C; i++) {
+                для (целое i = 0; i < C; i++) {
                     val += inp_bt[i] * wrow[i];
                 }
                 out_bt[o] = val;
@@ -42,7 +42,7 @@ void matmul_forward_cpu(float* out,
 
 void matmul_forward_ngc92(float* out,
     const float* inp, const float* weight, const float* bias,
-    int B, int T, int C, int OC) {
+    целое B, целое T, целое C, целое OC) {
     // most of the running time is spent here and in matmul_backward
     // OC is short for "output channels"
     // inp is (B,T,C), weight is (OC, C), bias is (OC)
@@ -51,36 +51,36 @@ void matmul_forward_ngc92(float* out,
     // make sure the tiled loop will be correct, otherwise, fallback to slow version
     #define LOOP_UNROLL 8
 
-    if (B * T % LOOP_UNROLL != 0) {
+    если (B * T % LOOP_UNROLL != 0) {
         printf("MUST BE A MULTIPLE OF 8"); // FIXME
-        return;
+        вернуть;
     }
 
     // collapse the B and T loops into one and turn it into a strided loop.
     // then we can tile the inner loop, and reuse the loaded weight LOOP_UNROLL many times
     // for significant speed-ups.
-    for (int obt = 0; obt < B * T; obt += LOOP_UNROLL) {
-        for (int o = 0; o < OC; o++) {
+    для (целое obt = 0; obt < B * T; obt += LOOP_UNROLL) {
+        для (целое o = 0; o < OC; o++) {
             // keep LOOP_UNROLL many results in register, initialized by the bias term.
             float result[LOOP_UNROLL];
-            for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+            для (целое ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
                 result[ibt] = (bias != NULL) ? bias[o] : 0.0f;
             }
 
             // inner loops. Because we do LOOP_UNROLL steps of inner bt, we can cache
             // the value of weight[i + o * C] and reuse it.
             // we compile with -Ofast, so the compiler will turn the inner loop into a bunch of FMAs
-            for (int i = 0; i < C; i++) {
+            для (целое i = 0; i < C; i++) {
                 float w = weight[i + o * C];
-                for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
-                    int bt = obt + ibt;
+                для (целое ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+                    целое bt = obt + ibt;
                     result[ibt] += inp[bt * C + i] * w;
                 }
             }
 
             // write back results to main memory
-            for (int ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
-                int bt = obt + ibt;
+            для (целое ibt = 0; ibt < LOOP_UNROLL; ++ibt) {
+                целое bt = obt + ibt;
                 out[bt * OC + o] = result[ibt];
             }
         }
@@ -89,10 +89,10 @@ void matmul_forward_ngc92(float* out,
 
 #define NUM_KERNELS 2
 
-void matmul_forward(int kernel_num,
+void matmul_forward(целое kernel_num,
     float* out,
     const float* inp, const float* weight, const float* bias,
-    int B, int T, int C, int OC) {
+    целое B, целое T, целое C, целое OC) {
 
     switch (kernel_num) {
         case 0:
@@ -108,17 +108,17 @@ void matmul_forward(int kernel_num,
 }
 
 
-void validate_results_cpu(const float* device_result, const float* cpu_reference, const char* name, int num_elements, float tolerance);
+void validate_results_cpu(const float* device_result, const float* cpu_reference, const char* name, целое num_elements, float tolerance);
 float* make_random_float(size_t N);
 
-int main(int argc, char **argv) {
+целое основной(целое argc, char **argv) {
     srand(0);
 
-    int B = 8;
-    int T = 1024;
-    int C = 768;
-    int OC = 768 * 4; // expansion of 4, e.g. in the MLP
-    int RUNS = 4; // number of times to run a kernel for benchmarks
+    целое B = 8;
+    целое T = 1024;
+    целое C = 768;
+    целое OC = 768 * 4; // expansion of 4, e.g. in the MLP
+    целое RUNS = 4; // number of times to run a kernel for benchmarks
 
     srand(137);
 
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
     printf("> Calculating reference\n");
     matmul_forward_cpu(out, inp, weight, bias, B, T, C, OC);
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
+    для (целое kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
         printf("> Verifying kernel #%d\n", kernel_num);
 
         srand(137);
@@ -157,12 +157,12 @@ int main(int argc, char **argv) {
 
     printf("All kernels passed! Starting benchmarks.\n\n");
 
-    for (int kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
+    для (целое kernel_num = 0; kernel_num < NUM_KERNELS; kernel_num++) {
         printf("> Running kernel #%d\n", kernel_num);
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        for (int i = 0; i < RUNS; i++) {
+        для (целое i = 0; i < RUNS; i++) {
             matmul_forward(kernel_num, out, inp, weight, bias, B, T, C, OC);
         }
 
@@ -182,35 +182,35 @@ int main(int argc, char **argv) {
     free(grad_weight);
     free(grad_bias);
 
-    return 0;
+    вернуть 0;
 }
 
 float* make_random_float(size_t N) {
     float* arr = (float*)malloc(N * sizeof(float));
-    for (size_t i = 0; i < N; i++) {
+    для (size_t i = 0; i < N; i++) {
         arr[i] = ((float)rand() / RAND_MAX) * 2.0 - 1.0; // range -1..1
     }
-    return arr;
+    вернуть arr;
 }
 
-void validate_results_cpu(const float* kernel_result, const float* cpu_reference, const char* name, int num_elements, float tolerance) {
-    int nfaults = 0;
-    for (int i = 0; i < num_elements; i++) {
+void validate_results_cpu(const float* kernel_result, const float* cpu_reference, const char* name, целое num_elements, float tolerance) {
+    целое nfaults = 0;
+    для (целое i = 0; i < num_elements; i++) {
         // print the first few comparisons
-        if (i < 5) {
+        если (i < 5) {
             printf("%f %f\n", cpu_reference[i], kernel_result[i]);
         }
         float t_eff = tolerance + fabs(cpu_reference[i]);
         // ensure correctness for all elements.
-        if (fabs(cpu_reference[i] - kernel_result[i]) > t_eff) {
+        если (fabs(cpu_reference[i] - kernel_result[i]) > t_eff) {
             printf("Mismatch of %s at %d: CPU_ref: %f vs CPU_new: %f\n", name, i, cpu_reference[i], kernel_result[i]);
             nfaults++;
-            if (nfaults >= 10) {
+            если (nfaults >= 10) {
                 exit(EXIT_FAILURE);
             }
         }
     }
-    if (nfaults > 0) {
+    если (nfaults > 0) {
         exit(EXIT_FAILURE);
     }
     printf("OK\n");
