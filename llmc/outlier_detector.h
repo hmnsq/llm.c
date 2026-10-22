@@ -9,62 +9,62 @@ update the mean and variance with += on each step for efficiency. We could
 reconsider this choice in the future, as the compute cost here is minimal.
 */
 
-#include <stdio.h>
-#include <math.h>
+#ضمن <stdio.h>
+#ضمن <math.h>
 
 // use compile-time constant for window size to avoid dynamic memory allocations
 #define OUTLIER_DETECTOR_WINDOW_SIZE 128
 
-typedef struct {
-    double buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
-    int count;
-    int index;
-    double sum;
-    double sum_sq;
+تعريفنوع بنية {
+    مزدوج buffer[OUTLIER_DETECTOR_WINDOW_SIZE];
+    صحيح كدي;
+    صحيح index;
+    مزدوج sum;
+    مزدوج sum_sq;
 } OutlierDetector;
 
-void init_detector(OutlierDetector *detector) {
-    for (int i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
+فراغ init_detector(OutlierDetector *detector) {
+    لكل (صحيح i = 0; i < OUTLIER_DETECTOR_WINDOW_SIZE; i++) {
         detector->buffer[i] = 0.0;
     }
-    detector->count = 0;
+    detector->كدي = 0;
     detector->index = 0;
     detector->sum = 0.0;
     detector->sum_sq = 0.0;
 }
 
-double update_detector(OutlierDetector *detector, double new_value) {
+مزدوج update_detector(OutlierDetector *detector, مزدوج new_درج) {
 
-    if (detector->count < OUTLIER_DETECTOR_WINDOW_SIZE) {
+    إذا (detector->كدي < OUTLIER_DETECTOR_WINDOW_SIZE) {
         // here we are still building up a window of observations
-        detector->buffer[detector->count] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
-        detector->count++;
-        return nan(""); // not enough data yet
+        detector->buffer[detector->كدي] = new_درج;
+        detector->sum += new_درج;
+        detector->sum_sq += new_درج * new_درج;
+        detector->كدي++;
+        أرجع nan(""); // not enough data yet
 
-    } else {
+    } وإلا {
         // we've filled the window, so now we can start detecting outliers
 
         // pop the oldest value from the window
-        double old_value = detector->buffer[detector->index];
-        detector->sum -= old_value;
-        detector->sum_sq -= old_value * old_value;
+        مزدوج old_درج = detector->buffer[detector->index];
+        detector->sum -= old_درج;
+        detector->sum_sq -= old_درج * old_درج;
         // push the new value into the window
-        detector->buffer[detector->index] = new_value;
-        detector->sum += new_value;
-        detector->sum_sq += new_value * new_value;
+        detector->buffer[detector->index] = new_درج;
+        detector->sum += new_درج;
+        detector->sum_sq += new_درج * new_درج;
         // move the index to the next position
         detector->index = (detector->index + 1) % OUTLIER_DETECTOR_WINDOW_SIZE;
         // calculate the z-score of the new value
-        double mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
-        double variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
-        double std_dev = sqrt(variance);
-        if (std_dev == 0.0) {
-            return 0.0;
+        مزدوج mean = detector->sum / OUTLIER_DETECTOR_WINDOW_SIZE;
+        مزدوج variance = (detector->sum_sq / OUTLIER_DETECTOR_WINDOW_SIZE) - (mean * mean);
+        مزدوج std_dev = sqrt(variance);
+        إذا (std_dev == 0.0) {
+            أرجع 0.0;
         }
-        double z = (new_value - mean) / std_dev;
+        مزدوج z = (new_درج - mean) / std_dev;
 
-        return z;
+        أرجع z;
     }
 }
