@@ -4,220 +4,220 @@
  C standard library function and check its return code. If an error was reported,
  the program prints some debug information and exits.
 */
-#ifndef UTILS_H
-#define UTILS_H
+#جے_بنا_تعریف UTILS_H
+#تعریف_کرو UTILS_H
 
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+#ضمن <unistd.h>
+#ضمن <string.h>
+#ضمن <stdio.h>
+#ضمن <stdlib.h>
+#ضمن <sys/stat.h>
 // implementation of dirent for Windows is in dev/unistd.h
-#ifndef _WIN32
-#include <dirent.h>
-#include <arpa/inet.h>
-#endif
+#جے_بنا_تعریف _WIN32
+#ضمن <dirent.h>
+#ضمن <arpa/inet.h>
+#جے_انت
 
 // ----------------------------------------------------------------------------
 // fread convenience utils, with nice handling of error checking using macros
 // simple replace fopen, fread, fclose, fseek
 // with fopenCheck, freadCheck, fcloseCheck, fseekCheck
 
-extern inline FILE *fopen_check(const char *path, const char *mode, const char *file, int line) {
-    FILE *fp = fopen(path, mode);
-    if (fp == NULL) {
-        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", path, file, line);
+خارجي مضمن FILE *fopen_check(ثابت حرف *رستہ, ثابت حرف *منوال, ثابت حرف *file, صحيح سطر) {
+    FILE *fp = fopen(رستہ, منوال);
+    إذا (fp == عدم) {
+        fprintf(stderr, "Error: Failed to open file '%s' at %s:%d\n", رستہ, file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        fprintf(stderr, "  Path: %s\n", path);
-        fprintf(stderr, "  Mode: %s\n", mode);
+        fprintf(stderr, "  Line: %d\n", سطر);
+        fprintf(stderr, "  Path: %s\n", رستہ);
+        fprintf(stderr, "  Mode: %s\n", منوال);
         fprintf(stderr, "---> HINT 1: dataset files/code have moved to dev/data recently (May 20, 2024). You may have to mv them from the legacy data/ dir to dev/data/(dataset), or re-run the data preprocessing script. Refer back to the main README\n");
         fprintf(stderr, "---> HINT 2: possibly try to re-run `python train_gpt2.py`\n");
-        exit(EXIT_FAILURE);
+        باہر_نکلو(EXIT_FAILURE);
     }
-    return fp;
+    أرجع fp;
 }
 
-#define fopenCheck(path, mode) fopen_check(path, mode, __FILE__, __LINE__)
+#تعریف_کرو fopenCheck(رستہ, منوال) fopen_check(رستہ, منوال, __FILE__, __LINE__)
 
-extern inline void fread_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
-    size_t result = fread(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File read error at %s:%d\n", file, line);
-        } else {
+خارجي مضمن فراغ fread_check(فراغ *ptr, size_t ناپ, size_t nmemb, FILE *دھارا, ثابت حرف *file, صحيح سطر) {
+    size_t نتیجہ = fread(ptr, ناپ, nmemb, دھارا);
+    إذا (نتیجہ != nmemb) {
+        إذا (feof(دھارا)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, سطر);
+        } وإلا إذا (ferror(دھارا)) {
+            fprintf(stderr, "Error: File read error at %s:%d\n", file, سطر);
+        } وإلا {
             fprintf(stderr, "Error: Partial read at %s:%d. Expected %zu elements, read %zu\n",
-                    file, line, nmemb, result);
+                    file, سطر, nmemb, نتیجہ);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", سطر);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
-        fprintf(stderr, "  Read elements: %zu\n", result);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Read elements: %zu\n", نتیجہ);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define freadCheck(ptr, size, nmemb, stream) fread_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
+#تعریف_کرو freadCheck(ptr, ناپ, nmemb, دھارا) fread_check(ptr, ناپ, nmemb, دھارا, __FILE__, __LINE__)
 
-extern inline void fclose_check(FILE *fp, const char *file, int line) {
-    if (fclose(fp) != 0) {
-        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, line);
+خارجي مضمن فراغ fclose_check(FILE *fp, ثابت حرف *file, صحيح سطر) {
+    إذا (fclose(fp) != 0) {
+        fprintf(stderr, "Error: Failed to close file at %s:%d\n", file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Line: %d\n", سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
+#تعریف_کرو fcloseCheck(fp) fclose_check(fp, __FILE__, __LINE__)
 
-extern inline void sclose_check(int sockfd, const char *file, int line) {
-    if (close(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+خارجي مضمن فراغ sclose_check(صحيح sockfd, ثابت حرف *file, صحيح سطر) {
+    إذا (close(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Line: %d\n", سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
+#تعریف_کرو scloseCheck(sockfd) sclose_check(sockfd, __FILE__, __LINE__)
 
-#ifdef _WIN32
-extern inline void closesocket_check(int sockfd, const char *file, int line) {
-    if (closesocket(sockfd) != 0) {
-        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, line);
+#جے_تعریف_شدہ _WIN32
+خارجي مضمن فراغ closesocket_check(صحيح sockfd, ثابت حرف *file, صحيح سطر) {
+    إذا (closesocket(sockfd) != 0) {
+        fprintf(stderr, "Error: Failed to close socket at %s:%d\n", file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Line: %d\n", سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
-#endif
+#تعریف_کرو closesocketCheck(sockfd) closesocket_check(sockfd, __FILE__, __LINE__)
+#جے_انت
 
-extern inline void fseek_check(FILE *fp, long off, int whence, const char *file, int line) {
-    if (fseek(fp, off, whence) != 0) {
-        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, line);
+خارجي مضمن فراغ fseek_check(FILE *fp, لما off, صحيح whence, ثابت حرف *file, صحيح سطر) {
+    إذا (fseek(fp, off, whence) != 0) {
+        fprintf(stderr, "Error: Failed to seek in file at %s:%d\n", file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  Offset: %ld\n", off);
         fprintf(stderr, "  Whence: %d\n", whence);
         fprintf(stderr, "  File:   %s\n", file);
-        fprintf(stderr, "  Line:   %d\n", line);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Line:   %d\n", سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
+#تعریف_کرو fseekCheck(fp, off, whence) fseek_check(fp, off, whence, __FILE__, __LINE__)
 
-extern inline void fwrite_check(void *ptr, size_t size, size_t nmemb, FILE *stream, const char *file, int line) {
-    size_t result = fwrite(ptr, size, nmemb, stream);
-    if (result != nmemb) {
-        if (feof(stream)) {
-            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, line);
-        } else if (ferror(stream)) {
-            fprintf(stderr, "Error: File write error at %s:%d\n", file, line);
-        } else {
+خارجي مضمن فراغ fwrite_check(فراغ *ptr, size_t ناپ, size_t nmemb, FILE *دھارا, ثابت حرف *file, صحيح سطر) {
+    size_t نتیجہ = fwrite(ptr, ناپ, nmemb, دھارا);
+    إذا (نتیجہ != nmemb) {
+        إذا (feof(دھارا)) {
+            fprintf(stderr, "Error: Unexpected end of file at %s:%d\n", file, سطر);
+        } وإلا إذا (ferror(دھارا)) {
+            fprintf(stderr, "Error: File write error at %s:%d\n", file, سطر);
+        } وإلا {
             fprintf(stderr, "Error: Partial write at %s:%d. Expected %zu elements, wrote %zu\n",
-                    file, line, nmemb, result);
+                    file, سطر, nmemb, نتیجہ);
         }
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
+        fprintf(stderr, "  Line: %d\n", سطر);
         fprintf(stderr, "  Expected elements: %zu\n", nmemb);
-        fprintf(stderr, "  Written elements: %zu\n", result);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Written elements: %zu\n", نتیجہ);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
 
-#define fwriteCheck(ptr, size, nmemb, stream) fwrite_check(ptr, size, nmemb, stream, __FILE__, __LINE__)
+#تعریف_کرو fwriteCheck(ptr, ناپ, nmemb, دھارا) fwrite_check(ptr, ناپ, nmemb, دھارا, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // malloc error-handling wrapper util
 
-extern inline void *malloc_check(size_t size, const char *file, int line) {
-    void *ptr = malloc(size);
-    if (ptr == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, line);
+خارجي مضمن فراغ *malloc_check(size_t ناپ, ثابت حرف *file, صحيح سطر) {
+    فراغ *ptr = حافظہ_دیو(ناپ);
+    إذا (ptr == عدم) {
+        fprintf(stderr, "Error: Memory allocation failed at %s:%d\n", file, سطر);
         fprintf(stderr, "Error details:\n");
         fprintf(stderr, "  File: %s\n", file);
-        fprintf(stderr, "  Line: %d\n", line);
-        fprintf(stderr, "  Size: %zu bytes\n", size);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Line: %d\n", سطر);
+        fprintf(stderr, "  Size: %zu bytes\n", ناپ);
+        باہر_نکلو(EXIT_FAILURE);
     }
-    return ptr;
+    أرجع ptr;
 }
 
-#define mallocCheck(size) malloc_check(size, __FILE__, __LINE__)
+#تعریف_کرو mallocCheck(ناپ) malloc_check(ناپ, __FILE__, __LINE__)
 
 
 // ----------------------------------------------------------------------------
 // check that all tokens are within range
-extern inline void token_check(const int* tokens, int token_count, int vocab_size, const char *file, int line) {
-    for(int i = 0; i < token_count; i++) {
-        if(!(0 <= tokens[i] && tokens[i] < vocab_size)) {
-            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, line);
+خارجي مضمن فراغ token_check(ثابت صحيح* ٹوکن, صحيح token_گنتی, صحيح vocab_ناپ, ثابت حرف *file, صحيح سطر) {
+    لكل(صحيح i = 0; i < token_گنتی; i++) {
+        إذا(!(0 <= ٹوکن[i] && ٹوکن[i] < vocab_ناپ)) {
+            fprintf(stderr, "Error: Token out of vocabulary at %s:%d\n", file, سطر);
             fprintf(stderr, "Error details:\n");
             fprintf(stderr, "  File: %s\n", file);
-            fprintf(stderr, "  Line: %d\n", line);
-            fprintf(stderr, "  Token: %d\n", tokens[i]);
+            fprintf(stderr, "  Line: %d\n", سطر);
+            fprintf(stderr, "  Token: %d\n", ٹوکن[i]);
             fprintf(stderr, "  Position: %d\n", i);
-            fprintf(stderr, "  Vocab: %d\n", vocab_size);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "  Vocab: %d\n", vocab_ناپ);
+            باہر_نکلو(EXIT_FAILURE);
         }
     }
 }
-#define tokenCheck(tokens, count, vocab) token_check(tokens, count, vocab, __FILE__, __LINE__)
+#تعریف_کرو tokenCheck(ٹوکن, گنتی, vocab) token_check(ٹوکن, گنتی, vocab, __FILE__, __LINE__)
 
 // ----------------------------------------------------------------------------
 // I/O ops
 
-extern inline void create_dir_if_not_exists(const char *dir) {
-    if (dir == NULL) { return; }
-    struct stat st = {0};
-    if (stat(dir, &st) == -1) {
-        if (mkdir(dir, 0700) == -1) {
-            printf("ERROR: could not create directory: %s\n", dir);
-            exit(EXIT_FAILURE);
+خارجي مضمن فراغ create_dir_if_not_exists(ثابت حرف *dir) {
+    إذا (dir == عدم) { أرجع; }
+    بنية stat st = {0};
+    إذا (stat(dir, &st) == -1) {
+        إذا (mkdir(dir, 0700) == -1) {
+            لکھو("ERROR: could not create directory: %s\n", dir);
+            باہر_نکلو(EXIT_FAILURE);
         }
-        printf("created directory: %s\n", dir);
+        لکھو("created directory: %s\n", dir);
     }
 }
 
-extern inline int find_max_step(const char* output_log_dir) {
+خارجي مضمن صحيح لبھو_max_قدم(ثابت حرف* output_log_dir) {
     // find the DONE file in the log dir with highest step count
-    if (output_log_dir == NULL) { return -1; }
+    إذا (output_log_dir == عدم) { أرجع -1; }
     DIR* dir;
-    struct dirent* entry;
-    int max_step = -1;
+    بنية dirent* اندراج;
+    صحيح max_قدم = -1;
     dir = opendir(output_log_dir);
-    if (dir == NULL) { return -1; }
-    while ((entry = readdir(dir)) != NULL) {
-        if (strncmp(entry->d_name, "DONE_", 5) == 0) {
-            int step = atoi(entry->d_name + 5);
-            if (step > max_step) {
-                max_step = step;
+    إذا (dir == عدم) { أرجع -1; }
+    طالما ((اندراج = readdir(dir)) != عدم) {
+        إذا (لڑی_مقابلہ(اندراج->d_name, "DONE_", 5) == 0) {
+            صحيح قدم = atoi(اندراج->d_name + 5);
+            إذا (قدم > max_قدم) {
+                max_قدم = قدم;
             }
         }
     }
     closedir(dir);
-    return max_step;
+    أرجع max_قدم;
 }
 
-extern inline int ends_with_bin(const char* str) {
+خارجي مضمن صحيح سرے_with_bin(ثابت حرف* str) {
     // checks if str ends with ".bin". could be generalized in the future.
-    if (str == NULL) { return 0; }
-    size_t len = strlen(str);
-    const char* suffix = ".bin";
-    size_t suffix_len = strlen(suffix);
-    if (len < suffix_len) { return 0; }
-    int suffix_matches = strncmp(str + len - suffix_len, suffix, suffix_len) == 0;
-    return suffix_matches;
+    إذا (str == عدم) { أرجع 0; }
+    size_t len = لڑی_لمبائی(str);
+    ثابت حرف* suffix = ".bin";
+    size_t suffix_len = لڑی_لمبائی(suffix);
+    إذا (len < suffix_len) { أرجع 0; }
+    صحيح suffix_matches = لڑی_مقابلہ(str + len - suffix_len, suffix, suffix_len) == 0;
+    أرجع suffix_matches;
 }
 
-#endif
+#جے_انت

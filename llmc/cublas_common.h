@@ -1,32 +1,32 @@
 /*
 cuBLAS related utils
 */
-#ifndef CUBLAS_COMMON_H
-#define CUBLAS_COMMON_H
+#جے_بنا_تعریف CUBLAS_COMMON_H
+#تعریف_کرو CUBLAS_COMMON_H
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <cublas_v2.h>
-#include <cublasLt.h>
+#ضمن <stddef.h>
+#ضمن <stdlib.h>
+#ضمن <stdio.h>
+#ضمن <cublas_v2.h>
+#ضمن <cublasLt.h>
 
 // ----------------------------------------------------------------------------
 // cuBLAS Precision settings
 
-#if defined(ENABLE_FP32)
-#define CUBLAS_LOWP CUDA_R_32F
-#elif defined(ENABLE_FP16)
-#define CUBLAS_LOWP CUDA_R_16F
-#else // default to bfloat16
-#define CUBLAS_LOWP CUDA_R_16BF
-#endif
+#إذا defined(ENABLE_FP32)
+#تعریف_کرو CUBLAS_LOWP CUDA_R_32F
+#وإلاإذا defined(ENABLE_FP16)
+#تعریف_کرو CUBLAS_LOWP CUDA_R_16F
+#وإلا // default to bfloat16
+#تعریف_کرو CUBLAS_LOWP CUDA_R_16BF
+#جے_انت
 
 // ----------------------------------------------------------------------------
 // cuBLAS globals for workspace, handle, settings
 
 // Hardcoding workspace to 32MiB but only Hopper needs 32 (for others 4 is OK)
-const size_t cublaslt_workspace_size = 32 * 1024 * 1024;
-void* cublaslt_workspace = NULL;
+ثابت size_t cublaslt_workspace_ناپ = 32 * 1024 * 1024;
+فراغ* cublaslt_workspace = عدم;
 cublasComputeType_t cublas_compute = CUBLAS_COMPUTE_32F;
 cublasLtHandle_t cublaslt_handle;
 
@@ -34,13 +34,13 @@ cublasLtHandle_t cublaslt_handle;
 // Error checking
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+فراغ cublasCheck(cublas_حالت_t حالت, ثابت حرف *file, صحيح سطر)
 {
-    if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
-        exit(EXIT_FAILURE);
+    إذا (حالت != CUBLAS_حالت_SUCCESS) {
+        لکھو("[cuBLAS ERROR]: %d %s %d\n", حالت, file, سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
-#define cublasCheck(status) { cublasCheck((status), __FILE__, __LINE__); }
+#تعریف_کرو cublasCheck(حالت) { cublasCheck((حالت), __FILE__, __LINE__); }
 
-#endif // CUBLAS_COMMON_H
+#جے_انت // CUBLAS_COMMON_H

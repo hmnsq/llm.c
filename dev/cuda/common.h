@@ -1,103 +1,103 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <cuda_runtime.h>
-#include <cublas_v2.h>
-#include <cublasLt.h>
-#include <float.h>
+#ضمن <stdlib.h>
+#ضمن <stdio.h>
+#ضمن <cuda_runtime.h>
+#ضمن <cublas_v2.h>
+#ضمن <cublasLt.h>
+#ضمن <float.h>
 
-#define WARP_SIZE 32U
-extern cudaDeviceProp deviceProp;
+#تعریف_کرو WARP_ناپ 32U
+خارجي cudaDeviceProp deviceProp;
 
-template<class T>
-__host__ __device__ T ceil_div(T dividend, T divisor) {
-    return (dividend + divisor-1) / divisor;
+سانچا<class T>
+__host__ __device__ T ceil_div(T dividend, T مقسوم_علیہ) {
+    أرجع (dividend + مقسوم_علیہ-1) / مقسوم_علیہ;
 }
 
-__device__ float warpReduceSum(float val) {
-    for (int offset = 16; offset > 0; offset /= 2) {
-        val += __shfl_xor_sync(0xFFFFFFFF, val, offset);
+__device__ عائم warp_Reduce_جوڑ(عائم val) {
+    لكل (صحيح وتھ = 16; وتھ > 0; وتھ /= 2) {
+        val += __shfl_xor_sync(0xFFFFFFFF, val, وتھ);
     }
-    return val;
+    أرجع val;
 }
 
 // requires all 32 threads in the warp to be active, but should work for any block size
 // uses non-dynamic shared memory so every call increases shared memory requirements by 128 bytes
 // the fact it's unique shared memory allows us to avoid an extra __syncthreads() call at the end
 // but if called inside a loop, the shared memory will be implicitly reused, so set final_sync to 1
-using reduction_func_t = float (*) (float);
+using reduction_func_t = عائم (*) (عائم);
 
-template<reduction_func_t warp_reduction>
-__device__ inline float blockReduce(float val, bool final_sync, float out_of_bounds) {
+سانچا<reduction_func_t warp_reduction>
+__device__ مضمن عائم بلاک_Reduce(عائم val, bool final_sync, عائم باہرلا_دا_bounds) {
     // two reductions of up to 1024 threads:
     // 1) inside warp (shuffle), 2) cross-warp (shared memory), 3) inside warp (shuffle)
-    __shared__ float shared_val[WARP_SIZE];
-    const int lane_id = threadIdx.x % WARP_SIZE;
-    const int warp_id = threadIdx.x / WARP_SIZE;
-    const int num_warps = blockDim.x / WARP_SIZE;
+    __shared__ عائم shared_val[WARP_ناپ];
+    ثابت صحيح lane_id = threadIdx.x % WARP_ناپ;
+    ثابت صحيح warp_id = threadIdx.x / WARP_ناپ;
+    ثابت صحيح عدد_warps = بلاک_Dim.x / WARP_ناپ;
 
-    float warp_val = warp_reduction(val);
-    if (lane_id == 0) { shared_val[warp_id] = warp_val; }
+    عائم warp_val = warp_reduction(val);
+    إذا (lane_id == 0) { shared_val[warp_id] = warp_val; }
     __syncthreads();
-    warp_val = (lane_id < num_warps) ? shared_val[lane_id] : out_of_bounds;
-    float block_val = warp_reduction(warp_val);
+    warp_val = (lane_id < عدد_warps) ? shared_val[lane_id] : باہرلا_دا_bounds;
+    عائم بلاک_val = warp_reduction(warp_val);
 
-    if (final_sync) {
+    إذا (final_sync) {
         __syncthreads(); // only needed in loops when effectively reusing shared memory etc.
     }
-    return block_val;
+    أرجع بلاک_val;
 }
 
 // Helper function to call blockReduce with default arguments
-template<reduction_func_t warp_reduction>
-__device__ inline float blockReduce(float val) {
-    return blockReduce<warp_reduction>(val, false, 0.0f);
+سانچا<reduction_func_t warp_reduction>
+__device__ مضمن عائم بلاک_Reduce(عائم val) {
+    أرجع بلاک_Reduce<warp_reduction>(val, false, 0.0f);
 }
 
 // ----------------------------------------------------------------------------
 // checking utils
 
 // CUDA error checking
-void cuda_check(cudaError_t error, const char *file, int line) {
-    if (error != cudaSuccess) {
-        printf("[CUDA ERROR] at file %s:%d:\n%s\n", file, line,
+فراغ cuda_check(cudaError_t error, ثابت حرف *file, صحيح سطر) {
+    إذا (error != cudaSuccess) {
+        لکھو("[CUDA ERROR] at file %s:%d:\n%s\n", file, سطر,
                cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
+        باہر_نکلو(EXIT_FAILURE);
     }
 };
-#define cudaCheck(err) (cuda_check(err, __FILE__, __LINE__))
+#تعریف_کرو cudaCheck(err) (cuda_check(err, __FILE__, __LINE__))
 
 // cuBLAS error checking
-void cublasCheck(cublasStatus_t status, const char *file, int line)
+فراغ cublasCheck(cublas_حالت_t حالت, ثابت حرف *file, صحيح سطر)
 {
-    if (status != CUBLAS_STATUS_SUCCESS) {
-        printf("[cuBLAS ERROR]: %d %s %d\n", status, file, line);
-        exit(EXIT_FAILURE);
+    إذا (حالت != CUBLAS_حالت_SUCCESS) {
+        لکھو("[cuBLAS ERROR]: %d %s %d\n", حالت, file, سطر);
+        باہر_نکلو(EXIT_FAILURE);
     }
 }
-#define cublasCheck(status) { cublasCheck((status), __FILE__, __LINE__); }
+#تعریف_کرو cublasCheck(حالت) { cublasCheck((حالت), __FILE__, __LINE__); }
 
 // ----------------------------------------------------------------------------
 // cuBLAS setup
 // these will be initialized by setup_main
 
 // cuBLAS workspace. Hardcoding to 32MiB but only Hopper needs 32, for others 4 is OK
-static size_t cublaslt_workspace_size = 32 * 1024 * 1024;
-static void* cublaslt_workspace = NULL;
-static cublasComputeType_t cublas_compute_type;
+ساكن size_t cublaslt_workspace_ناپ = 32 * 1024 * 1024;
+ساكن فراغ* cublaslt_workspace = عدم;
+ساكن cublasComputeType_t cublas_compute_type;
 cublasHandle_t cublas_handle;
 cublasLtHandle_t cublaslt_handle;
-int cuda_arch_major = 0;
-int cuda_arch_minor = 0;
-int cuda_num_SMs = 0; // for persistent threads where we want 1 threadblock per SM
-int cuda_threads_per_SM = 0;    // needed to calculate how many blocks to launch to fill up the GPU
+صحيح cuda_arch_major = 0;
+صحيح cuda_arch_minor = 0;
+صحيح cuda_عدد_SMs = 0; // for persistent threads where we want 1 threadblock per SM
+صحيح cuda_دھاگے_فی_SM = 0;    // needed to calculate how many blocks to launch to fill up the GPU
 
 // ----------------------------------------------------------------------------
 // to make sure that 2 blocks fit on A100/H100 to maximise latency tolerance
-#if __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
-#define MAX_1024_THREADS_BLOCKS 2
-#else
-#define MAX_1024_THREADS_BLOCKS 1
-#endif
+#إذا __CUDA_ARCH__ == 800 || __CUDA_ARCH__ >= 900
+#تعریف_کرو MAX_1024_دھاگے_بلاکاں 2
+#وإلا
+#تعریف_کرو MAX_1024_دھاگے_بلاکاں 1
+#جے_انت
 
 // ----------------------------------------------------------------------------
 // Packed128 data structure, which forces the compiler to use 128-bit loads/stores
@@ -105,281 +105,281 @@ int cuda_threads_per_SM = 0;    // needed to calculate how many blocks to launch
 // This is a bit similar to the use of float4 in the case of 32-bit floats, but
 // supports arbitrary precision.
 
-template<class ElementType>
-struct alignas(16) Packed128 {
+سانچا<class ElementType>
+بنية alignas(16) Packed128 {
     // Note: = default implicitly generates a __device__ function, but explicitly
     // adding __device__ causes a lot of warnings.
-    Packed128() = default;
-    __device__ explicit Packed128(int4 bits) {
-        static_assert(sizeof(bits) == sizeof(payload), "Size mismatch.");
-        memcpy(&payload, &bits, sizeof(bits));
+    Packed128() = افتراضي;
+    __device__ explicit Packed128(int4 بٹ) {
+        static_assert(حجم(بٹ) == حجم(payload), "Size mismatch.");
+        حافظہ_نقل(&payload, &بٹ, حجم(بٹ));
     }
 
-    __device__  static Packed128 constant(ElementType value) {
-        Packed128 result;
-        for(int k = 0; k < size; ++k) {
-            result.payload[k] = value;
+    __device__  ساكن Packed128 constant(ElementType قدر) {
+        Packed128 نتیجہ;
+        لكل(صحيح k = 0; k < ناپ; ++k) {
+            نتیجہ.payload[k] = قدر;
         }
-        return result;
+        أرجع نتیجہ;
     }
 
-    __device__ static Packed128 zeros() {
-        return constant(0);
+    __device__ ساكن Packed128 zeros() {
+        أرجع constant(0);
     }
 
-    __device__ static Packed128 ones() {
-        return constant(1);
+    __device__ ساكن Packed128 ones() {
+        أرجع constant(1);
     }
 
-    __device__ ElementType& operator[](int index) {
-        return payload[index];
+    __device__ ElementType& عامل[](صحيح اشاریہ) {
+        أرجع payload[اشاریہ];
     }
-    __device__ const ElementType& operator[](int index) const {
-        return payload[index];
+    __device__ ثابت ElementType& عامل[](صحيح اشاریہ) ثابت {
+        أرجع payload[اشاریہ];
     }
-    __device__ int4 get_bits() const {
-        int4 bits;
-        static_assert(sizeof(bits) == sizeof(payload), "Size mismatch.");
-        memcpy(&bits, &payload, sizeof(bits));
-        return bits;
+    __device__ int4 get_بٹ() ثابت {
+        int4 بٹ;
+        static_assert(حجم(بٹ) == حجم(payload), "Size mismatch.");
+        حافظہ_نقل(&بٹ, &payload, حجم(بٹ));
+        أرجع بٹ;
     }
     // e.g. sizeof(int4) is 16 (4 X 4 bytes), sizeof(bfloat16) = 2, so size = 8
     // so in the case where ElementType = bfloat16, we store 8 elements in one Packed128
-    static constexpr const int size = sizeof(int4) / sizeof(ElementType);
-    ElementType payload[size];
+    ساكن constexpr ثابت صحيح ناپ = حجم(int4) / حجم(ElementType);
+    ElementType payload[ناپ];
 };
 
 // short-form typedef
-typedef Packed128<float> f128;
+تعريفنوع Packed128<عائم> f128;
 
 // load a Packed128 from an aligned memory address
-template<class ElementType>
-__device__ Packed128<ElementType> load128(const ElementType* address) {
-    return Packed128<ElementType>{*reinterpret_cast<const int4*>(address)};
+سانچا<class ElementType>
+__device__ Packed128<ElementType> load128(ثابت ElementType* پتہ) {
+    أرجع Packed128<ElementType>{*reinterpret_cast<ثابت int4*>(پتہ)};
 }
 // load a Packed128 from an aligned memory address with streaming cache hint
-template<class ElementType>
-__device__ Packed128<ElementType> load128cs(const ElementType* address) {
-    return Packed128<ElementType>{__ldcs(reinterpret_cast<const int4*>(address))};
+سانچا<class ElementType>
+__device__ Packed128<ElementType> load128cs(ثابت ElementType* پتہ) {
+    أرجع Packed128<ElementType>{__ldcs(reinterpret_cast<ثابت int4*>(پتہ))};
 }
 // store a Packed128 to an aligned memory address
-template<class ElementType>
-__device__ void store128(ElementType* target, Packed128<ElementType> value) {
-    *reinterpret_cast<int4*>(target) = value.get_bits();
+سانچا<class ElementType>
+__device__ فراغ store128(ElementType* نشانہ, Packed128<ElementType> قدر) {
+    *reinterpret_cast<int4*>(نشانہ) = قدر.get_بٹ();
 }
 // store a Packed128 to an aligned memory address with streaming cache hint
-template<class ElementType>
-__device__ void store128cs(ElementType* target, Packed128<ElementType> value) {
-    __stcs(reinterpret_cast<int4*>(target), value.get_bits());
+سانچا<class ElementType>
+__device__ فراغ store128cs(ElementType* نشانہ, Packed128<ElementType> قدر) {
+    __stcs(reinterpret_cast<int4*>(نشانہ), قدر.get_بٹ());
 }
 // store a Packed128 to an aligned memory address while caching in L2 but bypassing L1
-template<class ElementType>
-__device__ void store128cg(ElementType* target, Packed128<ElementType> value) {
-    __stcg(reinterpret_cast<int4*>(target), value.get_bits());
+سانچا<class ElementType>
+__device__ فراغ store128cg(ElementType* نشانہ, Packed128<ElementType> قدر) {
+    __stcg(reinterpret_cast<int4*>(نشانہ), قدر.get_بٹ());
 }
 
 // ----------------------------------------------------------------------------
 // reduced/mixed precision utilities
 
-#if defined(ENABLE_BF16)
+#إذا defined(ENABLE_BF16)
 
-typedef __nv_bfloat16 floatX;
-typedef __nv_bfloat16 floatN;
-#define CUBLAS_LOWP CUDA_R_16BF // CUDA_R_16F or CUDA_R_16BF (or CUDA_R_32F)
+تعريفنوع __nv_bfloat16 floatX;
+تعريفنوع __nv_bfloat16 floatN;
+#تعریف_کرو CUBLAS_LOWP CUDA_R_16BF // CUDA_R_16F or CUDA_R_16BF (or CUDA_R_32F)
 // CUBLAS_COMPUTE_32F or CUBLAS_COMPUTE_16F (for CUDA_R_16F only, potentially slower?!)
-#define CUBLAS_LOWP_COMPUTE CUBLAS_COMPUTE_32F
+#تعریف_کرو CUBLAS_LOWP_COMPUTE CUBLAS_COMPUTE_32F
 
-#elif defined(ENABLE_FP16)
+#وإلاإذا defined(ENABLE_FP16)
 
-typedef half floatX;
-typedef half floatN;
+تعريفنوع half floatX;
+تعريفنوع half floatN;
 
-#else
+#وإلا
 
-typedef float floatX;
-typedef float floatN;
-#endif
+تعريفنوع عائم floatX;
+تعريفنوع عائم floatN;
+#جے_انت
 
-typedef Packed128<floatX> x128;
+تعريفنوع Packed128<floatX> x128;
 
 
 // older nvcc does not provide __ldcs and __stcs for bfloat16, despite these actually just being unsigned shorts.
 // we need to be careful here to only define our own versions if none already exist, otherwise the compiler will
 // complain.
 // If not, you easily get "no viable overload" (for sm52) and "function already exists" (sm_80)
-#if defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
-__device__ floatX __ldcs(const floatX* address) {
-    unsigned short bf = __ldcs(reinterpret_cast<const unsigned short*>(address));
-    return __nv_bfloat16_raw{bf};
+#إذا defined(ENABLE_BF16) && (__CUDACC_VER_MAJOR__ < 12) && !((__CUDA_ARCH__ >= 800) || !defined(__CUDA_ARCH__))
+__device__ floatX __ldcs(ثابت floatX* پتہ) {
+    بنانشانی چھوٹا bf = __ldcs(reinterpret_cast<ثابت بنانشانی چھوٹا*>(پتہ));
+    أرجع __nv_bfloat16_raw{bf};
 }
 
-__device__ void __stcs(floatX* address, floatX value) {
-    __stcs(reinterpret_cast<unsigned short*>(address), ((__nv_bfloat16_raw)value).x);
+__device__ فراغ __stcs(floatX* پتہ, floatX قدر) {
+    __stcs(reinterpret_cast<بنانشانی چھوٹا*>(پتہ), ((__nv_bfloat16_raw)قدر).x);
 }
-#endif
+#جے_انت
 
 
 // ----------------------------------------------------------------------------
 // random utils
 
-float* make_random_float_01(size_t N) {
-    float* arr = (float*)malloc(N * sizeof(float));
-    for (size_t i = 0; i < N; i++) {
-        arr[i] = ((float)rand() / RAND_MAX); // range 0..1
+عائم* make_random_float_01(size_t N) {
+    عائم* arr = (عائم*)حافظہ_دیو(N * حجم(عائم));
+    لكل (size_t i = 0; i < N; i++) {
+        arr[i] = ((عائم)rand() / RAND_MAX); // range 0..1
     }
-    return arr;
+    أرجع arr;
 }
 
-float* make_random_float(size_t N) {
-    float* arr = (float*)malloc(N * sizeof(float));
-    for (size_t i = 0; i < N; i++) {
-        arr[i] = ((float)rand() / RAND_MAX) * 2.0 - 1.0; // range -1..1
+عائم* make_random_float(size_t N) {
+    عائم* arr = (عائم*)حافظہ_دیو(N * حجم(عائم));
+    لكل (size_t i = 0; i < N; i++) {
+        arr[i] = ((عائم)rand() / RAND_MAX) * 2.0 - 1.0; // range -1..1
     }
-    return arr;
+    أرجع arr;
 }
 
-int* make_random_int(size_t N, int V) {
-    int* arr = (int*)malloc(N * sizeof(int));
-    for (size_t i = 0; i < N; i++) {
+صحيح* make_random_int(size_t N, صحيح V) {
+    صحيح* arr = (صحيح*)حافظہ_دیو(N * حجم(صحيح));
+    لكل (size_t i = 0; i < N; i++) {
         arr[i] = rand() % V; // range 0..V-1
     }
-    return arr;
+    أرجع arr;
 }
 
-float* make_zeros_float(size_t N) {
-    float* arr = (float*)malloc(N * sizeof(float));
-    memset(arr, 0, N * sizeof(float)); // all zero
-    return arr;
+عائم* make_zeros_float(size_t N) {
+    عائم* arr = (عائم*)حافظہ_دیو(N * حجم(عائم));
+    memset(arr, 0, N * حجم(عائم)); // all zero
+    أرجع arr;
 }
 
-float* make_ones_float(size_t N) {
-    float* arr = (float*)malloc(N * sizeof(float));
-    for (size_t i = 0; i < N; i++) {
+عائم* make_ones_float(size_t N) {
+    عائم* arr = (عائم*)حافظہ_دیو(N * حجم(عائم));
+    لكل (size_t i = 0; i < N; i++) {
         arr[i] = 1.0f;
     }
-    return arr;
+    أرجع arr;
 }
 
 // ----------------------------------------------------------------------------
 // testing and benchmarking utils
 
-template<class TargetType>
-[[nodiscard]] cudaError_t memcpy_convert(TargetType* d_ptr, float* h_ptr, size_t count) {
+سانچا<class نشانہ_Type>
+[[nodiscard]] cudaError_t memcpy_convert(نشانہ_Type* d_ptr, عائم* h_ptr, size_t گنتی) {
     // copy from host to device with data type conversion.
-    TargetType* converted = (TargetType*)malloc(count * sizeof(TargetType));
-    for (int i = 0; i < count; i++) {
-        converted[i] = (TargetType)h_ptr[i];
+    نشانہ_Type* converted = (نشانہ_Type*)حافظہ_دیو(گنتی * حجم(نشانہ_Type));
+    لكل (صحيح i = 0; i < گنتی; i++) {
+        converted[i] = (نشانہ_Type)h_ptr[i];
     }
 
-    cudaError_t status = cudaMemcpy(d_ptr, converted, count * sizeof(TargetType), cudaMemcpyHostToDevice);
-    free(converted);
+    cudaError_t حالت = cudaMemcpy(d_ptr, converted, گنتی * حجم(نشانہ_Type), cuda_Memcpy_Host_منزل_Device);
+    حرر(converted);
 
     // instead of checking the status at cudaMemcpy, we return it from here. This way, we
     // still need to use our checking macro, and get better line info as to where the error
     // happened.
-    return status;
+    أرجع حالت;
 }
 
-void setup_main() {
+فراغ تیاری_main() {
     srand(0);   // determinism
 
     // set up the device
-    int deviceIdx = 0;
-    cudaCheck(cudaSetDevice(deviceIdx));
+    صحيح deviceIdx = 0;
+    cudaCheck(cuda_سیٹ_Device(deviceIdx));
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, deviceIdx);
-    cuda_num_SMs = deviceProp.multiProcessorCount;
-    cuda_threads_per_SM = deviceProp.maxThreadsPerMultiProcessor;
+    cuda_عدد_SMs = deviceProp.multi_Processor_گنتی;
+    cuda_دھاگے_فی_SM = deviceProp.max_دھاگے_فی_Multi_Processor;
     cuda_arch_major = deviceProp.major;
     cuda_arch_minor = deviceProp.minor;
 
     // setup cuBLAS and cuBLASLt
     cublasCheck(cublasCreate(&cublas_handle));
     cublasCheck(cublasLtCreate(&cublaslt_handle));
-    cudaCheck(cudaMalloc(&cublaslt_workspace, cublaslt_workspace_size));
+    cudaCheck(cudaMalloc(&cublaslt_workspace, cublaslt_workspace_ناپ));
 
     // TF32 precision is equivalent to torch.set_float32_matmul_precision('high')
-    int enable_tf32 = cuda_arch_major >= 8 ? 1 : 0;
+    صحيح enable_tf32 = cuda_arch_major >= 8 ? 1 : 0;
     // TODO implement common CLI for all tests/benchmarks
     // if (override_enable_tf32 == 0) { enable_tf32 = 0; } // force to zero via arg
     cublas_compute_type = enable_tf32 ? CUBLAS_COMPUTE_32F_FAST_TF32 : CUBLAS_COMPUTE_32F;
-    cublasMath_t cublas_math_mode = enable_tf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH;
-    cublasCheck(cublasSetMathMode(cublas_handle, cublas_math_mode));
+    cublasMath_t cublas_math_منوال = enable_tf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH;
+    cublasCheck(cublas_سیٹ_Math_منوال(cublas_handle, cublas_math_منوال));
 }
 
-template<class D, class T>
-void validate_result(D* device_result, const T* cpu_reference, const char* name, std::size_t num_elements, T tolerance=1e-4) {
-    D* out_gpu = (D*)malloc(num_elements * sizeof(D));
-    cudaCheck(cudaMemcpy(out_gpu, device_result, num_elements * sizeof(D), cudaMemcpyDeviceToHost));
-    int nfaults = 0;
-#ifndef ENABLE_BF16
-    float epsilon = FLT_EPSILON;
-#else
-    float epsilon = 0.079;
-#endif
-    for (int i = 0; i < num_elements; i++) {
+سانچا<class D, class T>
+فراغ validate_نتیجہ(D* device_نتیجہ, ثابت T* cpu_reference, ثابت حرف* name, std::size_t عدد_elements, T tolerance=1e-4) {
+    D* باہرلا_gpu = (D*)حافظہ_دیو(عدد_elements * حجم(D));
+    cudaCheck(cudaMemcpy(باہرلا_gpu, device_نتیجہ, عدد_elements * حجم(D), cuda_Memcpy_Device_منزل_Host));
+    صحيح nfaults = 0;
+#جے_بنا_تعریف ENABLE_BF16
+    عائم epsilon = FLT_EPSILON;
+#وإلا
+    عائم epsilon = 0.079;
+#جے_انت
+    لكل (صحيح i = 0; i < عدد_elements; i++) {
         // Skip masked elements
-        if(!isfinite(cpu_reference[i]))
-            continue;
+        إذا(!isfinite(cpu_reference[i]))
+            استمر;
 
         // print the first few comparisons
-        if (i < 5) {
-            printf("%f %f\n", cpu_reference[i], (T)out_gpu[i]);
+        إذا (i < 5) {
+            لکھو("%f %f\n", cpu_reference[i], (T)باہرلا_gpu[i]);
         }
         // effective tolerance is based on expected rounding error (epsilon),
         // plus any specified additional tolerance
-        float t_eff = tolerance + fabs(cpu_reference[i]) * epsilon;
+        عائم t_eff = tolerance + fabs(cpu_reference[i]) * epsilon;
         // ensure correctness for all elements.
-        if (fabs(cpu_reference[i] - (T)out_gpu[i]) > t_eff) {
-            printf("Mismatch of %s at %d: CPU_ref: %f vs GPU: %f\n", name, i, cpu_reference[i], (T)out_gpu[i]);
+        إذا (fabs(cpu_reference[i] - (T)باہرلا_gpu[i]) > t_eff) {
+            لکھو("Mismatch of %s at %d: CPU_ref: %f vs GPU: %f\n", name, i, cpu_reference[i], (T)باہرلا_gpu[i]);
             nfaults ++;
-            if (nfaults >= 10) {
-                free(out_gpu);
-                exit(EXIT_FAILURE);
+            إذا (nfaults >= 10) {
+                حرر(باہرلا_gpu);
+                باہر_نکلو(EXIT_FAILURE);
             }
         }
     }
 
-    if (nfaults > 0) {
-        free(out_gpu);
-        exit(EXIT_FAILURE);
+    إذا (nfaults > 0) {
+        حرر(باہرلا_gpu);
+        باہر_نکلو(EXIT_FAILURE);
     }
 
-    free(out_gpu);
+    حرر(باہرلا_gpu);
 }
 
-template<class Kernel, class... KernelArgs>
-float benchmark_kernel(int repeats, Kernel kernel, KernelArgs&&... kernel_args) {
-    cudaEvent_t start, stop;
+سانچا<class Kernel, class... Kernel_دلیلاں>
+عائم benchmark_kernel(صحيح repeats, Kernel kernel, Kernel_دلیلاں&&... kernel_دلیلاں) {
+    cudaEvent_t شروع, stop;
     // prepare buffer to scrub L2 cache between benchmarks
     // just memset a large dummy array, recommended by
     // https://stackoverflow.com/questions/31429377/how-can-i-clear-flush-the-l2-cache-and-the-tlb-of-a-gpu
     // and apparently used in nvbench.
-    int deviceIdx = 0;
-    cudaCheck(cudaSetDevice(deviceIdx));
+    صحيح deviceIdx = 0;
+    cudaCheck(cuda_سیٹ_Device(deviceIdx));
     cudaDeviceProp deviceProp;
     cudaCheck(cudaGetDeviceProperties(&deviceProp, deviceIdx));
-    void* flush_buffer;
-    cudaCheck(cudaMalloc(&flush_buffer, deviceProp.l2CacheSize));
+    فراغ* flush_بفر;
+    cudaCheck(cudaMalloc(&flush_بفر, deviceProp.l2_Cache_ناپ));
 
-    cudaCheck(cudaEventCreate(&start));
+    cudaCheck(cudaEventCreate(&شروع));
     cudaCheck(cudaEventCreate(&stop));
-    float elapsed_time = 0.f;
-    for (int i = 0; i < repeats; i++) {
+    عائم elapsed_ویلا = 0.f;
+    لكل (صحيح i = 0; i < repeats; i++) {
         // clear L2
-        cudaCheck(cudaMemset(flush_buffer, 0, deviceProp.l2CacheSize));
+        cudaCheck(cudaMemset(flush_بفر, 0, deviceProp.l2_Cache_ناپ));
         // now we can start recording the timing of the kernel
-        cudaCheck(cudaEventRecord(start, nullptr));
-        kernel(std::forward<KernelArgs>(kernel_args)...);
-        cudaCheck(cudaEventRecord(stop, nullptr));
-        cudaCheck(cudaEventSynchronize(start));
+        cudaCheck(cuda_Event_ریکارڈ(شروع, nullptr));
+        kernel(std::forward<Kernel_دلیلاں>(kernel_دلیلاں)...);
+        cudaCheck(cuda_Event_ریکارڈ(stop, nullptr));
+        cudaCheck(cudaEventSynchronize(شروع));
         cudaCheck(cudaEventSynchronize(stop));
-        float single_call;
-        cudaCheck(cudaEventElapsedTime(&single_call, start, stop));
-        elapsed_time += single_call;
+        عائم single_call;
+        cudaCheck(cuda_Event_Elapsed_ویلا(&single_call, شروع, stop));
+        elapsed_ویلا += single_call;
     }
 
-    cudaCheck(cudaFree(flush_buffer));
+    cudaCheck(cudaFree(flush_بفر));
 
-    return elapsed_time / repeats;
+    أرجع elapsed_ویلا / repeats;
 }

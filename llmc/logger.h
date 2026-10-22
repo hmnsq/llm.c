@@ -2,28 +2,28 @@
 Implements a simple logger that writes log files in the output directory.
 The Logger object is stateless and uses append mode to write to log files.
 */
-#ifndef LOGGER_H
-#define LOGGER_H
+#جے_بنا_تعریف LOGGER_H
+#تعریف_کرو LOGGER_H
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#ضمن <assert.h>
+#ضمن <stdio.h>
+#ضمن <string.h>
 // defines: fopenCheck, freadCheck, fcloseCheck, fseekCheck, mallocCheck
-#include "utils.h"
+#ضمن "utils.h"
 
-typedef struct {
-    int active;
-    char output_log_file[512];
+تعريفنوع بنية {
+    صحيح سرگرم;
+    حرف output_log_file[512];
 } Logger;
 
-void logger_init(Logger *logger, const char *log_dir, int process_rank, int resume) {
+فراغ logger_init(Logger *logger, ثابت حرف *log_dir, صحيح process_rank, صحيح resume) {
     // currently, only rank 0 writes logs
-    logger->active = 0;
-    if (log_dir != NULL && process_rank == 0) {
-        logger->active = 1;
-        assert(strlen(log_dir) < 500); // being a bit lazy, could relax later
+    logger->سرگرم = 0;
+    إذا (log_dir != عدم && process_rank == 0) {
+        logger->سرگرم = 1;
+        أكد(لڑی_لمبائی(log_dir) < 500); // being a bit lazy, could relax later
         snprintf(logger->output_log_file, 512, "%s/main.log", log_dir);
-        if (resume == 0) {
+        إذا (resume == 0) {
             // wipe any existing logfile clean if we're starting fresh
             FILE *logfile = fopenCheck(logger->output_log_file, "w");
             fclose(logfile);
@@ -31,28 +31,28 @@ void logger_init(Logger *logger, const char *log_dir, int process_rank, int resu
     }
 }
 
-void logger_log_eval(Logger *logger, int step, float val) {
-    if (logger->active == 1) {
+فراغ logger_log_eval(Logger *logger, صحيح قدم, عائم val) {
+    إذا (logger->سرگرم == 1) {
         FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d eval:%.4f\n", step, val);
+        fprintf(logfile, "s:%d eval:%.4f\n", قدم, val);
         fclose(logfile);
     }
 }
 
-void logger_log_val(Logger *logger, int step, float val_loss) {
-    if (logger->active == 1) {
+فراغ logger_log_val(Logger *logger, صحيح قدم, عائم val_loss) {
+    إذا (logger->سرگرم == 1) {
         FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d tel:%.4f\n", step, val_loss);
+        fprintf(logfile, "s:%d tel:%.4f\n", قدم, val_loss);
         fclose(logfile);
     }
 }
 
-void logger_log_train(Logger *logger, int step, float train_loss, float learning_rate, float grad_norm) {
-    if (logger->active == 1) {
+فراغ logger_log_train(Logger *logger, صحيح قدم, عائم train_loss, عائم learning_شرح, عائم grad_norm) {
+    إذا (logger->سرگرم == 1) {
         FILE *logfile = fopenCheck(logger->output_log_file, "a");
-        fprintf(logfile, "s:%d trl:%.4f lr:%.6f norm:%.2f\n", step, train_loss, learning_rate, grad_norm);
+        fprintf(logfile, "s:%d trl:%.4f lr:%.6f norm:%.2f\n", قدم, train_loss, learning_شرح, grad_norm);
         fclose(logfile);
     }
 }
 
-#endif
+#جے_انت
